@@ -1,0 +1,5 @@
+target: static-pwa
+provider: github-pages-compatible
+backend_required: false
+secrets_required: false
+offline_browser_verification_required: true

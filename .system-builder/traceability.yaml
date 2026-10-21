@@ -1,0 +1,7 @@
+schema_version: 1
+requirement_groups:
+  import: [FR-001, FR-002, FR-003, FR-004, FR-005, FR-016]
+  model: [FR-006, FR-007, FR-008, FR-012, FR-015]
+  allocation: [FR-009, FR-010, FR-011, FR-018, FR-023, FR-024, FR-025, FR-026, FR-027, FR-028]
+  analysis: [FR-013, FR-014, FR-017, FR-021]
+  delivery: [FR-019, FR-020, FR-022]

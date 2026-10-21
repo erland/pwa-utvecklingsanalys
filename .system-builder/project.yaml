@@ -1,0 +1,9 @@
+id: utvecklingsanalys
+name: Utvecklingsanalys
+mode: CREATE
+source_mode: ZIP
+phase: implementation_pending
+technology:
+  frontend: react-typescript-vite
+  persistence: indexeddb
+  deployment: github-pages-compatible
