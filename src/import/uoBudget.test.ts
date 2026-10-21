@@ -13,7 +13,7 @@ async function workbook(kind:'valid'|'missing'|'bad'='valid'){
  const bytes=await w.xlsx.writeBuffer();return bytes as ArrayBuffer;
 }
 describe('2027 UO budget import',()=>{
- it('reads leaf facts with provenance, excludes totals and activation subset',async()=>{const res=await importUoBudget(await workbook());expect(res.facts).toHaveLength(3);expect(res.facts[0]).toMatchObject({uo:'UO A',area:'LO 1',measure:'it_hours',value:100,period:{year:2027,month:1},source:{cell:'D26'}});expect(res.excludedSheets).toContain('Aktivering  2027-2030');expect(res.facts).toContainEqual(expect.objectContaining({value:230,period:{year:2028},source:{cell:'Q26'}}));expect(res.facts.some(f=>f.value===120||f.value===70)).toBe(false);});
+ it('reads leaf facts with provenance, excludes totals and activation subset',async()=>{const res=await importUoBudget(await workbook());expect(res.facts).toHaveLength(3);expect(res.facts[0]).toMatchObject({uo:'UO A',area:'LO 1',measure:'it_hours',value:100,period:{year:2027,month:1},source:{cell:'D26'}});expect(res.excludedSheets).toContain('Aktivering  2027-2030');expect(res.facts.some(f=>f.value===230&&f.period.year===2028&&f.source.cell==='Q26')).toBe(true);expect(res.facts.some(f=>f.value===120||f.value===70)).toBe(false);});
  it('rejects an unsupported template',async()=>{const res=await importUoBudget(await workbook('missing'));expect(res.issues[0].code).toBe('PROFILE_NOT_MATCHED');expect(res.facts).toEqual([]);});
  it('flags invalid values instead of silently coercing them',async()=>{const res=await importUoBudget(await workbook('bad'));expect(res.facts).toHaveLength(2);expect(res.issues.some(i=>i.code==='NON_NUMERIC_INPUT'&&i.cell==='D26')).toBe(true);});
 });
