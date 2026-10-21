@@ -1,0 +1,30 @@
+import {useEffect,useState} from 'react';
+import {loadAllocations} from '../allocations/store';
+import {listMappings} from '../import/drafts';
+import {buildPackage,conflicts,parsePackage,type ConfigPackage} from './packages';
+import {initializeConfiguration,readConfiguration,commitConfiguration,importConfiguration,revisions,restoreRevision,type ConfigRevision} from './store';
+
+export default function ConfigurationView(){
+ const [current,setCurrent]=useState<ConfigPackage|null>(null),[history,setHistory]=useState<ConfigRevision[]>([]);
+ const [selected,setSelected]=useState<('allocations'|'mappings')[]>(['allocations','mappings']);
+ const [mode,setMode]=useState<ConfigPackage['mode']>('definitions-only');
+ const [incoming,setIncoming]=useState<ConfigPackage|null>(null),[policy,setPolicy]=useState<'reject'|'replace'>('reject');
+ const [message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ const refresh=async()=>{setCurrent(await readConfiguration());setHistory(await revisions())};
+ useEffect(()=>{void Promise.all([loadAllocations(),listMappings()]).then(async([a,m])=>{await initializeConfiguration(a,Object.fromEntries(m.map(x=>[x.name,x.mapping])));await refresh()}).catch(e=>setMessage('Kunde inte initiera konfiguration: '+String(e)))},[]);
+ const download=()=>{if(!current)return;const pkg=buildPackage(selected.includes('allocations')?current.sections.allocations:undefined,selected.includes('mappings')?current.sections.mappings:undefined,mode);
+  const blob=new Blob([JSON.stringify(pkg,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='utvecklingsanalys-config-v1.json';a.click();URL.revokeObjectURL(url);
+ };
+ const upload=async(file?:File)=>{if(!file)return;setMessage('');if(file.size>1024*1024){setMessage('Maximal konfigurationsstorlek är 1 MB.');return}try{const content=await file.text();setIncoming(parsePackage(JSON.parse(content)))}catch(e){setIncoming(null);setMessage('Ogiltig eller inkompatibel fil: '+String(e))}};
+ const commit=async()=>{if(!incoming||!current)return;setBusy(true);try{const last=history[history.length-1]?.id;await importConfiguration(incoming,policy,last);await refresh();setIncoming(null);setMessage('Konfiguration importerad med versionspost.')}catch(e){setMessage('Import blockerad: '+String(e))}finally{setBusy(false)}};
+ const restore=async(id:string)=>{setBusy(true);try{await restoreRevision(id,history[history.length-1]?.id);await refresh();setMessage('Tidigare konfiguration återställd som ny version.')}catch(e){setMessage(String(e))}finally{setBusy(false)}};
+ const saveCurrent=async()=>{if(!current)return;setBusy(true);try{await commitConfiguration(current,'Manual version checkpoint',history[history.length-1]?.id);await refresh();setMessage('Version kontrollerad.')}catch(e){setMessage(String(e))}finally{setBusy(false)}};
+ const collision=incoming&&current?conflicts(current,incoming):[];
+ return <><div className="eyebrow">KONFIGURATION · DEV-010</div><h1>Konfigurationspaket</h1><p className="lead">Exportera valda konfigurationsdelar, granska konflikter före import och återställ tidigare versioner. Endast inställningar – aldrig importerade originalarbetsböcker.</p>
+ <section className="panel"><h2>Exportera</h2><div className="mapping-grid"><label><input type="checkbox" checked={selected.includes('allocations')} onChange={e=>setSelected(s=>e.target.checked?[...s,'allocations']:s.filter(x=>x!=='allocations'))}/> Fördelningstyper</label><label><input type="checkbox" checked={selected.includes('mappings')} onChange={e=>setSelected(s=>e.target.checked?[...s,'mappings']:s.filter(x=>x!=='mappings'))}/> Mallprofiler</label></div><label>Exportläge<select aria-label="Exportläge" value={mode} onChange={e=>setMode(e.target.value as ConfigPackage['mode'])}><option value="definitions-only">Endast definitioner (utan UO/LO-regler)</option><option value="full-configuration">Konfiguration inklusive fördelningsregler</option></select></label><button className="primary" disabled={!current||!selected.length} onClick={download}>Ladda ner konfiguration</button></section>
+ <section className="panel"><h2>Importera med granskning</h2><label>Välj konfigurationsfil<input aria-label="Välj konfigurationsfil" type="file" accept=".json" onChange={e=>{void upload(e.target.files?.[0])}}/></label>
+ {incoming&&<><p>Formatversion {incoming.version}. Innehåll: {Object.keys(incoming.sections).join(', ')||'tomt'}.</p><p>{collision.length} konflikter.</p>{collision.length>0&&<ul>{collision.map(c=><li key={c.section+c.key}>{c.section}: {c.key} – {c.reason}</li>)}</ul>}
+ <label>Konflikthantering<select aria-label="Konflikthantering" value={policy} onChange={e=>setPolicy(e.target.value as 'reject'|'replace')}><option value="reject">Avbryt vid konflikt</option><option value="replace">Ersätt konflikter uttryckligen</option></select></label>
+ <button className="primary" disabled={busy||(collision.length>0&&policy==='reject')} onClick={()=>{void commit()}}>Bekräfta import</button></>}</section>
+ <section className="panel"><h2>Versionshistorik</h2><p>{history.length} revisionsposter. Återställning skapar en ny revision och skriver inte över historiken.</p><button className="secondary" disabled={!current||busy} onClick={()=>{void saveCurrent()}}>Kontrollera aktuell version</button><ul>{history.map(h=><li key={h.id}>{new Date(h.createdAt).toLocaleString('sv-SE')} – {h.reason} <button className="secondary" disabled={busy} onClick={()=>{void restore(h.id)}}>Återställ</button></li>)}</ul></section>{message&&<p role="status">{message}</p>}</>;
+}
