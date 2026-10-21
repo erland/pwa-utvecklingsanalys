@@ -16,7 +16,7 @@ completed_steps:
   - DEV-010
 next:
   recommended: DEV-011
-  reason: Recovery journal and cross-profile restore verified; original XLSX/draft/history coverage and manual accessibility remain
+  reason: v2 archive with persisted XLSX drafts and config revisions verified; manual accessibility and large-backup handling remain
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -105,8 +105,8 @@ verification:
     playwright_chromium: passed
     limitation: atomic_scope_is_single_configuration_database
   dev_011:
-    implementation_commit: 7ef1dd2fe956bee092befd99ec748074f2afa332
-    github_actions_run: 39642543816
+    implementation_commit: 3951aa832b7cb73c35bb491261a936ad7a1fb0a8
+    github_actions_run: 39662905596
     result: partial
     lint: passed
     typecheck: passed
@@ -116,6 +116,7 @@ verification:
     cross_profile_restore: passed
     mobile_keyboard_smoke: passed
     interrupted_restore_recovery: passed
+    cross_profile_xlsx_bytes: passed
     manual_accessibility: pending
-    full_source_backup: partial
+    full_source_backup: persisted_draft_bytes_verified
     multi_database_atomicity: unsupported
