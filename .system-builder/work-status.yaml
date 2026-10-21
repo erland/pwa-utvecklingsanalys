@@ -1,14 +1,14 @@
 schema_version: 1
 mode: CREATE
-phase: implementation
-selected_step: null
-in_progress: null
+phase: verifying
+selected_step: DEV-003
+in_progress: DEV-003
 completed_steps:
   - DEV-001
   - DEV-002
 next:
   recommended: DEV-003
-  reason: DEV-002 UO budget source parser, synthetic regression fixtures and source provenance verified in GitHub Actions; guided multi-file import UI remains DEV-003
+  reason: Guided multi-file import implemented; CI and browser verification pending
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
