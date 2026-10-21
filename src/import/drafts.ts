@@ -1,3 +1,4 @@
+import {readConfiguration,commitConfiguration,revisions} from '../config/store';
 import {openDB} from 'idb';
 import {importUoBudget,type Mapping,type ImportResult} from './uoBudget';
 export type Draft={id:string;fileName:string;bytes:ArrayBuffer;result:ImportResult;uoName:string;status:'review'|'ready';updatedAt:string;mapping?:Mapping};
@@ -18,5 +19,5 @@ export async function readDraft(file:File):Promise<Draft>{
 
 const PROFILE_DB='utvecklingsanalys-mappings';
 async function mappingDb(){return openDB(PROFILE_DB,1,{upgrade(d){d.createObjectStore('profiles');}});}
-export async function saveMapping(name:string,mapping:Mapping):Promise<void>{if(!name.trim())throw new Error('Profilnamn saknas');await (await mappingDb()).put('profiles',mapping,name.trim());}
-export async function listMappings():Promise<{name:string;mapping:Mapping}[]>{const d=await mappingDb();const names=await d.getAllKeys('profiles');return Promise.all(names.map(async name=>({name:String(name),mapping:await d.get('profiles',name) as Mapping})));}
+export async function saveMapping(name:string,mapping:Mapping):Promise<void>{if(!name.trim())throw new Error('Profilnamn saknas');const config=await readConfiguration();if(config){const history=await revisions();await commitConfiguration({...config,sections:{...config.sections,mappings:{...config.sections.mappings,[name.trim()]:mapping}}},'Update mapping '+name.trim(),history.at(-1)?.id);return;}await (await mappingDb()).put('profiles',mapping,name.trim());}
+export async function listMappings():Promise<{name:string;mapping:Mapping}[]>{const config=await readConfiguration();if(config?.sections.mappings)return Object.entries(config.sections.mappings).map(([name,mapping])=>({name,mapping}));const d=await mappingDb();const names=await d.getAllKeys('profiles');return Promise.all(names.map(async name=>({name:String(name),mapping:await d.get('profiles',name) as Mapping})));}
