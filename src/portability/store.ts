@@ -5,7 +5,7 @@ import {loadAllocations,saveAllocations} from '../allocations/store';
 import {readConfiguration,commitConfiguration,revisions,replaceConfigurationHistory} from '../config/store';
 import {backupToJson,validateBackup,type ProjectBackup} from './format';
 import {openDB} from 'idb';
-import {listDrafts,storeDraft} from '../import/drafts';
+import {listDrafts} from '../import/drafts';
 
 const encode=(bytes:ArrayBuffer)=>{const data=new Uint8Array(bytes);let str='';for(let i=0;i<data.length;i+=8192)str+=String.fromCharCode(...data.subarray(i,i+8192));return btoa(str)};
 const decode=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer;
