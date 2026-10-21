@@ -9,9 +9,10 @@ completed_steps:
   - DEV-003
   - DEV-004
   - DEV-005
+  - DEV-006
 next:
-  recommended: DEV-006
-  reason: DEV-005 imported-data query engine, grouping, pivot and browser E2E passed; next additional import profiles
+  recommended: DEV-007
+  reason: DEV-006 process and workforce table profiles, validation, explicit identity matching and E2E passed; next temporal relations
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -47,6 +48,15 @@ verification:
   dev_005:
     implementation_commit: d56a7d9a8199b1ce844d85f9cc41206769d45977
     github_actions_run: 39602771109
+    result: passed
+    lint: passed
+    typecheck: passed
+    unit_tests: passed
+    production_build: passed
+    playwright_chromium: passed
+  dev_006:
+    implementation_commit: c3e188e04ee1451d6de30cf520bad020cd8d6c36
+    github_actions_run: 39604693207
     result: passed
     lint: passed
     typecheck: passed

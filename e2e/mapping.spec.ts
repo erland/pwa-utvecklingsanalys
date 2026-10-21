@@ -7,7 +7,7 @@ test('unknown sheet can be mapped and mapping is reusable',async({page})=>{test.
  s.getCell('C20').value='LO 1';s.getCell('D21').value='IT timmar';s.getCell('E21').value=75;
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('input[type=file]').setInputFiles({name:'ändrad.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.locator('#import-files').setInputFiles({name:'ändrad.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByText(/UO totalblad hittades inte/)).toBeVisible({timeout:8000});
  console.log('MAPPING_STEP sheet input');await page.getByLabel('Bladnamn').fill('Planering ny version');
  await page.getByLabel('Cell med UO-namn').fill('C1');
