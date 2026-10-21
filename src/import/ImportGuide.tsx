@@ -1,3 +1,4 @@
+import TabularImport from './TabularImport';
 import {importBudgetFacts} from '../domain/importAdapter';
 import {loadSemantic,saveSemantic} from '../domain/semanticStore';
 import {defaultMapping,type Mapping} from './uoBudget';
@@ -31,6 +32,7 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  }catch{setMessage('Kunde inte spara importen. Utkastet finns kvar för nytt försök.');}finally{setBusy(false);}};
  return <><div className="eyebrow">IMPORT · XLSX</div><h1>Importera och granska underlag</h1>
  <p className="lead">Välj flera filer och granska dem en i taget. Utkast sparas lokalt, så du kan återuppta arbetet efter omladdning. Filer lämnar inte webbläsaren.</p>
+ <TabularImport project={project} onProject={onProject}/>
  <section className="panel"><label htmlFor="import-files">Välj Excel-filer</label><input id="import-files" type="file" accept=".xlsx" multiple disabled={busy} onChange={e=>{void files(e.target.files);e.target.value='';}}/><p className="notice">Nuvarande mallprofil: UO-budget 2027–2030. Andra malltyper rapporteras som ej igenkända i stället för att tolkas på chans.</p></section>
  {message&&<p role="status" className="notice">{message}</p>}
  {drafts.length>0&&<div className="analysis-layout" style={{marginTop:20}}><section className="panel filters"><h2>Importerade utkast</h2>{drafts.map(d=><button key={d.id} className={d.id===active?.id?'primary':'secondary'} onClick={()=>setSelected(d.id)}>{d.fileName} ({d.status==='ready'?'Godkänd':'Granska'})</button>)}</section>
