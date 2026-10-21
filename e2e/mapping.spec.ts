@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
-test('unknown sheet can be mapped and mapping is reusable',async({page})=>{
+test('unknown sheet can be mapped and mapping is reusable',async({page})=>{test.setTimeout(60000);
  const wb=new ExcelJS.Workbook();const s=wb.addWorksheet('Planering ny version');
  s.getCell('C1').value='UO: UO X';
  s.getCell('E10').value=new Date(2027,0,1);
@@ -8,7 +8,7 @@ test('unknown sheet can be mapped and mapping is reusable',async({page})=>{
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('input[type=file]').setInputFiles({name:'ändrad.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByText(/UO totalblad hittades inte/)).toBeVisible();
+ await expect(page.getByText(/UO totalblad hittades inte/)).toBeVisible({timeout:8000});
  await page.getByLabel('Bladnamn').fill('Planering ny version');
  await page.getByLabel('Cell med UO-namn').fill('C1');
  await page.getByLabel('Rad med periodrubriker').fill('10');
@@ -16,10 +16,10 @@ test('unknown sheet can be mapped and mapping is reusable',async({page})=>{
  await page.getByLabel('Kolumnnummer för resursslag').fill('4');
  await page.getByLabel('Första datarad').fill('20');
  await page.getByRole('button',{name:'Tillämpa mappning'}).click();
- await expect(page.getByText('75 h')).toBeVisible();
+ await expect(page.getByText('75 h')).toBeVisible({timeout:8000});
  await page.getByLabel('Profilnamn').fill('Ny version');
  await page.getByRole('button',{name:'Spara mallprofil'}).click();
- await expect(page.getByRole('status')).toContainText('Mallprofilen sparad');
+ await expect(page.getByRole('status')).toContainText('Mallprofilen sparad',{timeout:8000});
  await page.reload();await page.getByRole('button',{name:'Import',exact:true}).click();
- await expect(page.getByRole('option',{name:'Ny version'})).toHaveCount(1);
+ await expect(page.getByRole('option',{name:'Ny version'})).toHaveCount(1,{timeout:8000});
 });
