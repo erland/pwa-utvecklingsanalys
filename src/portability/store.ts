@@ -17,7 +17,7 @@ async function apply(b:ProjectBackup){
  await savePlanning(b.planning);
  await saveProject(b.project);
  if(b.configuration){await commitConfiguration(b.configuration,'Restore project backup', (await revisions()).at(-1)?.id)}
- else await saveAllocations(b.legacyAllocations);
+ else {const existing=await readConfiguration();if(existing)await commitConfiguration({...existing,sections:{...existing.sections,allocations:b.legacyAllocations}},'Restore legacy project configuration',(await revisions()).at(-1)?.id);else await saveAllocations(b.legacyAllocations);}
 }
 export async function restoreProject(input:unknown):Promise<void>{
  const incoming=validateBackup(input);
