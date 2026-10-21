@@ -20,4 +20,9 @@ test('import review survives reload and can be approved',async({page})=>{
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Översikt',exact:true}).click();
  await expect(page.getByText('Importerade filer').locator('..')).toContainText('1');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
+ await expect(page.locator('.result-head strong')).toHaveText('42 h');
+ await page.getByLabel('År').selectOption('2027');
+ await expect(page.locator('.analysis-table')).toContainText('UO A');
 });

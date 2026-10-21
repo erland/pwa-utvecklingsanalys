@@ -1,12 +1,10 @@
 import {test,expect} from '@playwright/test';
 
-test('navigation, interactive demo and local project persistence',async({page})=>{
+test('navigation, empty analysis and local project persistence',async({page})=>{
  await page.goto('./');
  await expect(page.getByRole('heading',{name:'Överblick över verksamhetsutvecklingen'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.getByLabel('Resurskategori').selectOption('it');
- await page.getByLabel('Arbetstyp').selectOption('development');
- await expect(page.getByText('14 500 h')).toBeVisible();
+ await expect(page.getByText('Inga importerade analysvärden ännu')).toBeVisible();
  await page.getByRole('button',{name:'Inställningar'}).click();
  const input=page.getByLabel('Namn på lokalt projekt');
  await expect(input).toBeEnabled();

@@ -8,9 +8,10 @@ completed_steps:
   - DEV-002
   - DEV-003
   - DEV-004
+  - DEV-005
 next:
-  recommended: DEV-005
-  reason: DEV-004 semantic catalog, provenance adapter and migration/identity tests passed CI; next analytics engine
+  recommended: DEV-006
+  reason: DEV-005 imported-data query engine, grouping, pivot and browser E2E passed; next additional import profiles
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -37,6 +38,15 @@ verification:
   dev_004:
     implementation_commit: 1907deb2347d3e9c5a5ce4192004dd3ab810bed3
     github_actions_run: 39600431254
+    result: passed
+    lint: passed
+    typecheck: passed
+    unit_tests: passed
+    production_build: passed
+    playwright_chromium: passed
+  dev_005:
+    implementation_commit: d56a7d9a8199b1ce844d85f9cc41206769d45977
+    github_actions_run: 39602771109
     result: passed
     lint: passed
     typecheck: passed
