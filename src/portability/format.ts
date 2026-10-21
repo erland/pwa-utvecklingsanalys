@@ -7,19 +7,30 @@ import {parsePackage} from '../config/packages';
 import type {Allocations} from '../allocations/model';
 import {validateAllocation} from '../allocations/model';
 
+export interface ArchivedDraft {id:string;fileName:string;bytesBase64:string;result:import('../import/uoBudget').ImportResult;uoName:string;status:'review'|'ready';updatedAt:string;mapping?:import('../import/uoBudget').Mapping}
+export interface ArchivedRevision {id:string;createdAt:string;reason:string;data:ConfigPackage}
 export interface ProjectBackup {
- format:'utvecklingsanalys-project';version:1;exportedAt:string;
- project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;
+ format:'utvecklingsanalys-project';version:1|2;exportedAt:string;
+ project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;drafts?:ArchivedDraft[];configurationHistory?:ArchivedRevision[];
 }
 export function validateBackup(input:unknown):ProjectBackup{
  if(!input||typeof input!=='object')throw new Error('INVALID_BACKUP');
  const b=input as ProjectBackup;
- if(b.format!=='utvecklingsanalys-project'||b.version!==1)throw new Error('UNSUPPORTED_BACKUP_VERSION');
+ if(b.format!=='utvecklingsanalys-project'||b.version!==1&&b.version!==2)throw new Error('UNSUPPORTED_BACKUP_VERSION');
  if(!b.project||b.project.schemaVersion!==1||typeof b.project.id!=='string'||typeof b.project.name!=='string'||!Array.isArray(b.project.datasets))throw new Error('INVALID_PROJECT');
  migrateSemantic(b.semantic);
  if(!b.planning||b.planning.schemaVersion!==1||!Array.isArray(b.planning.scenarios))throw new Error('INVALID_PLANNING');
  if(b.configuration!==null)parsePackage(b.configuration);
  if(!b.legacyAllocations||validateAllocation(b.legacyAllocations).length||b.legacyAllocations.schemaVersion!==1)throw new Error('INVALID_ALLOCATIONS');
+ if(b.version===2){
+  if(!Array.isArray(b.drafts)||!Array.isArray(b.configurationHistory))throw new Error('INCOMPLETE_PROJECT_ARCHIVE');
+  const unique=new Set<string>();
+  for(const d of b.drafts){
+   if(!d||typeof d.id!=='string'||unique.has(d.id)||typeof d.fileName!=='string'||typeof d.bytesBase64!=='string'||!/^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(d.bytesBase64)||!d.result||!Array.isArray(d.result.facts)||!Array.isArray(d.result.issues)||!['review','ready'].includes(d.status))throw new Error('INVALID_DRAFT');
+   unique.add(d.id);
+  }
+  for(const h of b.configurationHistory)if(!h.id||!h.createdAt||!h.reason)throw new Error('INVALID_REVISION');else parsePackage(h.data);
+ }
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));
