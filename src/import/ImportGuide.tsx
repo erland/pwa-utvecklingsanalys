@@ -1,6 +1,6 @@
 import {defaultMapping,type Mapping} from './uoBudget';
 import {useEffect,useState} from 'react';
-import {applyMapping,canApprove,deleteDraft,listDrafts,readDraft,storeDraft,type Draft} from './drafts';
+import {applyMapping,canApprove,deleteDraft,listDrafts,listMappings,readDraft,saveMapping,storeDraft,type Draft} from './drafts';
 import type {AnalysisProject} from '../model';
 import {saveProject} from '../storage';
 
@@ -11,6 +11,8 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  const files=async(files:FileList|null)=>{if(!files)return;setBusy(true);setMessage('');const errors:string[]=[];for(const f of Array.from(files)){try{const draft=await readDraft(f);setSelected(draft.id);}catch(e){errors.push(f.name+': '+(e instanceof Error?e.message:'Okänt fel'));}}await refresh();setBusy(false);if(errors.length)setMessage(errors.join(' • '));};
  const active=drafts.find(d=>d.id===selected)??drafts[0];
  const [profile,setProfile]=useState<Mapping>(defaultMapping);
+ const [profileName,setProfileName]=useState('');const [savedProfiles,setSavedProfiles]=useState<{name:string;mapping:Mapping}[]>([]);
+ useEffect(()=>{void listMappings().then(setSavedProfiles).catch(()=>setMessage('Kunde inte läsa sparade mallprofiler.'))},[]);
  useEffect(()=>{setProfile(active?.mapping??defaultMapping)},[active?.id,active?.mapping]);
  const reparse=async()=>{if(!active)return;setBusy(true);try{await applyMapping(active,profile);await refresh();setMessage('Mappningen har tillämpats. Granska resultatet innan godkännande.')}catch(e){setMessage('Mappningen kunde inte användas: '+(e instanceof Error?e.message:'Okänt fel'))}finally{setBusy(false)}};
  const mappingField=(name:keyof Mapping,label:string)=><label style={{display:'grid',gap:4}}>{label}<input aria-label={label} type={typeof defaultMapping[name]==='number'?'number':'text'} value={profile[name]} onChange={e=>setProfile(p=>({...p,[name]:typeof defaultMapping[name]==='number'?Number(e.target.value):e.target.value}))}/></label>;
@@ -39,7 +41,9 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  {mappingField('areaColumn','Kolumnnummer för LO')}
  {mappingField('labelColumn','Kolumnnummer för resursslag')}
  {mappingField('startRow','Första datarad')}
- </div><button className="secondary" disabled={busy||!profile.sheet.trim()||!profile.uoCell.trim()||profile.headerRow<1||profile.areaColumn<1||profile.labelColumn<1||profile.startRow<1} onClick={()=>{void reparse()}}>Tillämpa mappning</button>
+ </div><label>Återanvänd profil <select aria-label="Sparade mallprofiler" defaultValue="" onChange={e=>{const found=savedProfiles.find(p=>p.name===e.target.value);if(found)setProfile(found.mapping)}}><option value="">Välj sparad profil</option>{savedProfiles.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}</select></label>
+ <label>Profilnamn <input aria-label="Profilnamn" value={profileName} onChange={e=>setProfileName(e.target.value)}/></label>
+ <button className="secondary" disabled={!profileName.trim()} onClick={()=>{void saveMapping(profileName,profile).then(()=>listMappings()).then(setSavedProfiles).then(()=>setMessage('Mallprofilen sparad för framtida importer.')).catch(()=>setMessage('Kunde inte spara mallprofilen.'))}}>Spara mallprofil</button> <button className="secondary" disabled={busy||!profile.sheet.trim()||!profile.uoCell.trim()||profile.headerRow<1||profile.areaColumn<1||profile.labelColumn<1||profile.startRow<1} onClick={()=>{void reparse()}}>Tillämpa mappning</button>
  </details><h2>Kontroller</h2>{active.result.issues.length===0?<p>Inga avvikelser upptäckta av nuvarande profil.</p>:<ul>{active.result.issues.map((i,n)=><li key={n}>{i.severity==='error'?'Fel':'Varning'}: {i.message} {i.cell?('('+i.cell+')'):''}</li>)}</ul>}
  <h2>Förhandsgranskning (upp till 15 värden)</h2><div style={{overflowX:'auto'}}><table style={{width:'100%',textAlign:'left'}}><thead><tr><th>LO</th><th>Mått</th><th>År</th><th>Värde</th><th>Källa</th></tr></thead><tbody>{active.result.facts.slice(0,15).map((fact,i)=><tr key={i}><td>{fact.area}</td><td>{fact.measure}</td><td>{fact.period.year}</td><td>{fact.value} {fact.unit}</td><td>{fact.source.sheet}!{fact.source.cell}</td></tr>)}</tbody></table></div>
  <div className="actions"><button className="primary" disabled={busy||!canApprove(active)||!project} onClick={()=>{void approve()}}>Godkänn import</button><button className="secondary" disabled={busy||active.status==="ready"} onClick={()=>{void discard(active.id)}}>Ta bort utkast</button></div>
