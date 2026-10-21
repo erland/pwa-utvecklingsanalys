@@ -63,3 +63,14 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
  const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration');
  return next;
 }
+
+/** Copies rules as a proposal for a new year, never replacing explicit target-year rules. */
+export function proposeYear(a:Allocations,fromYear:number,toYear:number):Allocations{
+ if(!Number.isInteger(fromYear)||!Number.isInteger(toYear)||fromYear===toYear||toYear<2000||toYear>2100)throw new Error('INVALID_YEAR');
+ const rules=[...a.rules];const present=new Set(rules.map(r=>[r.dimensionId,r.entityId,r.year].join('|')));
+ for(const rule of a.rules.filter(r=>r.year===fromYear)){
+  const key=[rule.dimensionId,rule.entityId,toYear].join('|');
+  if(!present.has(key)){rules.push({...rule,year:toYear,source:'Proposed from '+fromYear});present.add(key)}
+ }
+ const next={...a,rules};if(validateAllocation(next).length)throw new Error('INVALID_PROPOSAL');return next;
+}
