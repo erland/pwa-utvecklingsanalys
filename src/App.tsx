@@ -1,3 +1,4 @@
+import {recoverInterruptedRestore} from './portability/store';
 import PortabilityView from './portability/PortabilityView';
 import ConfigurationView from './config/ConfigurationView';
 import PlanningView from './planning/PlanningView';
@@ -13,7 +14,7 @@ const nav: {id:ViewId;label:string;icon:typeof Activity}[]=[{id:'overview',label
 const fmt=(n:number)=>new Intl.NumberFormat('sv-SE').format(n);
 export default function App(){
  const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
- useEffect(()=>{let active=true;loadProject().then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring är inte tillgänglig. Kontrollera webbläsarens lagringsinställningar.')});return()=>{active=false}},[]);
+ useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
  const updateName=async(name:string)=>{if(!project)return;const p={...project,name};setProject(p);try{await saveProject(p);setStorageError('')}catch{setStorageError('Kunde inte spara projektet lokalt.')}};
  return <div className="shell"><aside className="sidebar"><div className="brand"><span className="brandmark"><BarChart3 size={24}/></span><div><strong>Utvecklingsanalys</strong><small>Analysarbetsyta</small></div></div><nav aria-label="Huvudmeny">{nav.map(n=><button key={n.id} className={view===n.id?'nav-link active':'nav-link'} onClick={()=>setView(n.id)}><n.icon size={19}/>{n.label}</button>)}</nav><div className="sidebar-foot"><ShieldCheck size={16}/>Lokal data · ingen server</div></aside>
  <div className="content"><header className="topbar"><div><strong>{project?.name??'Mitt analysprojekt'}</strong><small>Projektbackup · DEV-011</small></div><span className="pill">Lokal analys</span></header><main>
