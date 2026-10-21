@@ -14,10 +14,6 @@ export default function TabularImport({project,onProject}:{project:AnalysisProje
  }catch(e){setError(e instanceof Error?e.message:'Filen kunde inte öppnas.')}finally{setBusy(false)}};
  const parse=async()=>{if(!bytes||!mapping)return;setBusy(true);setError('');try{const parsed=await parseTable(bytes,profile,mapping);setResult(parsed);setResolutions({})}catch(e){setError(e instanceof Error?e.message:'Importen misslyckades.')}finally{setBusy(false)}};
  const issues=semantic&&result?tableIdentityIssues(semantic,result,resolutions):[];
- const matchRows=semantic&&result?[...new Map(result.facts.map(f=>[f.entityKind+':'+f.entityName,{key:f.entityKind+':'+f.entityName,kind:f.entityKind,name:f.entityName}])).values()].map(row=>{
-  const {matchEntity}=requirePlaceholder;return row;
- }):[];
- void matchRows;
  const approve=async()=>{if(!semantic||!result||!file||!project||result.issues.some(i=>i.severity==='error')||issues.length)return;setBusy(true);try{
   const id=crypto.randomUUID();const next=importTableFacts(semantic,result,id,file.name,resolutions);
   await saveSemantic(next);setSemantic(next);
