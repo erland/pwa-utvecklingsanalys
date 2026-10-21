@@ -32,3 +32,12 @@ export async function importConfiguration(incoming:unknown,policy:'reject'|'repl
  const p=parsePackage(incoming);const current=await readConfiguration();const next=current?mergedPackage(current,p,policy):p;
  return commitConfiguration(next,'Import configuration',expectedRevision);
 }
+
+/** Replace revision history after all entries are validated; current config is maintained by caller. */
+export async function replaceConfigurationHistory(items:ConfigRevision[]):Promise<void>{
+ const keys=new Set<string>();
+ for(const item of items){if(!item.id||keys.has(item.id)||!item.createdAt||!item.reason)throw new Error('INVALID_REVISION');keys.add(item.id);parsePackage(item.data)}
+ const db=await database();const tx=db.transaction('history','readwrite');
+ await tx.store.clear();for(const item of items)await tx.store.put(item);
+ await tx.done;
+}
