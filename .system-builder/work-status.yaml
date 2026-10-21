@@ -10,9 +10,10 @@ completed_steps:
   - DEV-004
   - DEV-005
   - DEV-006
+  - DEV-007
 next:
-  recommended: DEV-007
-  reason: DEV-006 process and workforce table profiles, validation, explicit identity matching and E2E passed; next temporal relations
+  recommended: DEV-008
+  reason: DEV-007 typed temporal relation editor and distinct process reach verified; next allocation dimensions and rules
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -57,6 +58,15 @@ verification:
   dev_006:
     implementation_commit: c3e188e04ee1451d6de30cf520bad020cd8d6c36
     github_actions_run: 39604693207
+    result: passed
+    lint: passed
+    typecheck: passed
+    unit_tests: passed
+    production_build: passed
+    playwright_chromium: passed
+  dev_007:
+    implementation_commit: a95dc4d01ae4099168507e27aab77398c9acac66
+    github_actions_run: 39606280940
     result: passed
     lint: passed
     typecheck: passed
