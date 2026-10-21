@@ -11,7 +11,7 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  const years=useMemo(()=>[...new Set((data?.observations??[]).map(o=>o.period.year))].sort(),[data]);
  const query=useMemo(()=>({measureId,year:year==='all'?undefined:Number(year),datasetIds:datasets.length?datasets:undefined,uoIds:uos.length?uos:undefined,groupBy}),[measureId,year,datasets,uos,groupBy]);
  let outcome:ReturnType<typeof analyze>|null=null;
- try{if(data)outcome=analyze(data,query)}catch(e){error||(outcome=null)}
+ try{if(data)outcome=analyze(data,query)}catch{outcome=null}
  const chosenMeasure=data?.measures.find(m=>m.id===measureId);
  const toggle=(id:string,selection:string[],set:(x:string[])=>void)=>set(selection.includes(id)?selection.filter(x=>x!==id):[...selection,id]);
  const fmt=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
