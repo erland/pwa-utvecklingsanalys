@@ -52,3 +52,14 @@ export function scenarioCompare(data:SemanticDataset,baseVersion:string,scenario
  }
  return {baseline,scenario:adjusted,difference:adjusted-baseline,sourceCount:seen.size};
 }
+
+export function compareVersions(data:SemanticDataset,first:string,second:string,measureId:string,year:number){
+ if(data.measures.find(m=>m.id===measureId)?.aggregation!=='sum')throw new Error('NON_ADDITIVE_COMPARISON');
+ const sum=(version:string)=>{const used=new Set<string>();let total=0,count=0;
+  for(const o of data.observations){if(o.planningVersion!==version||o.measureId!==measureId||o.period.year!==year||o.kind!=='detail')continue;
+   const key=[o.source.datasetId,o.source.sheet,o.source.cell,o.measureId].join('|');if(used.has(key))continue;used.add(key);total+=o.value;count++;
+  }
+  return {total,count};
+ };
+ const a=sum(first),b=sum(second);return {first:a.total,second:b.total,difference:b.total-a.total,firstCount:a.count,secondCount:b.count};
+}
