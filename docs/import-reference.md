@@ -30,3 +30,14 @@ Importprofilen `uo-budget-2027-v1` identifierar bladet `UO Tot 2027-30`, UO-namn
 Importen återger källa (blad/cell) för varje numeriskt detaljvärde. Icke-numeriska celler rapporteras som varningar i stället för att få ett påhittat tal.
 
 **Begränsning:** Den första parsern omfattar UO-budgetens detaljvärden och kan anropas programmässigt. Användargränssnittet för filuppladdning och interaktiv återkoppling byggs i DEV-003. Testerna använder syntetiska arbetsböcker, så ingen verklig planeringsfil lagras i GitHub.
+
+## DEV-003 – importguide och återanvändbar strukturell mappning
+
+Importvyn stödjer samtidig filuppladdning, separat förhandsgranskning och varnings-/felredovisning per fil. Granskningsutkast, inklusive filens bytes, lagras lokalt i IndexedDB och kan återupptas efter sidomladdning. En import godkänns först efter granskning och uppdaterar då projektets datasetförteckning.
+
+När den ordinarie UO-budgetmallen inte känns igen går det att justera kalkylbladsnamn, UO-cell, rad med periodrubriker, första datarad samt kolumnnummer för LO och resursslag. Mappningen kan användas för att läsa om utkastet utan att ändra originalfilen och lagras även som en namngiven profil för återanvändning mellan importer.
+
+Fältmappningens **nuvarande begränsning** är att resursslag fortfarande identifieras med parserns kända rubrikalias och att perioder följer stöd för Excel-datum och ÅRSBEHOV-rubriker. Fria måttdimensioner, egna rubrikalias, avancerad jämförelse/migrering av konfigurationspaket och sammanslagning med analysmodellen tillhör senare utvecklingssteg. Profilen lagras i webbläsarens IndexedDB; separat export/import av profiler ingår i DEV-010.
+
+### Testning
+Syntetiska XLSX-filer används i Chromium E2E för batchimport, återupptaget utkast, godkännande och konfigurerad ommappning av flyttat blad och kolumner. Inga verksamhetsfiler inkluderas i repot.
