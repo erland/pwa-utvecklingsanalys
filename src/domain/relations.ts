@@ -1,4 +1,4 @@
-import type {Relation,SemanticDataset,Observation} from './semantic';
+import type {Relation,SemanticDataset} from './semantic';
 export type RelationKind=Relation['type'];
 export type RelationDraft=Omit<Relation,'id'>;
 const iso=/^\d{4}-\d{2}-\d{2}$/;
