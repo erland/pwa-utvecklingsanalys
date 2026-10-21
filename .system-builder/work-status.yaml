@@ -1,0 +1,17 @@
+schema_version: 1
+mode: REPAIR
+phase: verifying
+selected_step: DEV-001
+in_progress: DEV-001
+completed_steps: []
+next:
+  recommended: DEV-001
+  reason: Agent Workspace install, unit tests and production build PASS; lint and Playwright E2E are still pending
+verification:
+  agent_workspace:
+    install: passed
+    unit_tests: passed
+    production_build: passed
+  lint: not_run
+  playwright: not_run
+  ci: not_run
