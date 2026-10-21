@@ -1,11 +1,40 @@
 import {test,expect} from '@playwright/test';
-test('backup download and import review',async({page})=>{
- await page.goto('./');
- await page.getByRole('button',{name:'Inställningar'}).click();
- const button=page.getByRole('button',{name:'Ladda ner projektbackup'});
- await expect(button).toBeVisible();
- const event=page.waitForEvent('download');
- await button.click();
- const download=await event;
- expect(download.suggestedFilename()).toContain('projekt');
+import {readFile} from 'node:fs/promises';
+
+test('restore backup in a fresh browser profile with identical analysis',async({browser})=>{
+ const contextA=await browser.newContext({acceptDownloads:true});
+ const first=await contextA.newPage();
+ await first.goto('./');
+ await first.evaluate(async()=>{
+  const req=indexedDB.open('utvecklingsanalys-semantic',1);
+  const db=await new Promise<IDBDatabase>((resolve,reject)=>{req.onupgradeneeded=()=>req.result.createObjectStore('datasets');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+  const sample={schemaVersion:1,entities:[{id:'u',kind:'uo',name:'UO Test',aliases:[]}],measures:[{id:'it_hours',label:'IT-timmar',unit:'h',aggregation:'sum',description:''}],observations:[{id:'o',entityId:'u',measureId:'it_hours',value:42,period:{year:2027},planningVersion:'2027',scenario:'reported',kind:'detail',quality:'reported',source:{datasetId:'d',fileName:'source.xlsx',sheet:'Data',cell:'C2'}}],relations:[]};
+  await new Promise<void>((resolve,reject)=>{const tx=db.transaction('datasets','readwrite');tx.objectStore('datasets').put(sample,'active');tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});db.close();
+  const request=indexedDB.open('utvecklingsanalys',1);
+  const p=await new Promise<IDBDatabase>((resolve,reject)=>{request.onupgradeneeded=()=>request.result.createObjectStore('projects');request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)});
+  const tx=p.transaction('projects','readwrite');
+  tx.objectStore('projects').put({schemaVersion:1,id:'project',name:'Testprojekt',datasets:[{id:'d',name:'source',planningYear:2027,importedAt:'2026-10-21',source:'excel'}],updatedAt:'2026-10-21'},'active');
+  await new Promise<void>((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});p.close();
+ });
+ await first.reload();
+ await first.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(first.locator('.result-head strong')).toHaveText('42 h');
+ await first.getByRole('button',{name:'Inställningar'}).click();
+ const requested=first.waitForEvent('download');
+ await first.getByRole('button',{name:'Ladda ner projektbackup'}).click();
+ const downloaded=await requested;
+ const bytes=await readFile((await downloaded.path())!);
+ await contextA.close();
+ const contextB=await browser.newContext({acceptDownloads:true});
+ const second=await contextB.newPage();
+ await second.goto('./');
+ await second.getByRole('button',{name:'Inställningar'}).click();
+ await second.getByLabel('Välj projektbackup').setInputFiles({name:'project.json',mimeType:'application/json',buffer:bytes});
+ await expect(second.getByRole('status')).toContainText('Validerad backup');
+ await second.getByRole('button',{name:'Bekräfta återställning'}).click();
+ await expect(second.getByRole('status')).toContainText('Projekt återställt');
+ await second.reload();
+ await second.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(second.locator('.result-head strong')).toHaveText('42 h');
+ await contextB.close();
 });
