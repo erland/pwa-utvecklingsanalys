@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {emptySemantic} from '../domain/semantic';
 import {emptyAllocations,createDimension,setAllocation} from '../allocations/model';
-import {qualityIssues,newScenario,adjustScenario,approveScenario,scenarioCompare} from './model';
+import {qualityIssues,newScenario,adjustScenario,approveScenario,scenarioCompare,compareVersions} from './model';
 const fixture=()=>{const data=emptySemantic();data.entities=[{id:'uo',kind:'uo',name:'UO A',aliases:[]},{id:'lo',kind:'lo',name:'LO A',aliases:[],parentId:'uo'}];const observation={id:'o1',entityId:'lo',measureId:'it_hours',value:100,period:{year:2027},planningVersion:'2027',scenario:'reported',source:{datasetId:'d',fileName:'test.xlsx',sheet:'Tabell',cell:'C2'},kind:'detail' as const,quality:'reported' as const};data.observations=[observation];return {data,observation}};
 describe('DEV-009 data quality and scenarios',()=>{
  it('flags incomplete distributions without inventing missing values',()=>{
@@ -15,6 +15,7 @@ describe('DEV-009 data quality and scenarios',()=>{
   const approved=approveScenario(adjusted,id,data,[]);expect(approved.scenarios[0].status).toBe('approved');
   expect(()=>adjustScenario(approved,id,observation,200,'Ändring')).toThrow('APPROVED_SCENARIO_IMMUTABLE');
  });
+ it('compares two versions without double-counting the same source',()=>{const {data,observation}=fixture();data.observations.push({...observation,id:'same'});data.observations.push({...observation,id:'next',planningVersion:'2028',value:130,source:{...observation.source,cell:'D2'}});expect(compareVersions(data,'2027','2028','it_hours',2027)).toMatchObject({first:100,second:130,difference:30,firstCount:1,secondCount:1});});
  it('blocks approval with invalid source and adjustments',()=>{
   const {data,observation}=fixture();const s=newScenario({schemaVersion:1,scenarios:[]},'A','2027');const id=s.scenarios[0].id;
   expect(()=>approveScenario(s,id,data,[{id:'x',code:'MISSING_SOURCE',severity:'error',description:'Saknas'}])).toThrow('BLOCKING_DATA_QUALITY');
