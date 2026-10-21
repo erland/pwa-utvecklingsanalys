@@ -1,5 +1,5 @@
 /** Versioned semantic contract. Original observations are immutable. */
-export type EntityKind='uo'|'lo'|'process'|'department'|'organization';
+export type EntityKind='uo'|'lo'|'process'|'department'|'organization'|'uo-overhead';
 export interface Entity {id:string;kind:EntityKind;name:string;aliases:string[];parentId?:string}
 export type Unit='h'|'SEK'|'people'|'FTE'|'ratio';
 export type Aggregation='sum'|'snapshot'|'weighted-ratio'|'distinct-reach';
