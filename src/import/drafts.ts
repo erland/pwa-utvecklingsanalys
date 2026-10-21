@@ -15,3 +15,8 @@ export async function readDraft(file:File):Promise<Draft>{
  const draft:Draft={id:crypto.randomUUID(),fileName:file.name,bytes,result,uoName:result.uo,status:'review',updatedAt:new Date().toISOString()};
  await storeDraft(draft);return draft;
 }
+
+const PROFILE_DB='utvecklingsanalys-mappings';
+async function mappingDb(){return openDB(PROFILE_DB,1,{upgrade(d){d.createObjectStore('profiles');}});}
+export async function saveMapping(name:string,mapping:Mapping):Promise<void>{if(!name.trim())throw new Error('Profilnamn saknas');await (await mappingDb()).put('profiles',mapping,name.trim());}
+export async function listMappings():Promise<{name:string;mapping:Mapping}[]>{const d=await mappingDb();const names=await d.getAllKeys('profiles');return Promise.all(names.map(async name=>({name:String(name),mapping:await d.get('profiles',name) as Mapping})));}
