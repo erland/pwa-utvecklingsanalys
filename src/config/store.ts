@@ -20,7 +20,7 @@ export async function commitConfiguration(next:ConfigPackage,reason:string,expec
  const db=await database();const tx=db.transaction(['current','history'],'readwrite');
  const current=await tx.objectStore('current').get('active') as ConfigPackage|undefined;
  const revisions=await tx.objectStore('history').getAll() as ConfigRevision[];
- const last=revisions.at(-1)?.id;
+ const last=revisions.sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).at(-1)?.id;
  if(expectedRevision!==undefined&&expectedRevision!==last){tx.abort();throw new Error('REVISION_CONFLICT')}
  if(current&&JSON.stringify(current.sections)===JSON.stringify(verified.sections)){await tx.done;return last??''}
  const id=crypto.randomUUID();const revision:ConfigRevision={id,createdAt:new Date().toISOString(),reason,data:verified};
