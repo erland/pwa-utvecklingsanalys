@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {buildPackage,parsePackage,conflicts,mergedPackage} from './packages';
+import {buildPackage,parsePackage,conflicts,mergedPackage,proposeYear} from './packages';
 import type {Allocations} from '../allocations/model';
 const alloc=(name='Arbetstyp'):Allocations=>({schemaVersion:1,dimensions:[{id:'d1',name,basis:'manual',categories:[{id:'a',name:'A'}]}],rules:[{dimensionId:'d1',entityId:'u1',year:2027,percentages:{a:60},origin:'uo-proposal'}]});
 const mapping={sheet:'Budget',uoCell:'B1',headerRow:11,areaColumn:2,labelColumn:3,startRow:19};
@@ -11,6 +11,7 @@ describe('configuration package',()=>{
   expect(defs.sections.allocations?.rules).toEqual([]);
   expect(()=>parsePackage({...defs,sections:full.sections})).toThrow('DEFINITIONS_PACKAGE_HAS_RULES');
  });
+ it('copies allocation rules to another year without overwriting target rules',()=>{const a=alloc();const b=proposeYear(a,2027,2028);expect(b.rules).toHaveLength(2);expect(b.rules.find(x=>x.year===2028)?.percentages.a).toBe(60);const c=proposeYear(b,2027,2028);expect(c.rules).toHaveLength(2);expect(()=>proposeYear(a,2027,2027)).toThrow('INVALID_YEAR');});
  it('rejects unknown versions and corrupt category totals',()=>{
   expect(()=>parsePackage({...buildPackage(alloc(),undefined,'full-configuration'),version:2})).toThrow('UNSUPPORTED_PACKAGE_VERSION');
   const broken=alloc();broken.rules[0].percentages.a=120;
