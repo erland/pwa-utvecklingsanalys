@@ -1,17 +1,25 @@
 schema_version: 1
 mode: CREATE
-phase: verifying
-selected_step: DEV-002
-in_progress: DEV-002
+phase: implementation
+selected_step: null
+in_progress: null
 completed_steps:
   - DEV-001
+  - DEV-002
 next:
-  recommended: DEV-002
-  reason: Implemented first import parser; required verification pending
+  recommended: DEV-003
+  reason: DEV-002 UO budget source parser, synthetic regression fixtures and source provenance verified in GitHub Actions; guided multi-file import UI remains DEV-003
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
     github_actions_run: 39584735909
     result: passed
   dev_002:
-    result: pending
+    implementation_commit: 31eee41077d1817c6f8f2acf09d68d6cad3d7ce8
+    github_actions_run: 39586750739
+    result: passed
+    lint: passed
+    typecheck: passed
+    unit_tests: passed
+    production_build: passed
+    playwright_chromium: passed
