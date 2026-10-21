@@ -16,7 +16,7 @@ completed_steps:
   - DEV-010
 next:
   recommended: DEV-011
-  reason: Cross-profile backup restoration and mobile keyboard E2E passed; manual accessibility and completeness acceptance remain
+  reason: Recovery journal and cross-profile restore verified; original XLSX/draft/history coverage and manual accessibility remain
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -105,8 +105,8 @@ verification:
     playwright_chromium: passed
     limitation: atomic_scope_is_single_configuration_database
   dev_011:
-    implementation_commit: fedeb027d9e66d611a17e2c9df9d0c6f2121c32f
-    github_actions_run: 39619770874
+    implementation_commit: 7ef1dd2fe956bee092befd99ec748074f2afa332
+    github_actions_run: 39642543816
     result: partial
     lint: passed
     typecheck: passed
@@ -115,6 +115,7 @@ verification:
     playwright_chromium: passed
     cross_profile_restore: passed
     mobile_keyboard_smoke: passed
+    interrupted_restore_recovery: passed
     manual_accessibility: pending
     full_source_backup: partial
     multi_database_atomicity: unsupported
