@@ -1,3 +1,5 @@
+import {importBudgetFacts} from '../domain/importAdapter';
+import {loadSemantic,saveSemantic} from '../domain/semanticStore';
 import {defaultMapping,type Mapping} from './uoBudget';
 import {useEffect,useState} from 'react';
 import {applyMapping,canApprove,deleteDraft,listDrafts,listMappings,readDraft,saveMapping,storeDraft,type Draft} from './drafts';
@@ -22,7 +24,9 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  const approve=async()=>{if(!active||!project||!canApprove(active))return;setBusy(true);try{
   const datasets=project.datasets.filter(x=>x.id!==active.id);
   datasets.push({id:active.id,name:active.uoName.trim(),planningYear:2027,importedAt:new Date().toISOString(),source:'excel'});
-  const next={...project,datasets};await saveProject(next);onProject(next);
+  const next={...project,datasets};
+  const semantic=importBudgetFacts(await loadSemantic(),{...active.result,uo:active.uoName.trim()},active.id,active.fileName);
+  await saveSemantic(semantic);await saveProject(next);onProject(next);
   await storeDraft({...active,status:'ready',updatedAt:new Date().toISOString()});await refresh();setMessage('Importen godkänd. Källuppgifter finns kvar lokalt och kan användas i kommande analyssteg.');
  }catch{setMessage('Kunde inte spara importen. Utkastet finns kvar för nytt försök.');}finally{setBusy(false);}};
  return <><div className="eyebrow">IMPORT · XLSX</div><h1>Importera och granska underlag</h1>
