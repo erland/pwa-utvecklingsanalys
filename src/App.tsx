@@ -1,11 +1,12 @@
+import AllocationsView from './allocations/AllocationsView';
 import RelationsView from './domain/RelationsView';
 import AnalyticsView from './analytics/AnalyticsView';
 import ImportGuide from './import/ImportGuide';
 import {useEffect,useState} from 'react';
-import {Activity,BarChart3,FileSpreadsheet,Settings2,ShieldCheck,Layers3,GitBranch} from 'lucide-react';
+import {Activity,BarChart3,FileSpreadsheet,Settings2,ShieldCheck,Layers3,GitBranch,ChartPie} from 'lucide-react';
 import {DEMO_UNITS,aggregate,type AnalysisProject,type ViewId} from './model';
 import{loadProject,saveProject}from './storage';
-const nav: {id:ViewId;label:string;icon:typeof Activity}[]=[{id:'overview',label:'Översikt',icon:Activity},{id:'import',label:'Import',icon:FileSpreadsheet},{id:'analysis',label:'Analys',icon:BarChart3},{id:'groups',label:'Grupper',icon:Layers3},{id:'relations',label:'Relationer',icon:GitBranch},{id:'settings',label:'Inställningar',icon:Settings2}];
+const nav: {id:ViewId;label:string;icon:typeof Activity}[]=[{id:'overview',label:'Översikt',icon:Activity},{id:'import',label:'Import',icon:FileSpreadsheet},{id:'analysis',label:'Analys',icon:BarChart3},{id:'groups',label:'Grupper',icon:Layers3},{id:'relations',label:'Relationer',icon:GitBranch},{id:'allocations',label:'Fördelningar',icon:ChartPie},{id:'settings',label:'Inställningar',icon:Settings2}];
 const fmt=(n:number)=>new Intl.NumberFormat('sv-SE').format(n);
 export default function App(){
  const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
@@ -18,6 +19,7 @@ export default function App(){
  {view==='analysis'&&<AnalyticsView refreshKey={analysisRefresh}/>}
  {view==='import'&&<ImportGuide project={project} onProject={p=>{setProject(p);setAnalysisRefresh(v=>v+1)}}/>}
  {view==='relations'&&<RelationsView/>}
+ {view==='allocations'&&<AllocationsView/>}
  {view==='groups'&&<><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1><section className="panel"><p>Analysdemot innehåller två exempelgrupper. Redigering, sparande och alternativa grupperingsmodeller ingår i ett senare utvecklingssteg.</p><div className="cards two">{['Grupp 1','Grupp 2'].map(g=><div className="metric" key={g}><b>{g}</b>{DEMO_UNITS.filter(x=>x.group===g).map(x=><small key={x.id}>{x.id}</small>)}</div>)}</div><button className="primary" onClick={()=>{setView('analysis')}}>Visa i analysen</button></section></>}
  {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Säkerhetskopiering och konfigurationsexport kommer i senare utvecklingssteg.</p></section></>}
  </main><footer>Utvecklingsanalys · DEV-005 · Demodata är syntetisk</footer></div></div>
