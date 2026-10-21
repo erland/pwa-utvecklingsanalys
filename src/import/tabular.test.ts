@@ -1,0 +1,12 @@
+import {describe,it,expect} from 'vitest';
+import ExcelJS from 'exceljs';
+import {inspectTable,parseTable} from './tabular';
+import {importTableFacts,tableIdentityIssues} from './tabularAdapter';
+import {emptySemantic} from '../domain/semantic';
+async function sample(name='Processarbete'){const w=new ExcelJS.Workbook(),s=w.addWorksheet(name);s.getRow(1).values=['Process','År','Timmar'];s.getRow(2).values=['Process A',2027,120];s.getRow(3).values=['Process B',2027,55];return await w.xlsx.writeBuffer() as ArrayBuffer;}
+describe('tabular imports',()=>{
+ it('recognizes process hours and preserves provenance',async()=>{const b=await sample(),i=await inspectTable(b);expect(i.suggested).toBe('process-hours');const result=await parseTable(b,i.suggested,i.mapping);expect(result.facts).toHaveLength(2);expect(result.facts[0].source.cell).toBe('C2');const data=importTableFacts(emptySemantic(),result,'d1','process.xlsx');expect(data.observations[0]).toMatchObject({measureId:'business_hours',value:120,source:{cell:'C2'}});});
+ it('imports snapshot measures without changing aggregation policy',async()=>{const b=await sample('Personal'),i=await inspectTable(b);const result=await parseTable(b,'staff-snapshot',{...i.mapping,measureId:'fte',entityKind:'department'});const data=importTableFacts(emptySemantic(),result,'d2','fte.xlsx');expect(data.observations).toHaveLength(2);expect(data.measures.find(m=>m.id==='fte')?.aggregation).toBe('snapshot');});
+ it('flags bad years and values',async()=>{const w=new ExcelJS.Workbook(),s=w.addWorksheet('Data');s.getRow(1).values=['Enhet','År','FTE'];s.getRow(2).values=['Enhet A','wrong',-2];const b=await w.xlsx.writeBuffer() as ArrayBuffer;const result=await parseTable(b,'staff-snapshot',{sheet:'Data',headerRow:1,entityColumn:'A',yearColumn:'B',valueColumn:'C',entityKind:'department',measureId:'fte'});expect(result.issues.some(i=>i.code==='INVALID_YEAR')).toBe(true);});
+ it('blocks ambiguous aliases unless user resolves them',async()=>{const b=await sample(),i=await inspectTable(b),result=await parseTable(b,i.suggested,i.mapping);const d=emptySemantic();d.entities=[{id:'x',kind:'process',name:'Other 1',aliases:['Process A']},{id:'y',kind:'process',name:'Other 2',aliases:['Process A']}];expect(tableIdentityIssues(d,result).some(x=>x.includes('AMBIGUOUS'))).toBe(true);expect(()=>importTableFacts(d,result,'d','f.xlsx')).toThrow();expect(importTableFacts(d,result,'d','f.xlsx',{'process:Process A':'x'}).observations).toHaveLength(2);});
+});
