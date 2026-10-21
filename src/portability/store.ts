@@ -19,11 +19,21 @@ async function apply(b:ProjectBackup){
  if(b.configuration){await commitConfiguration(b.configuration,'Restore project backup', (await revisions()).at(-1)?.id)}
  else {const existing=await readConfiguration();if(existing)await commitConfiguration({...existing,sections:{...existing.sections,allocations:b.legacyAllocations}},'Restore legacy project configuration',(await revisions()).at(-1)?.id);else await saveAllocations(b.legacyAllocations);}
 }
+const JOURNAL='utvecklingsanalys-recovery';
+async function recoveryDb(){return openDB(JOURNAL,1,{upgrade(d){d.createObjectStore('restore')}})}
+export async function pendingRecovery():Promise<boolean>{return Boolean(await (await recoveryDb()).get('restore','pending'))}
+export async function recoverInterruptedRestore():Promise<boolean>{
+ const db=await recoveryDb();const snapshot=await db.get('restore','pending') as ProjectBackup|undefined;
+ if(!snapshot)return false;
+ await apply(validateBackup(snapshot));await db.delete('restore','pending');return true;
+}
 export async function restoreProject(input:unknown):Promise<void>{
+ await recoverInterruptedRestore();
  const incoming=validateBackup(input);
  const before=await captureProject();
- try{await apply(incoming)}
- catch(cause){try{await apply(before)}catch{throw new Error('RESTORE_FAILED_ROLLBACK_FAILED')}
+ const journal=await recoveryDb();await journal.put('restore',before,'pending');
+ try{await apply(incoming);await journal.delete('restore','pending')}
+ catch(cause){try{await apply(before);await journal.delete('restore','pending')}catch{throw new Error('RESTORE_FAILED_ROLLBACK_FAILED')}
   throw new Error('RESTORE_FAILED_ROLLED_BACK: '+String(cause));
  }
 }
