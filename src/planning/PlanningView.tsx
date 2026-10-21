@@ -2,15 +2,16 @@ import {useEffect,useState} from 'react';
 import {loadSemantic} from '../domain/semanticStore';
 import {loadAllocations} from '../allocations/store';
 import {loadPlanning,savePlanning} from './store';
-import {adjustScenario,approveScenario,newScenario,qualityIssues,scenarioCompare,type Issue,type PlanningState} from './model';
+import {adjustScenario,approveScenario,newScenario,qualityIssues,scenarioCompare,compareVersions,type Issue,type PlanningState} from './model';
 import type {SemanticDataset} from '../domain/semantic';
 import type {Allocations} from '../allocations/model';
 export default function PlanningView(){
  const [data,setData]=useState<SemanticDataset|null>(null),[allocations,setAllocations]=useState<Allocations|null>(null),[state,setState]=useState<PlanningState|null>(null);
- const [year,setYear]=useState(2027),[name,setName]=useState(''),[baseVersion,setBaseVersion]=useState('2027'),[chosen,setChosen]=useState(''),[observationId,setObservation]=useState(''),[value,setValue]=useState(''),[reason,setReason]=useState(''),[measure,setMeasure]=useState('it_hours'),[message,setMessage]=useState('');
+ const [versionA,setVersionA]=useState(''),[versionB,setVersionB]=useState('');const [year,setYear]=useState(2027),[name,setName]=useState(''),[baseVersion,setBaseVersion]=useState('2027'),[chosen,setChosen]=useState(''),[observationId,setObservation]=useState(''),[value,setValue]=useState(''),[reason,setReason]=useState(''),[measure,setMeasure]=useState('it_hours'),[message,setMessage]=useState('');
  useEffect(()=>{void Promise.all([loadSemantic(),loadAllocations(),loadPlanning()]).then(([d,a,p])=>{setData(d);setAllocations(a);setState(p)}).catch(()=>setMessage('Kunde inte läsa planeringsdata'))},[]);
  const issues:Issue[]=data&&allocations?qualityIssues(data,allocations,year):[];
  const scenario=state?.scenarios.find(s=>s.id===chosen);
+ const versions=[...new Set(data?.observations.map(o=>o.planningVersion)??[])].sort();
  const observations=data?.observations.filter(o=>o.kind==='detail'&&o.period.year===year&&o.planningVersion===(scenario?.baseVersion??baseVersion))??[];
  const selected=observations.find(o=>o.id===observationId);
  const persist=async(next:PlanningState)=>{await savePlanning(next);setState(next)};
@@ -29,5 +30,5 @@ export default function PlanningView(){
  <h2>Jämför mot basversionen</h2><label>Mått<select aria-label="Jämförelsemått" value={measure} onChange={e=>setMeasure(e.target.value)}>{data?.measures.filter(m=>m.aggregation==='sum').map(m=><option key={m.id} value={m.id}>{m.label}</option>)}</select></label>
  {comparison?<p>Bas: {comparison.baseline.toLocaleString('sv-SE')} · Scenario: {comparison.scenario.toLocaleString('sv-SE')} · Skillnad: {comparison.difference.toLocaleString('sv-SE')} ({comparison.sourceCount} källvärden)</p>:<p>Detta mått kan inte jämföras additivt.</p>}
  </>}</>}
- </section>{message&&<p role="status">{message}</p>}</>;
+ </section><section className="panel"><h2>Jämför planeringsversioner</h2><div className="mapping-grid"><label>Första version<select aria-label="Första version" value={versionA} onChange={e=>setVersionA(e.target.value)}><option value="">Välj</option>{versions.map(v=><option key={v} value={v}>{v}</option>)}</select></label><label>Andra version<select aria-label="Andra version" value={versionB} onChange={e=>setVersionB(e.target.value)}><option value="">Välj</option>{versions.map(v=><option key={v} value={v}>{v}</option>)}</select></label></div>{data&&versionA&&versionB&&(()=>{const c=compareVersions(data,versionA,versionB,measure,year);return <p>Första: {c.first.toLocaleString('sv-SE')} · Andra: {c.second.toLocaleString('sv-SE')} · Förändring: {c.difference.toLocaleString('sv-SE')} ({c.firstCount} / {c.secondCount} källvärden)</p>})()}</section>{message&&<p role="status">{message}</p>}</>;
 }
