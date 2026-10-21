@@ -33,3 +33,10 @@ export function exportFactsCsv(data:SemanticDataset):string{
  const rows=data.observations.map(o=>[o.source.datasetId,o.source.fileName,o.source.sheet,o.source.cell,o.entityId,o.measureId,String(o.period.year),String(o.period.month??''),String(o.value),o.scenario,o.planningVersion,o.kind].map(quote).join(','));
  return [headers.map(quote).join(','),...rows].join('\r\n')+'\r\n';
 }
+
+export async function exportFactsXlsx(data:SemanticDataset):Promise<ArrayBuffer>{
+ const {default:ExcelJS}=await import('exceljs');const workbook=new ExcelJS.Workbook();const sheet=workbook.addWorksheet('Observationer');
+ sheet.addRow(['Dataset','Fil','Blad','Cell','Objekt','Mått','År','Månad','Värde','Scenario','Version','Typ']);
+ for(const o of data.observations)sheet.addRow([o.source.datasetId,o.source.fileName,o.source.sheet,o.source.cell,o.entityId,o.measureId,o.period.year,o.period.month??'',o.value,o.scenario,o.planningVersion,o.kind]);
+ sheet.getRow(1).font={bold:true};sheet.views=[{state:'frozen',ySplit:1}];return workbook.xlsx.writeBuffer() as Promise<ArrayBuffer>;
+}
