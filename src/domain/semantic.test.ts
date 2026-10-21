@@ -33,5 +33,6 @@ describe('semantic import adapter',()=>{
   const named={...a,entities:[...a.entities,{id:'uo:external',kind:'uo' as const,name:'Other',aliases:['UO X']}]};
   expect(()=>importBudgetFacts(named,{...result,uo:'UO X'},'ds2','b.xlsx')).toThrow('Confirm UO alias');
  });
+ it('keeps UO-level overhead distinct from LO hierarchy',()=>{const record={...result,facts:[{...result.facts[0],area:'UO Övergripande'}]};const data=importBudgetFacts(emptySemantic(),record,'ds-overhead','a.xlsx');expect(data.entities.find(e=>e.kind==='uo-overhead')).toMatchObject({parentId:'uo:UO%20A'});expect(data.entities.filter(e=>e.kind==='lo')).toHaveLength(0);});
  it('rejects blocking import errors',()=>expect(()=>importBudgetFacts(emptySemantic(),{...result,issues:[{code:'INVALID',severity:'error',message:'bad'}]},'ds1','a.xlsx')).toThrow());
 });
