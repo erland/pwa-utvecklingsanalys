@@ -13,7 +13,7 @@ export async function importUoBudget(bytes:ArrayBuffer):Promise<ImportResult>{
  const issues:Issue[]=[];const uo=valueText(sheet.getCell('B1')).replace(/^UO:\s*/i,'').replace(/^["“]|["”]$/g,'').trim();
  if(!uo||/skriv namn/i.test(uo))issues.push({code:'UO_NAME_MISSING',severity:'warning',message:'UO-namn saknas eller är en platshållare.',cell:'B1'});
  const periods=new Map<number,{year:number;month?:number}>();
- for(let c=4;c<=sheet.columnCount;c++){const p=period(sheet.getCell(11,c).value);if(p)periods.set(c,p);}
+ for(let c=4;c<=sheet.columnCount;c++){const header=sheet.getCell(11,c);const p=period(header.value);if(p)periods.set(c,p);else {const annual=valueText(header).match(/^ÅRSBEHOV\s+(20\d{2})$/i);if(annual&&Number(annual[1])>2027)periods.set(c,{year:Number(annual[1])});}}
  if(!periods.size)issues.push({code:'PERIOD_HEADERS_MISSING',severity:'error',message:'Periodrubriker saknas i rad 11.'});
  let area='';const facts:Fact[]=[];
  for(let r=19;r<=sheet.rowCount;r++){
