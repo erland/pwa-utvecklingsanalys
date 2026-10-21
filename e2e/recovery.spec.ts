@@ -18,5 +18,5 @@ test('startup recovers interrupted multi-store restoration from journal',async({
  },backup);
  await page.reload();
  await expect(page.locator('.topbar strong')).toHaveText(backup.project.name);
- await page.evaluate(async()=>{const request=indexedDB.open('utvecklingsanalys-recovery');const db=await new Promise<IDBDatabase>((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)});const pending=await new Promise((resolve,reject)=>{const tx=db.transaction('restore');const r=tx.objectStore('restore').get('pending');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});db.close();if(pending)throw new Error('Recovery journal was not cleared')});
+ await expect.poll(async()=>page.evaluate(async()=>{const request=indexedDB.open('utvecklingsanalys-recovery');const db=await new Promise<IDBDatabase>((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)});const pending=await new Promise((resolve,reject)=>{const tx=db.transaction('restore');const r=tx.objectStore('restore').get('pending');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});db.close();return Boolean(pending)})).toBe(false);
 });
