@@ -5,6 +5,8 @@ test('restore backup in a fresh browser profile with identical analysis',async({
  const contextA=await browser.newContext({acceptDownloads:true});
  const first=await contextA.newPage();
  await first.goto('./');
+ await first.getByRole('button',{name:'Inställningar'}).click();
+ await expect(first.locator('#project-name')).toBeEnabled();
  await first.evaluate(async()=>{
   const req=indexedDB.open('utvecklingsanalys-semantic',1);
   const db=await new Promise<IDBDatabase>((resolve,reject)=>{req.onupgradeneeded=()=>req.result.createObjectStore('datasets');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
@@ -20,6 +22,7 @@ test('restore backup in a fresh browser profile with identical analysis',async({
  await first.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(first.locator('.result-head strong')).toHaveText('42 h');
  await first.getByRole('button',{name:'Inställningar'}).click();
+ await expect(first.getByRole('button',{name:'Ladda ner projektbackup'})).toBeEnabled();
  const requested=first.waitForEvent('download');
  await first.getByRole('button',{name:'Ladda ner projektbackup'}).click();
  const downloaded=await requested;
