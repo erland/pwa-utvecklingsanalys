@@ -10,7 +10,7 @@ test('import review survives reload and can be approved',async({page})=>{
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('input[type=file]').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.locator('#import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByText('42 h')).toBeVisible();
  await expect(page.getByRole('button',{name:'Godkänn import'})).toBeEnabled();
  await page.reload();
