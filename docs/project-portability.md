@@ -7,3 +7,7 @@ Inställningar ger JSON-backup samt CSV/XLSX-utdrag av observationer. JSON inneh
 Flera IndexedDB-databaser kan inte återställas i en enda atomär transaktion. Vid fel försöker appen återföra tidigare innehåll, men ett avbrott kan hindra detta. Gör alltid en backup före import.
 
 Releasegranskning omfattar lint, TypeScript, enhetstester, Chromium och befintligt PWA-offlinetest. Mobil, tangentbordsnavigation, skärmläsare och återställning i en annan profil behöver särskild verifiering före produktionsklar release.
+
+## Recovery journal
+
+Before replacing project data, the app saves the previous project state locally. On restart, an unfinished restoration is recovered before loading the project. This is crash recovery with compensation, not a multi-database atomic transaction. Keep an external backup because local storage may itself be lost.
