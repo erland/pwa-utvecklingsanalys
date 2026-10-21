@@ -7,7 +7,7 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  const[drafts,setDrafts]=useState<Draft[]>([]),[selected,setSelected]=useState<string|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  useEffect(()=>{void listDrafts().then(setDrafts).catch(()=>setMessage('Kunde inte läsa sparade utkast.'))},[]);
  const refresh=async()=>setDrafts(await listDrafts());
- const files=async(files:FileList|null)=>{if(!files)return;setBusy(true);setMessage('');let errors:string[]=[];for(const f of Array.from(files)){try{const draft=await readDraft(f);setSelected(draft.id);}catch(e){errors.push(f.name+': '+(e instanceof Error?e.message:'Okänt fel'));}}await refresh();setBusy(false);if(errors.length)setMessage(errors.join(' • '));};
+ const files=async(files:FileList|null)=>{if(!files)return;setBusy(true);setMessage('');const errors:string[]=[];for(const f of Array.from(files)){try{const draft=await readDraft(f);setSelected(draft.id);}catch(e){errors.push(f.name+': '+(e instanceof Error?e.message:'Okänt fel'));}}await refresh();setBusy(false);if(errors.length)setMessage(errors.join(' • '));};
  const active=drafts.find(d=>d.id===selected)??drafts[0];
  const rename=async(value:string)=>{if(!active)return;await storeDraft({...active,uoName:value,updatedAt:new Date().toISOString()});await refresh();};
  const discard=async(id:string)=>{await deleteDraft(id);if(selected===id)setSelected(null);await refresh();};
