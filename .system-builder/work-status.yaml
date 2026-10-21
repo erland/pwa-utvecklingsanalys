@@ -12,9 +12,10 @@ completed_steps:
   - DEV-006
   - DEV-007
   - DEV-008
+  - DEV-009
 next:
-  recommended: DEV-009
-  reason: DEV-008 custom distribution categories, UO proposals and LO overrides with weighted aggregations verified; next completion and scenario guidance
+  recommended: DEV-010
+  reason: DEV-009 quality guide, source-preserving scenario approval and planning version comparison verified; next configuration packages
 verification:
   dev_001:
     implementation_commit: 598649779f251a184d344aea57cfd7915d464782
@@ -77,6 +78,15 @@ verification:
   dev_008:
     implementation_commit: 596c512cad4fedbb88e21e3c5cb472524d77664c
     github_actions_run: 39608080802
+    result: passed
+    lint: passed
+    typecheck: passed
+    unit_tests: passed
+    production_build: passed
+    playwright_chromium: passed
+  dev_009:
+    implementation_commit: a0a411c50814d5801fcbaa0f19c5857226f0f88a
+    github_actions_run: 39609734013
     result: passed
     lint: passed
     typecheck: passed
