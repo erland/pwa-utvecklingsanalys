@@ -11,5 +11,8 @@ try{
  await page.getByRole('heading',{name:'Överblick över verksamhetsutvecklingen'}).waitFor();
  await page.getByRole('button',{name:'Inställningar'}).click();
  await page.getByRole('heading',{name:'Inställningar'}).waitFor();
+ await page.locator('#project-name').waitFor({state:'visible'});
+ await page.waitForFunction(()=>{const field=document.querySelector('#project-name');return field instanceof HTMLInputElement&&!field.disabled;});
+ if(await page.getByRole('alert').count())throw new Error('Standalone file URL reports local storage failure');
  if(errors.length)throw new Error('Standalone browser runtime error: '+errors.join(' | '));
 }finally{await browser.close()}
