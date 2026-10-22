@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 test('keyboard skip link leads to main landmark and current navigation is announced',async({page})=>{
  await page.goto('./');
+ await page.evaluate(()=>{document.body.tabIndex=-1;document.body.focus()});
  await page.keyboard.press('Tab');
  const skip=page.getByRole('link',{name:'Hoppa till innehållet'});
  await expect(skip).toBeFocused();
