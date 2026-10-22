@@ -1,5 +1,6 @@
 import {recoverInterruptedRestore} from './portability/store';
 import PortabilityView from './portability/PortabilityView';
+import GroupsView from './analytics/GroupsView';
 import ConfigurationView from './config/ConfigurationView';
 import PlanningView from './planning/PlanningView';
 import AllocationsView from './allocations/AllocationsView';
@@ -26,7 +27,7 @@ export default function App(){
  {view==='allocations'&&<AllocationsView/>}
  {view==='planning'&&<PlanningView/>}
  {view==='configuration'&&<ConfigurationView/>}
- {view==='groups'&&<><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1><section className="panel"><p>Analysdemot innehåller två exempelgrupper. Redigering, sparande och alternativa grupperingsmodeller ingår i ett senare utvecklingssteg.</p><div className="cards two">{['Grupp 1','Grupp 2'].map(g=><div className="metric" key={g}><b>{g}</b>{DEMO_UNITS.filter(x=>x.group===g).map(x=><small key={x.id}>{x.id}</small>)}</div>)}</div><button className="primary" onClick={()=>{setView('analysis')}}>Visa i analysen</button></section></>}
+ {view==='groups'&&<GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)}/>}
  {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p><PortabilityView/></section></>}
  </main><footer>Utvecklingsanalys · DEV-011 · Demodata är syntetisk</footer></div></div>
 }
