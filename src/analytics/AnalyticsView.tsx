@@ -4,7 +4,7 @@ import type {SemanticDataset} from '../domain/semantic';
 import {readConfiguration} from '../config/store';
 import type {UoGroupModel} from './groupModels';
 import ResultChart from './ResultChart';
-import YearChart,type {YearMode} from './YearChart';
+import YearChart,{type YearMode} from './YearChart';
 import {analyzeYears} from './yearSeries';
 import type {ChartType} from './charts';
 import {analyze,type GroupBy} from './query';
