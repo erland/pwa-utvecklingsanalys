@@ -1,5 +1,6 @@
 import {recoverSourceMutation} from './import/sourceManagement';
 import {recoverInterruptedRestore} from './portability/store';
+import ResetWorkspace from './reset/ResetWorkspace';
 import PortabilityView from './portability/PortabilityView';
 import GapView from './gaps/GapView';
 import GroupsView from './analytics/GroupsView';
@@ -33,6 +34,6 @@ export default function App(){
  {view==='planning'&&<PlanningView/>}
  {view==='configuration'&&<ConfigurationView/>}
  {view==='groups'&&<GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)}/>}
- {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p><PortabilityView/></section></>}
+ {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p><PortabilityView/><ResetWorkspace/></section></>}
  </main><footer>Utvecklingsanalys · DEV-011 · Demodata är syntetisk</footer></div></div>
 }
