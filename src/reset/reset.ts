@@ -3,6 +3,7 @@ export type ResetScope='data'|'configuration'|'all';
 export const DATA_STORES:Readonly<Record<string,readonly string[]>>={
  'utvecklingsanalys':['projects'],
  'utvecklingsanalys-semantic':['datasets'],
+ 'utvecklingsanalys-canonical-v2':['datasets'],
  'utvecklingsanalys-planning':['state'],
  'utvecklingsanalys-imports':['drafts'],
  'utvecklingsanalys-information-gaps':['state'],
