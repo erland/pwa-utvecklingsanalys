@@ -1,0 +1,57 @@
+name: Publish release (Pages + standalone HTML)
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:singlefile
+      - run: node scripts/verify-singlefile.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-singlefile-browser.mjs
+      - run: npm run test:browser
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: standalone-html
+          path: dist-singlefile/index.html
+          if-no-files-found: error
+      - name: Attach standalone HTML to GitHub Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          cp dist-singlefile/index.html utvecklingsanalys-standalone.html
+          gh release upload "$TAG" utvecklingsanalys-standalone.html --clobber
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
