@@ -41,7 +41,7 @@ export function withoutSources(semantic:SemanticDataset,ids:readonly string[]):S
  const remove=new Set(ids);
  return {...semantic,observations:semantic.observations.filter(o=>!remove.has(o.source.datasetId))};
 }
-export async function deleteImportedSources(ids:string[]):Promise<AnalysisProject>{
+export async function deleteImportedSources(ids:string[],clearAllDrafts=false):Promise<AnalysisProject>{
  if(!ids.length)throw new Error('NO_SOURCE_SELECTED');
  return mutate(async()=>{
   const project=await loadProject(),semantic=await loadSemantic();
@@ -49,7 +49,7 @@ export async function deleteImportedSources(ids:string[]):Promise<AnalysisProjec
   const next={...project,datasets:project.datasets.filter(d=>!ids.includes(d.id))};
   await saveSemantic(withoutSources(semantic,ids));
   await saveProject(next);
-  for(const draft of await listDrafts())if(ids.includes(draft.id)||ids.length===project.datasets.length)await deleteDraft(draft.id);
+  for(const draft of await listDrafts())if(ids.includes(draft.id)||clearAllDrafts)await deleteDraft(draft.id);
   return next;
  });
 }
