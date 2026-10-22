@@ -34,6 +34,7 @@ export function validateBackup(input:unknown):ProjectBackup{
   for(const h of b.configurationHistory)if(!h.id||!h.createdAt||!h.reason)throw new Error('INVALID_REVISION');else parsePackage(h.data);
  }
  if(b.gapState){if(!Array.isArray(b.gapState.requirements)||!Array.isArray(b.gapState.resolutions)||b.gapState.requirements.some(r=>validateRequirement(r,b.semantic).length)||b.gapState.resolutions.some(r=>validateResolution(r).length))throw new Error('INVALID_GAP_STATE');}
+ if(b.gapState?.rules){const keys=new Set<string>();for(const rule of b.gapState.rules){if(!rule.id||keys.has(rule.id)||!b.gapState.requirements.some(req=>req.id===rule.requirementId&&req.entityKind==='lo'&&req.years.includes(rule.year)&&req.activities.includes(rule.activity))||!b.semantic.measures.some(m=>m.id===rule.weightMeasureId)||!rule.reason.trim())throw new Error('INVALID_DISTRIBUTION_RULE');keys.add(rule.id)}}
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));
