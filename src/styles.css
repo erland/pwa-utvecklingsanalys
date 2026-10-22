@@ -2,7 +2,7 @@
 .analysis-table{width:100%;border-collapse:collapse;margin:12px 0 28px;font-size:14px}.analysis-table th,.analysis-table td{padding:12px 10px;text-align:left;border-bottom:1px solid #e0e8ed}.analysis-table th{color:#536e80}.analysis-table td:nth-child(2){font-variant-numeric:tabular-nums}
 
 /* Keyboard focus stays visible on both light content and dark navigation. */
-:where(button,input,select,textarea,a):focus-visible{outline:3px solid #d17817;outline-offset:3px}
+:where(button,input,select,textarea,a):focus,:where(button,input,select,textarea,a):focus-visible{outline:3px solid #d17817;outline-offset:3px}
 .sidebar :where(button,a):focus-visible{outline-color:#ffe08b}
 button:disabled{cursor:not-allowed;opacity:.65}
 @media(max-width:480px){.metric,.panel{padding:16px}.mapping-grid{grid-template-columns:minmax(0,1fr)}.actions>*{max-width:100%;overflow-wrap:anywhere}.topbar{flex-wrap:wrap}}
