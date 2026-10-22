@@ -14,4 +14,4 @@
 - En byte-för-byte kompatibel projektbackup och importerade originalobservationer får inte påverkas av UI-förändringar.
 - Varje ändringssteg kräver lint, typkontroll, enhetstester, bygg, Playwright och relevanta nya regressionstester innan det slutförs.
 - Avsaknad av särskild gruppmodell får inte ändra nuvarande analysresultat. Snapshotmått som FTE ingår inte i summa timmar.
-- **Nuvarande fokus:** Steg 6 – sammansatta timmar och kostnader. Full CI och Playwright krävs före färdigmarkering. Därefter funktionsacceptans och releasebedömning för CHANGE-013.
+- **Nuvarande fokus:** Samlad funktionsacceptans i PR #19. Se `docs/change-013-acceptance.md`. Release genomförs separat efter grön CI och merge.
