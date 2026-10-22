@@ -1,5 +1,5 @@
 /** Stable starter contracts. Detailed import and semantic models are introduced in DEV-002/004. */
-export type ViewId = 'overview'|'import'|'analysis'|'groups'|'relations'|'allocations'|'planning'|'configuration'|'settings';
+export type ViewId = 'overview'|'import'|'analysis'|'groups'|'relations'|'allocations'|'planning'|'configuration'|'settings'|'gaps';
 export interface DatasetSummary { id: string; name: string; planningYear: number; importedAt: string; source: 'demo'|'excel'; }
 export interface AnalysisProject { schemaVersion: 1; id: string; name: string; datasets: DatasetSummary[]; updatedAt: string; }
 export const emptyProject = (): AnalysisProject => ({schemaVersion:1,id:crypto.randomUUID(),name:'Mitt analysprojekt',datasets:[],updatedAt:new Date().toISOString()});
