@@ -3,7 +3,7 @@ import type {Observation,SemanticDataset,Unit} from '../domain/semantic';
 export const COMPOSITE_MEASURES={all_hours:{label:'Alla timmar',unit:'h'},all_costs:{label:'Alla kostnader',unit:'SEK'}} as const;
 export function measureSelection(data:SemanticDataset,id:string){
  const family=id==='all_hours'?'h':id==='all_costs'?'SEK':undefined;
- if(family){const members=data.measures.filter(m=>m.unit===family&&m.aggregation==='sum');return {members,unit:family,label:COMPOSITE_MEASURES[id].label};}
+ if(family){const members=data.measures.filter(m=>m.unit===family&&m.aggregation==='sum');return {members,unit:family,label:family==='h'?'Alla timmar':'Alla kostnader'};}
  const measure=data.measures.find(m=>m.id===id);
  if(!measure)throw new Error('Unknown measure');
  if(measure.aggregation!=='sum')throw new Error('Non-additive measure requires a dedicated snapshot or ratio query');
