@@ -2,7 +2,7 @@ import type {ImportResult} from '../import/uoBudget';
 import {emptySemantic,matchEntity,validateSemantic,type Entity,type Observation,type SemanticDataset} from './semantic';
 /** Canonical domain identity is deliberately scoped to entity kind and owning UO. */
 const normalizedArea=(area:string)=>/^UO Övergripande$/i.test(area.trim());
-export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,datasetId:string,fileName:string):SemanticDataset{
+export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,datasetId:string,fileName:string,includeMatrix=false):SemanticDataset{
  if(result.issues.some(i=>i.severity==='error'))throw new Error('Import has blocking issues');
  if(!result.uo.trim())throw new Error('UO must be confirmed before semantic import');
  const entities:Entity[]=existing.entities.map(e=>({...e,aliases:[...e.aliases]}));
@@ -24,6 +24,13 @@ export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,d
   const cellId=[datasetId,fact.source.sheet,fact.source.cell,fact.measure].map(identifier).join('|');
   const observation:Observation={id:cellId,entityId:areaId,measureId:fact.measure,value:fact.value,period:fact.period,planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'detail',quality:'reported'};
   observations.push(observation);
+ }
+ if(includeMatrix&&result.matrix){
+  if(result.matrix.issues.length)throw new Error('Matrix contains unreviewed import issues');
+  for(const fact of result.matrix.facts){
+   const cellId=[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(identifier).join('|');
+   observations.push({id:cellId,entityId:uoId,measureId:fact.measureId,value:fact.value,period:{year:fact.year},planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'subset',sectionId:fact.sectionId,activity:fact.activity,quality:'reported'});
+  }
  }
  const updated={...emptySemantic(),...existing,entities,observations};
  const errors=validateSemantic(updated);if(errors.length)throw new Error(errors.join(', '));

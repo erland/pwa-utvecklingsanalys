@@ -24,6 +24,15 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  try{if(data)outcome=analyze(data,query)}catch{outcome=null}
  const selectedMeasure=data?(()=>{try{return measureSelection(data,measureId)}catch{return null}})():null;
  const yearly=data&&year==='all'&&yearMode!=='total'&&selectedMeasure?analyzeYears(data,query):null;
+ const allocations=useMemo(()=>{
+  const obs=(data?.observations??[]).filter(o=>o.kind==='subset'&&o.sectionId&&o.activity&&(year==='all'||o.period.year===Number(year))&&(!datasets.length||datasets.includes(o.source.datasetId))&&(!uos.length||data?.entities.some(e=>e.id===o.entityId&&e.kind==='uo'&&uos.includes(e.id))));
+  const ids=new Set<string>();const by=new Map<string,{label:string;value:number;unit:string}>();
+  for(const o of obs){const id=[o.source.datasetId,o.source.sheet,o.source.cell,o.measureId].join('|');if(ids.has(id))continue;ids.add(id);
+   const unit=data?.measures.find(m=>m.id===o.measureId)?.unit??'';const label=[o.measureId,o.activity==='development'?'Utveckling':'Förvaltning',o.period.year].join(' · ');const k=[o.measureId,o.activity,o.period.year].join('|');
+   const prev=by.get(k);by.set(k,{label,value:(prev?.value??0)+o.value,unit});
+  }
+  return [...by.values()].sort((a,b)=>a.label.localeCompare(b.label,'sv'));
+ },[data,year,datasets,uos]);
  const chosenMeasure=selectedMeasure;
  const toggle=(id:string,selection:string[],set:(x:string[])=>void)=>set(selection.includes(id)?selection.filter(x=>x!==id):[...selection,id]);
  const fmt=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
@@ -43,6 +52,6 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  {year==='all'&&<><label htmlFor="year-mode">Tidsvisning</label><select id="year-mode" value={yearMode} onChange={e=>setYearMode(e.target.value as YearMode)}><option value="total">Summerat resultat</option><option value="grouped">Grupperade årsstaplar</option><option value="trend">Trendlinjer</option></select></>}
  {year==='all'&&yearMode!=='total'&&yearly?<><p className="notice">Tidsserien använder samma mått, källor, UO-urval och gruppmodell.</p><YearChart series={yearly} mode={yearMode}/><div style={{overflowX:'auto'}}><table className="analysis-table" aria-label="Periodtabell"><thead><tr><th>Grupp</th>{yearly.years.map(y=><th key={y}>{y}</th>)}</tr></thead><tbody>{yearly.rows.map(r=><tr key={r.key}><td>{r.label}</td>{r.values.map((v,i)=><td key={yearly.years[i]}>{fmt(v)} {yearly.unit}</td>)}</tr>)}</tbody></table></div></>:<><label htmlFor="chart-type">Visualisering</label><select id="chart-type" value={chartType} onChange={e=>setChartType(e.target.value as ChartType)}><option value="bar">Stapeldiagram</option><option value="pie">Cirkeldiagram</option><option value="table">Endast tabell</option></select>
  <ResultChart result={outcome} type={chartType}/></>}
- {!outcome.rows.length&&<p>Inga värden för valt urval.</p>}</>:<p role="alert">Detta mått kan inte summeras säkert med den valda analysen. Välj ett summerbart mått.</p>}</section></div>}
+ {!outcome.rows.length&&<p>Inga värden för valt urval.</p>}</>:<p role="alert">Detta mått kan inte summeras säkert med den valda analysen. Välj ett summerbart mått.</p>}</section>{allocations.length>0&&<section className="panel" style={{marginTop:18}}><h2>Utveckling och förvaltning – separat fördelning</h2><p className="notice">Årsuppgifter från en annan datasektion. De ingår inte i huvudanalysens detaljsummor för att undvika dubbelräkning.</p><div style={{overflowX:'auto'}}><table className="analysis-table" aria-label="Utveckling och förvaltning"><thead><tr><th>Mått · aktivitet · år</th><th>Värde</th></tr></thead><tbody>{allocations.map(x=><tr key={x.label}><td>{x.label}</td><td>{fmt(x.value)} {x.unit}</td></tr>)}</tbody></table></div></section>}</div>}
  </>;
 }
