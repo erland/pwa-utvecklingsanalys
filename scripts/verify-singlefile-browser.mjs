@@ -1,4 +1,4 @@
-import {chromium} from '@playwright/test';
+import {chromium,expect} from '@playwright/test';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
@@ -12,7 +12,7 @@ try{
  await page.getByRole('button',{name:'Inställningar'}).click();
  await page.getByRole('heading',{name:'Inställningar'}).waitFor();
  await page.locator('#project-name').waitFor({state:'visible'});
- await page.waitForFunction(()=>{const field=document.querySelector('#project-name');return field instanceof HTMLInputElement&&!field.disabled;});
- if(await page.getByRole('alert').count())throw new Error('Standalone file URL reports local storage failure');
+ await expect(page.locator('#project-name')).toBeEnabled();
+ await expect(page.getByRole('alert')).toHaveCount(0);
  if(errors.length)throw new Error('Standalone browser runtime error: '+errors.join(' | '));
 }finally{await browser.close()}
