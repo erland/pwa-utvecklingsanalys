@@ -42,6 +42,7 @@ export function validateBackup(input:unknown):ProjectBackup{
    ids.add(a.ruleId);
   }
  }
+ if(b.gapState?.manualApprovals){const seen=new Set<string>();for(const a of b.gapState.manualApprovals){if(!a.key||seen.has(a.key)||!a.resolutionUpdatedAt||!a.approvedAt||!b.gapState.resolutions.some(r=>r.key===a.key&&r.status==='manual'))throw new Error('INVALID_MANUAL_APPROVAL');seen.add(a.key)}}
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));

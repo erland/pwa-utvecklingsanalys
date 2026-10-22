@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+test('manual completions are approved separately and never inflate original analysis',async({page})=>{
+ const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
+ s.getCell('B1').value='UO: UO A';s.getCell('D11').value=new Date(2027,0,1);
+ s.getCell('B25').value='LO IA';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;
+ const bytes=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#import-files').setInputFiles({name:'manual.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
+ await page.getByRole('button',{name:'Godkänn import'}).click();
+ await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.getByRole('button',{name:'Kompletteringar'}).click();
+ await page.getByLabel('Kravnamn').fill('LO utveckling');
+ await page.getByLabel('Aktiviteter').fill('development');
+ await page.getByRole('button',{name:'Lägg till informationskrav'}).click();
+ await page.getByLabel('Hantera LO IA development').selectOption('manual');
+ await page.getByLabel('Värde LO IA development').fill('30');
+ await page.getByRole('button',{name:'Spara komplettering'}).click();
+ await expect(page.getByRole('button',{name:'Godkänn manuellt värde'})).toBeVisible();
+ await page.getByRole('button',{name:'Godkänn manuellt värde'}).click();
+ await expect(page.getByText('Godkänd',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.locator('.result-head strong')).toHaveText('42 h');
+ await page.getByLabel('Kompletteringsläge').selectOption('completed');
+ await expect(page.getByTestId('completion-summary')).toContainText('30');
+ await expect(page.locator('.result-head strong')).toHaveText('42 h');
+});
