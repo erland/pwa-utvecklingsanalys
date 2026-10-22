@@ -1,11 +1,12 @@
+import {validateGroupModels,type UoGroupModel} from '../analytics/groupModels';
 import type {Allocations} from '../allocations/model';
 import {validateAllocation} from '../allocations/model';
 import type {Mapping} from '../import/uoBudget';
 
-export type PackageSection='allocations'|'mappings';
+export type PackageSection='allocations'|'mappings'|'groups';
 export interface ConfigPackage {
  format:'utvecklingsanalys-config';version:1;exportedAt:string;mode:'definitions-only'|'full-configuration';
- sections:{allocations?:Allocations;mappings?:Record<string,Mapping>};
+ sections:{allocations?:Allocations;mappings?:Record<string,Mapping>;groups?:UoGroupModel[]};
 }
 export type Conflict={section:PackageSection;key:string;reason:string};
 export function parsePackage(input:unknown):ConfigPackage{
@@ -25,13 +26,15 @@ export function parsePackage(input:unknown):ConfigPackage{
    if(!m||typeof m.sheet!=='string'||!m.sheet.trim()||typeof m.uoCell!=='string'||!m.uoCell.trim()||!['headerRow','areaColumn','labelColumn','startRow'].every(k=>Number.isInteger(m[k as keyof Mapping])&&Number(m[k as keyof Mapping])>0))throw new Error('INVALID_MAPPING');
   }
  }
- if(Object.keys(p.sections).some(k=>!['allocations','mappings'].includes(k)))throw new Error('UNSUPPORTED_SECTION');
+ if(p.sections.groups)validateGroupModels(p.sections.groups);
+ if(Object.keys(p.sections).some(k=>!['allocations','mappings','groups'].includes(k)))throw new Error('UNSUPPORTED_SECTION');
  return p;
 }
-export function buildPackage(allocations:Allocations|undefined,mappings:Record<string,Mapping>|undefined,mode:ConfigPackage['mode']):ConfigPackage{
+export function buildPackage(allocations:Allocations|undefined,mappings:Record<string,Mapping>|undefined,mode:ConfigPackage['mode'],groups?:UoGroupModel[]):ConfigPackage{
  return parsePackage({format:'utvecklingsanalys-config',version:1,exportedAt:new Date().toISOString(),mode,sections:{
   ...(allocations?{allocations:mode==='definitions-only'?{...allocations,rules:[]}:allocations}:{}),
   ...(mappings?{mappings}:{}),
+  ...(groups?{groups}:{}),
  }});
 }
 export function conflicts(current:ConfigPackage, incoming:ConfigPackage):Conflict[]{
@@ -45,6 +48,7 @@ export function conflicts(current:ConfigPackage, incoming:ConfigPackage):Conflic
   const old=current.sections.mappings?.[key];
   if(old&&JSON.stringify(old)!==JSON.stringify(val))out.push({section:'mappings',key,reason:'Mallprofil med samma namn skiljer sig'});
  }
+ for(const model of incoming.sections.groups??[]){const old=current.sections.groups?.find(x=>x.id===model.id||x.name.toLocaleLowerCase('sv-SE')===model.name.toLocaleLowerCase('sv-SE'));if(old&&JSON.stringify(old)!==JSON.stringify(model))out.push({section:'groups',key:model.name,reason:'Gruppmodell med samma id eller namn skiljer sig'});}
  return out;
 }
 export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,policy:'reject'|'replace'):ConfigPackage{
@@ -60,7 +64,8 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
   ];
   allocations={schemaVersion:1,dimensions,rules};
  }
- const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration');
+ const groups=[...(current.sections.groups??[]).filter(g=>!(incoming.sections.groups??[]).some(x=>x.id===g.id||x.name.toLocaleLowerCase('sv-SE')===g.name.toLocaleLowerCase('sv-SE'))),...(incoming.sections.groups??[])];
+ const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups);
  return next;
 }
 
