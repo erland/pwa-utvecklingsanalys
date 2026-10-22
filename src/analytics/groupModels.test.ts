@@ -19,7 +19,7 @@ describe('UO group models',()=>{
   const d=emptySemantic();d.entities=['u1','u2','u3'].map(id=>({id,name:id,kind:'uo' as const,aliases:[]}));
   d.observations=['u1','u2','u3'].map((entityId,i):Observation=>({id:'o'+i,entityId,measureId:'it_hours',value:(i+1)*10,kind:'detail',period:{year:2027},scenario:'need',planningVersion:'2027',quality:'reported',source:{datasetId:'ds',fileName:'x.xlsx',sheet:'Sheet1',cell:'A'+i}}));
   const result=analyze(d,{measureId:'it_hours',groupBy:'uo-group',groupModel:model});
-  expect(result.total).toBe(60);expect(result.rows.map(r=>[r.label,r.value])).toEqual([['Första',30],['Andra',30]]);
+  expect(result.total).toBe(60);expect(result.rows.map(r=>[r.label,r.value])).toEqual([['Andra',30],['Första',30]]);
  });
  it('roundtrips configuration and requires explicit conflicting import',()=>{
   const pkg=buildPackage(undefined,undefined,'definitions-only',[model]);
