@@ -19,3 +19,9 @@ JSON-arkivet inkluderar sparade arbetsboksbytes (Base64) från importutkast, äv
 ## Stora säkerhetskopior och tillgänglighet
 
 Inställningar erbjuder komprimerat JSON/GZIP-arkiv. Både JSON och GZIP går att importera; den komprimerade filen är begränsad till 150 MiB och den uppackade JSON-datan till 300 MiB. De här gränserna skyddar mot vissa stora filer men hela backupen behöver fortfarande rymmas i webbläsarens minne. Komprimeringsstödet kräver webbläsare med CompressionStream/DecompressionStream. Exportera till en extern lagringsplats. Tangentbordsfokus får tydlig markering och 320 px-mobilvy har automatiserade smoke-tester. Manuell skärmläsar-, kontrast- och fullständig WCAG-granskning återstår.
+
+## Tillgänglighetsgranskning – DEV-011
+
+Automatiserade Playwright-kontroller omfattar mobilbredderna 320 och 390 pixlar, tangentbordsaktivering av navigation, synlig fokusmarkering, etiketter för filuppladdning, länk för att hoppa över navigationen, huvudlandmärke och aktiv navigeringsvy via aria-current. Webbappens nya skipplänk är bara synlig vid fokus. Rörelser respekterar inställningen för reducerad rörelse.
+
+Detta innebär **inte WCAG 2.2 AA-certifiering**. Manuell granskning återstår av hela flödet med VoiceOver på macOS/iOS, fokusrörelse i samtliga import- och analysvyer, statusmeddelanden, tabellernas navigering, färgkontrast och textförstoring till 200–400 %. Granskningen ska redovisa testad miljö, steg, avvikelser, skärmdumpar och PASS/PARTIAL/FAIL utan att likställa automatiska tester med full efterlevnad.
