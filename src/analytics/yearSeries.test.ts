@@ -15,6 +15,6 @@ describe('year series',()=>{
  });
  it('disallows non additive snapshot',()=>{
   const data=emptySemantic();data.observations=[];
-  expect(()=>analyzeYears(data,{measureId:'fte',groupBy:'year'})).not.toThrow();
+  expect(()=>analyzeYears(data,{measureId:'fte',groupBy:'year'})).toThrow('Non-additive');
  });
 });
