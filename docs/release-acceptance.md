@@ -26,3 +26,7 @@ Automatiserat Playwright-test kontrollerar beräknad färgkontrast för synliga 
 Automatisk teknisk CI är grön. Projektet kan behandlas som en **intern testkandidat**, men bör inte deklareras WCAG 2.2 AA-konformt eller slutligt releasegodkänt utan dokumenterad manuell granskning. Godkännandet kräver en spårbar acceptanspost med datum, testmiljö, resultat och hanterade avvikelser.
 
 Inga originalarbetsböcker eller andra verksamhetsdata har checkats in som del av testerna.
+
+## Uppföljning: extrem textförstoring
+
+Chromiumtest med 320 pixlars viewport och rootfont 64 px kontrollerar att formulärfält och knappar ryms inom skärmen i samtliga nio huvudvyer. Testet upptäckte överskridande fil- och inmatningsfält på importvyn och resulterade i CSS-korrigering. Tangentbordstest prövar navigering till planeringsvyn och ändring av årsnummer med pilknapp. Båda testerna passerar i CI-körning 39715103932. Testet är en förenklad simulering av förstoring och styrker **inte** att alla textnoder, diagram, tabeller och browserzoom vid 400 % har fullständigt WCAG-kompatibelt omflöde. Detta och VoiceOver kräver fortsatt manuell granskning.
