@@ -9,7 +9,7 @@ export function evaluateApprovals(data:SemanticDataset,state:GapState):Evaluated
   if(!rule||!req)return {approval,status:'invalid',reason:'Regeln eller informationskravet saknas'};
   try{
    const preview=calculateDistribution(data,req,rule,state.resolutions);
-   const signature=JSON.stringify([rule.requirementId,rule.year,rule.activity,rule.weightMeasureId,req.measureId,req.entityKind]);
+   const signature=distributionSignature(rule,req);
    const same=approval.ruleSignature===signature&&preview.fingerprint===approval.fingerprint&&preview.items.length===approval.items.length&&preview.items.every((item,i)=>item.key===approval.items[i].key&&item.entityId===approval.items[i].entityId&&item.value===approval.items[i].value);
    return {approval,status:same?'current':'stale',preview,reason:same?undefined:'Källvärden, vikter eller mål har ändrats'};
   }catch(e){return {approval,status:'invalid',reason:e instanceof Error?e.message:String(e)}}
@@ -43,4 +43,4 @@ export function approvedRows(data:SemanticDataset,state:GapState,options:{measur
  });
 }
 
-export const distributionSignature=(rule:{requirementId:string;year:number;activity:string;weightMeasureId:string},req:{measureId:string;entityKind:string})=>JSON.stringify([rule.requirementId,rule.year,rule.activity,rule.weightMeasureId,req.measureId,req.entityKind]);
+export const distributionSignature=(rule:{requirementId:string;year:number;activity:string;weightMeasureId:string;uoId?:string},req:{measureId:string;entityKind:string})=>JSON.stringify([rule.requirementId,rule.year,rule.activity,rule.weightMeasureId,req.measureId,req.entityKind,...(rule.uoId?[rule.uoId]:[])]);
