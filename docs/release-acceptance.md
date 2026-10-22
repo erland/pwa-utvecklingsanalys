@@ -30,3 +30,7 @@ Inga originalarbetsböcker eller andra verksamhetsdata har checkats in som del a
 ## Uppföljning: extrem textförstoring
 
 Chromiumtest med 320 pixlars viewport och rootfont 64 px kontrollerar att formulärfält och knappar ryms inom skärmen i samtliga nio huvudvyer. Testet upptäckte överskridande fil- och inmatningsfält på importvyn och resulterade i CSS-korrigering. Tangentbordstest prövar navigering till planeringsvyn och ändring av årsnummer med pilknapp. Båda testerna passerar i CI-körning 39715103932. Testet är en förenklad simulering av förstoring och styrker **inte** att alla textnoder, diagram, tabeller och browserzoom vid 400 % har fullständigt WCAG-kompatibelt omflöde. Detta och VoiceOver kräver fortsatt manuell granskning.
+
+## Extra tangentbords- och omflödeskontroller
+
+Playwright kontrollerar tabbordning genom hela huvudnavigationen, aktivering med Enter samt omflöde av interaktiva kontroller i de nio huvudvyerna vid en 320-pixlars layoutviewport, motsvarande den tillgängliga CSS-bredden efter 400 % sidzoom från 1280 px. Detta är inte faktisk zoomstyrning i en användares webbläsare och kan inte användas som ensamt bevis på full WCAG-reflow. Tidiga försök med CSS zoom gav missvisande resultat och har ersatts av viewportbaserad metod. Manuella VoiceOver- och visuella zoomtester återstår.
