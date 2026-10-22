@@ -1,3 +1,5 @@
+import type {GapState} from '../gaps/store';
+import {validateResolution,validateRequirement} from '../gaps/model';
 import type {AnalysisProject} from '../model';
 import type {SemanticDataset} from '../domain/semantic';
 import {migrateSemantic} from '../domain/semantic';
@@ -11,7 +13,7 @@ export interface ArchivedDraft {id:string;fileName:string;bytesBase64:string;res
 export interface ArchivedRevision {id:string;createdAt:string;reason:string;data:ConfigPackage}
 export interface ProjectBackup {
  format:'utvecklingsanalys-project';version:1|2;exportedAt:string;
- project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;drafts?:ArchivedDraft[];configurationHistory?:ArchivedRevision[];
+ project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;drafts?:ArchivedDraft[];configurationHistory?:ArchivedRevision[];gapState?:GapState;
 }
 export function validateBackup(input:unknown):ProjectBackup{
  if(!input||typeof input!=='object')throw new Error('INVALID_BACKUP');
@@ -31,6 +33,7 @@ export function validateBackup(input:unknown):ProjectBackup{
   }
   for(const h of b.configurationHistory)if(!h.id||!h.createdAt||!h.reason)throw new Error('INVALID_REVISION');else parsePackage(h.data);
  }
+ if(b.gapState){if(!Array.isArray(b.gapState.requirements)||!Array.isArray(b.gapState.resolutions)||b.gapState.requirements.some(r=>validateRequirement(r,b.semantic).length)||b.gapState.resolutions.some(r=>validateResolution(r).length))throw new Error('INVALID_GAP_STATE');}
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));

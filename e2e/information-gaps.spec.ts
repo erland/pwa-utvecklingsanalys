@@ -1,0 +1,25 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+test('define information requirement and resolve missing LO activity without altering imported data',async({page})=>{
+ const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
+ s.getCell('B1').value='UO: UO A';s.getCell('D11').value=new Date(2027,0,1);
+ s.getCell('B25').value='LO AUL';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;
+ const buffer=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#import-files').setInputFiles({name:'uo.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.getByRole('button',{name:'Godkänn import'}).click();
+ await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.getByRole('button',{name:'Kompletteringar'}).click();
+ await page.getByLabel('Kravnamn').fill('Aktivitet per LO');
+ await page.getByLabel('Aktiviteter').fill('development,maintenance');
+ await page.getByRole('button',{name:'Lägg till informationskrav'}).click();
+ await expect(page.getByTestId('gap-summary')).toContainText('2 kombinationer');
+ await page.getByLabel('Hantera LO AUL development').selectOption('manual');
+ await page.getByLabel('Värde LO AUL development').fill('0');
+ await page.getByRole('button',{name:'Spara komplettering'}).first().click();
+ await expect(page.getByText('Manuellt', {exact:true})).toBeVisible();
+ await page.reload();await page.getByRole('button',{name:'Kompletteringar'}).click();
+ await expect(page.getByTestId('gap-summary')).toContainText('2 kombinationer');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.locator('.result-head strong')).toHaveText('42 h');
+});

@@ -1,3 +1,4 @@
+import {loadGapState,saveGapState} from '../gaps/store';
 import {loadProject,saveProject} from '../storage';
 import {loadSemantic,saveSemantic} from '../domain/semanticStore';
 import {loadPlanning,savePlanning} from '../planning/store';
@@ -10,8 +11,8 @@ import {listDrafts} from '../import/drafts';
 const encode=(bytes:ArrayBuffer)=>{const data=new Uint8Array(bytes);let str='';for(let i=0;i<data.length;i+=8192)str+=String.fromCharCode(...data.subarray(i,i+8192));return btoa(str)};
 const decode=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer;
 export async function captureProject():Promise<ProjectBackup>{
- const [project,semantic,planning,configuration,legacyAllocations,drafts,configurationHistory]=await Promise.all([loadProject(),loadSemantic(),loadPlanning(),readConfiguration(),loadAllocations(),listDrafts(),revisions()]);
- return validateBackup({format:'utvecklingsanalys-project',version:2,exportedAt:new Date().toISOString(),project,semantic,planning,configuration,legacyAllocations,drafts:drafts.map(({bytes,...d})=>({...d,bytesBase64:encode(bytes)})),configurationHistory});
+ const [project,semantic,planning,configuration,legacyAllocations,drafts,configurationHistory,gapState]=await Promise.all([loadProject(),loadSemantic(),loadPlanning(),readConfiguration(),loadAllocations(),listDrafts(),revisions(),loadGapState()]);
+ return validateBackup({format:'utvecklingsanalys-project',version:2,exportedAt:new Date().toISOString(),project,semantic,planning,configuration,legacyAllocations,drafts:drafts.map(({bytes,...d})=>({...d,bytesBase64:encode(bytes)})),configurationHistory,gapState});
 }
 export async function backupJson(){return backupToJson(await captureProject())}
 /** Browser databases are independent; rollback is best-effort, not a distributed transaction. */
@@ -19,6 +20,7 @@ async function apply(b:ProjectBackup){
  await saveSemantic(b.semantic);
  await savePlanning(b.planning);
  await saveProject(b.project);
+ await saveGapState(b.gapState??{requirements:[],resolutions:[]});
  if(b.configuration){await commitConfiguration(b.configuration,'Restore project backup', (await revisions()).at(-1)?.id)}
  else {const existing=await readConfiguration();if(existing)await commitConfiguration({...existing,sections:{...existing.sections,allocations:b.legacyAllocations}},'Restore legacy project configuration',(await revisions()).at(-1)?.id);else await saveAllocations(b.legacyAllocations);}
  if(b.version===2){
