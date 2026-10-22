@@ -15,3 +15,7 @@ Before replacing project data, the app saves the previous project state locally.
 ## Format v2
 
 JSON-arkivet inkluderar sparade arbetsboksbytes (Base64) från importutkast, även utkast som ännu inte godkänts, samt konfigurationsrevisioner. Format v1 accepteras fortsatt vid import men innehåller inte dessa delar. En backup kan bli stor, särskilt om flera XLSX-filer finns lagrade. Den aktuella importgränsen i gränssnittet gäller JSON-filens storlek; för större projekt behöver gränsen och minneshanteringen anpassas. Inga källdata checkas in i GitHub.
+
+## Stora säkerhetskopior och tillgänglighet
+
+Inställningar erbjuder komprimerat JSON/GZIP-arkiv. Både JSON och GZIP går att importera; den komprimerade filen är begränsad till 150 MiB och den uppackade JSON-datan till 300 MiB. De här gränserna skyddar mot vissa stora filer men hela backupen behöver fortfarande rymmas i webbläsarens minne. Komprimeringsstödet kräver webbläsare med CompressionStream/DecompressionStream. Exportera till en extern lagringsplats. Tangentbordsfokus får tydlig markering och 320 px-mobilvy har automatiserade smoke-tester. Manuell skärmläsar-, kontrast- och fullständig WCAG-granskning återstår.
