@@ -1,3 +1,4 @@
+import {validateReconciliationRule} from '../reconciliation/model';
 import type {GapState} from '../gaps/store';
 import {validateResolution,validateRequirement} from '../gaps/model';
 import type {AnalysisProject} from '../model';
@@ -43,6 +44,8 @@ export function validateBackup(input:unknown):ProjectBackup{
   }
  }
  if(b.gapState?.manualApprovals){const seen=new Set<string>();for(const a of b.gapState.manualApprovals){if(!a.key||seen.has(a.key)||!a.resolutionUpdatedAt||!a.approvedAt||!b.gapState.resolutions.some(r=>r.key===a.key&&r.status==='manual'))throw new Error('INVALID_MANUAL_APPROVAL');seen.add(a.key)}}
+ if(b.gapState?.reconciliations){const names=new Set<string>();for(const rule of b.gapState.reconciliations){if(names.has(rule.id)||validateReconciliationRule(rule,b.semantic).length)throw new Error('INVALID_RECONCILIATION_RULE');names.add(rule.id)}}
+ if(b.gapState?.reconciliationDecisions){const keys=new Set<string>();for(const decision of b.gapState.reconciliationDecisions){if(!decision.key||keys.has(decision.key)||!decision.fingerprint||!decision.reason?.trim()||!decision.updatedAt)throw new Error('INVALID_RECONCILIATION_DECISION');keys.add(decision.key)}}
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));
