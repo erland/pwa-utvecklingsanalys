@@ -29,6 +29,6 @@ export function calculateDistribution(data:SemanticDataset,requirement:Informati
  const sum=weights.reduce((a,w)=>a+w.weight,0);if(sum<=0)throw new Error('ZERO_WEIGHT_TOTAL');
  let allocated=0;
  const items=weights.map((w,i)=>{const value=i===weights.length-1?sourceTotal-allocated:sourceTotal*w.weight/sum;allocated+=value;return {key:w.key,entityId:w.entity.id,entityName:w.entity.name,weight:w.weight,value}});
- const fingerprint=stable(['uo:'+root.id,...sources.map(o=>[o.id,o.value].join(':')),...weights.map(w=>[w.entity.id,w.weight].join(':'))]);
+ const fingerprint=stable([...(rule.uoId?['uo:'+root.id]:[]),...sources.map(o=>[o.id,o.value].join(':')),...weights.map(w=>[w.entity.id,w.weight].join(':'))]);
  return {ruleId:rule.id,requirementId:requirement.id,year:rule.year,activity:rule.activity,sourceTotal,allocatedTotal:allocated,items,fingerprint};
 }
