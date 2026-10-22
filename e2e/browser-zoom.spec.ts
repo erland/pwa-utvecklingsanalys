@@ -1,10 +1,9 @@
 import {test,expect} from '@playwright/test';
 const views=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
-test('400 percent browser-scale equivalent reflow of critical controls',async({browser})=>{
- const context=await browser.newContext({viewport:{width:1280,height:900},deviceScaleFactor:1});
+test('400 percent zoom equivalent viewport reflow of critical controls',async({browser})=>{
+ const context=await browser.newContext({viewport:{width:320,height:720},deviceScaleFactor:1});
  const page=await context.newPage();
  await page.goto('./');
- await page.evaluate(()=>{document.documentElement.style.zoom='4'});
  for(const name of views){
   await page.getByRole('button',{name,exact:true}).click();
   await expect(page.getByRole('main')).toBeVisible();
