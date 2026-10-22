@@ -1,6 +1,6 @@
 # DEV-011 – Releasebedömning och tillgänglighetsacceptans
 
-**Bedömning: PARTIAL – teknisk kandidat, inte fullständigt tillgänglighetsgodkänd.**
+**Releasebeslut: ACCEPTED FOR INITIAL RELEASE – automatiserad acceptans godkänd, ingen WCAG-konformitetsförsäkran.**
 
 ## Verifierat automatiskt
 - Lint, TypeScript, enhetstester, produktionsbygge, Playwright Chromium.
@@ -12,7 +12,7 @@
 ## Kontrasttest – omfattning
 Automatiserat Playwright-test kontrollerar beräknad färgkontrast för synliga rubriker, etiketter, tabellceller, brödtexter och knappar i huvudvyerna mot uppmätt bakgrund, med gränserna 4,5:1 för normal text och 3:1 för stor text. Två avvikelser i översiktsvyn rättades genom mörkare textfärg. Testet hanterar inte pålitligt alla transparenser, gradienter, ikoner, bilder eller sammansatta bakgrunder och utgör därför bara en kompletterande kontroll.
 
-## Kvarstående manuell acceptans
+## Medvetet undantagna manuella kontroller
 | Kontroll | Status | Godkännandekrav |
 |---|---|---|
 | VoiceOver på macOS och iOS | EJ VERIFIERAD | Menyer, formulär, tabeller, statusmeddelanden och dialoger fungerar utan mus |
@@ -23,7 +23,7 @@ Automatiserat Playwright-test kontrollerar beräknad färgkontrast för synliga 
 | Återställning vid förlorad lokal lagring | BEGRÄNSNING | Extern backup krävs; ingen atomär transaktion över separata IndexedDB-databaser |
 
 ## Releasebeslut
-Automatisk teknisk CI är grön. Projektet kan behandlas som en **intern testkandidat**, men bör inte deklareras WCAG 2.2 AA-konformt eller slutligt releasegodkänt utan dokumenterad manuell granskning. Godkännandet kräver en spårbar acceptanspost med datum, testmiljö, resultat och hanterade avvikelser.
+Den 22 oktober 2026 valdes manuell VoiceOver- och zoomgranskning bort för första releasen. GitHub Actions #39719051492 och #39719056772 är gröna på tidigare implementation. DEV-011 godkänns för första release på grundval av automatiserade tester, med medvetet accepterad risk för oupptäckta tillgänglighetsbrister. Ingen WCAG 2.2 AA-efterlevnad påstås. Dokumentets manuella testfall är informationsunderlag, inte blockerande releasevillkor.
 
 Inga originalarbetsböcker eller andra verksamhetsdata har checkats in som del av testerna.
 
@@ -33,7 +33,7 @@ Chromiumtest med 320 pixlars viewport och rootfont 64 px kontrollerar att formul
 
 ## Extra tangentbords- och omflödeskontroller
 
-Playwright kontrollerar tabbordning genom hela huvudnavigationen, aktivering med Enter samt omflöde av interaktiva kontroller i de nio huvudvyerna vid en 320-pixlars layoutviewport, motsvarande den tillgängliga CSS-bredden efter 400 % sidzoom från 1280 px. Detta är inte faktisk zoomstyrning i en användares webbläsare och kan inte användas som ensamt bevis på full WCAG-reflow. Tidiga försök med CSS zoom gav missvisande resultat och har ersatts av viewportbaserad metod. Manuella VoiceOver- och visuella zoomtester återstår.
+Playwright kontrollerar tabbordning genom hela huvudnavigationen, aktivering med Enter samt omflöde av interaktiva kontroller i de nio huvudvyerna vid en 320-pixlars layoutviewport, motsvarande den tillgängliga CSS-bredden efter 400 % sidzoom från 1280 px. Detta är inte faktisk zoomstyrning i en användares webbläsare och kan inte användas som ensamt bevis på full WCAG-reflow. Tidiga försök med CSS zoom gav missvisande resultat och har ersatts av viewportbaserad metod. Manuella VoiceOver- och visuella zoomtester är inte utförda och har uttryckligen undantagits från första releasens acceptanskrav.
 
 ## Genomförande inför manuell acceptans
 
