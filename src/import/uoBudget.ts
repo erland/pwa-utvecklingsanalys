@@ -25,7 +25,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping):Promise
   const kind=measure(label);
   if(!label||/\bTOT\b|\bSUMMA\b/i.test(label))continue;
   for(const [c,p] of periods){
-   const cell=row.getCell(c);if(cell.type===ExcelJS.ValueType.Formula)continue;
+   const cell=row.getCell(c);if(cell.type===ExcelJS.ValueType.Formula){if(kind){formulas++;issues.push({code:'FORMULA_SKIPPED',severity:'warning',message:'Formel i detaljrad har inte importerats.',cell:cell.address})}continue;}
    const v=cell.value;if(v==null)continue;
    if(typeof v!=='number'||!Number.isFinite(v)){if(kind)issues.push({code:'NON_NUMERIC_INPUT',severity:'warning',message:'Icke-numeriskt detaljvärde.',cell:cell.address});continue;}
    candidates++;
