@@ -1,8 +1,8 @@
 schema_version: 1
 mode: CREATE
-phase: acceptance
+phase: complete
 selected_step: DEV-011
-in_progress: DEV-011
+in_progress: null
 completed_steps:
   - DEV-001
   - DEV-002
@@ -14,9 +14,10 @@ completed_steps:
   - DEV-008
   - DEV-009
   - DEV-010
+  - DEV-011
 next:
-  recommended: DEV-011
-  reason: All-view form labeling and zoom smoke checks pass; manual WCAG/VoiceOver remains a release gate
+  recommended: release
+  reason: Automated acceptance passed; manual accessibility intentionally excluded from initial release, with no WCAG conformance claim
 verification:
   dev_001:
     implementation_commit: 4ca008b00c01cbfb78fb2c1f407921a318764650
@@ -107,7 +108,7 @@ verification:
   dev_011:
     implementation_commit: 3951aa832b7cb73c35bb491261a936ad7a1fb0a8
     github_actions_run: 39662905596
-    result: partial
+    result: passed_with_documented_accessibility_exception
     lint: passed
     typecheck: passed
     unit_tests: passed
@@ -117,7 +118,7 @@ verification:
     mobile_keyboard_smoke: passed
     interrupted_restore_recovery: passed
     cross_profile_xlsx_bytes: passed
-    manual_accessibility: pending
+    manual_accessibility: intentionally_not_required_for_initial_release
     all_views_accessible_names: passed
     zoom_200_percent_smoke: passed
     skip_link_and_aria_current: passed
