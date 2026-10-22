@@ -26,3 +26,9 @@ main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0
 .pie-swatch{display:inline-block;flex:0 0 13px;width:13px;height:13px;border-radius:3px}
 .results>select{display:block;margin:8px 0 20px;border:1px solid #ccdbe1;border-radius:8px;padding:10px;max-width:100%}
 @media(max-width:560px){.pie-layout{grid-template-columns:1fr}.pie-chart{max-width:240px;margin:0 auto}}
+
+/* Reset controls: radio inputs must not inherit full-width text-input styles at high zoom. */
+.reset-workspace fieldset{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.reset-workspace label.check{display:flex;align-items:flex-start;gap:10px;min-width:0;max-width:100%;overflow-wrap:anywhere;white-space:normal}
+.reset-workspace input[type="radio"]{width:auto!important;max-width:none;min-width:1rem;flex:0 0 auto;margin-top:.2em}
+.reset-workspace button{overflow-wrap:anywhere}
