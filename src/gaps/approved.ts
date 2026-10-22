@@ -4,7 +4,7 @@ import {calculateDistribution,type DistributionPreview} from './distribution';
 export type ApprovedDistribution={ruleId:string;fingerprint:string;ruleSignature?:string;approvedAt:string;items:{key:string;entityId:string;value:number}[]};
 export type EvaluatedApproval={approval:ApprovedDistribution;status:'current'|'stale'|'invalid';preview?:DistributionPreview;reason?:string};
 export function evaluateApprovals(data:SemanticDataset,state:GapState):EvaluatedApproval[]{
- return (state.approvals??[]).map(approval=>{
+ const results=(state.approvals??[]).map(approval=>{
   const rule=(state.rules??[]).find(r=>r.id===approval.ruleId),req=state.requirements.find(r=>r.id===rule?.requirementId);
   if(!rule||!req)return {approval,status:'invalid',reason:'Regeln eller informationskravet saknas'};
   try{
@@ -14,6 +14,21 @@ export function evaluateApprovals(data:SemanticDataset,state:GapState):Evaluated
    return {approval,status:same?'current':'stale',preview,reason:same?undefined:'Källvärden, vikter eller mål har ändrats'};
   }catch(e){return {approval,status:'invalid',reason:e instanceof Error?e.message:String(e)}}
  });
+ const counts=new Map<string,number>();
+ for(const result of results.filter(x=>x.status==='current')){
+  const rule=(state.rules??[]).find(r=>r.id===result.approval.ruleId);
+  const req=state.requirements.find(r=>r.id===rule?.requirementId);
+  if(!rule||!req)continue;
+  for(const item of result.approval.items){const key=JSON.stringify([req.measureId,rule.year,rule.activity,item.entityId]);counts.set(key,(counts.get(key)??0)+1)}
+ }
+ for(const result of results.filter(x=>x.status==='current')){
+  const rule=(state.rules??[]).find(r=>r.id===result.approval.ruleId);
+  const req=state.requirements.find(r=>r.id===rule?.requirementId);
+  if(rule&&req&&result.approval.items.some(item=>(counts.get(JSON.stringify([req.measureId,rule.year,rule.activity,item.entityId]))??0)>1)){
+   result.status='invalid';result.reason='Överlappande godkända fördelningar för samma LO, mått, år och aktivitet';
+  }
+ }
+ return results;
 }
 export function approvalFromPreview(preview:DistributionPreview,signature:string):ApprovedDistribution{
  return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,ruleSignature:signature,approvedAt:new Date().toISOString(),items:preview.items.map(i=>({key:i.key,entityId:i.entityId,value:i.value}))};
