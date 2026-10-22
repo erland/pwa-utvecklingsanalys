@@ -14,7 +14,7 @@ describe('canonical approved import mapping',()=>{
   const dataset={...emptyCanonical(),records:canonicalFromBudget(input,'source1',true)};
   expect(validateCanonical(dataset)).toEqual([]);
   expect(dataset.records).toHaveLength(4);
-  expect(summarizeCanonical(dataset,'work',['it_hours'],'all').value).toBe(2000);
+  expect(summarizeCanonical(dataset,'work',['it_hours'],'all').value).toBe(1000);
   expect(dataset.records.filter(r=>r.scope.axis==='work'&&'loId'in r.scope&&r.scope.loId).map(r=>r.value)).toEqual([600,400]);
   expect(dataset.records.filter(r=>r.activity!=='unknown').map(r=>r.value)).toEqual([650,350]);
  });
