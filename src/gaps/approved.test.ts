@@ -33,6 +33,16 @@ describe('approved completions are separate and freshness checked',()=>{
   expect(evaluateApprovals(d,state)[0].status).toBe('invalid');
   expect(approvedRows(d,state)).toEqual([]);
  });
+ it('never counts two different approved requirements for the same measure, activity, year and LO',()=>{
+  const {d,state,p}=make();
+  const second={...req,id:'r2',name:'Duplicated information requirement'};
+  const otherRule={...rule,id:'rule2',requirementId:'r2'};
+  const secondPreview={...p,ruleId:'rule2',requirementId:'r2',items:p.items.map(i=>({...i,key:JSON.stringify(['r2',i.entityId,2027,'development'])}))};
+  state.requirements.push(second);state.rules!.push(otherRule);
+  state.approvals!.push(approvalFromPreview(secondPreview,distributionSignature(otherRule,second)));
+  expect(evaluateApprovals(d,state).map(a=>a.status)).toEqual(['invalid','invalid']);
+  expect(approvedRows(d,state)).toEqual([]);
+ });
  it('year and measure filters do not expand approved scope',()=>{
   const {d,state}=make();
   expect(approvedRows(d,state,{year:2028})).toEqual([]);
