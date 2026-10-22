@@ -12,7 +12,7 @@ describe('import mapping previews',()=>{
   ws.getCell('D11').value=2027;
   ws.getCell('B19').value='LO 1';ws.getCell('C19').value='IT-timmar';
   const buffer=await wb.xlsx.writeBuffer();
-  const bytes=Uint8Array.from(buffer).buffer;
+  const bytes=Uint8Array.from(buffer as unknown as ArrayLike<number>).buffer;
   const p=await previewMapping(bytes,{...defaultMapping,uoCell:'B2'});
   expect(p.uoCell).toBe('Flyttat UO');
   expect(p.headerRow).toContain('2027');
