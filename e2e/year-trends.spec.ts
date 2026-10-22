@@ -11,12 +11,12 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.getByLabel('Visa över åren').selectOption('grouped');
+ await page.getByLabel('Tidsvisning').selectOption('grouped');
  await expect(page.getByLabel('Grupperade årsstaplar')).toBeVisible();
- await expect(page.getByRole('table',{name:'Årsvis resultattabell'})).toBeVisible();
- await page.getByLabel('Visa över åren').selectOption('trend');
- await expect(page.getByRole('img',{name:'Trendlinjer per grupp och år'})).toBeVisible();
+ await expect(page.getByRole('table',{name:'Periodtabell'})).toBeVisible();
+ await page.getByLabel('Tidsvisning').selectOption('trend');
+ await expect(page.getByRole('img',{name:'Trendlinjer per grupp'})).toBeVisible();
  await page.getByLabel('År').selectOption('2027');
- await expect(page.getByLabel('Visa över åren')).toHaveCount(0);
+ await expect(page.getByLabel('Tidsvisning')).toHaveCount(0);
  await expect(page.locator('.analysis-table').first()).toBeVisible();
 });
