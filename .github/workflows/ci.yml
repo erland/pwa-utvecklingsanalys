@@ -19,4 +19,5 @@ jobs:
       - run: npm run build:singlefile
       - run: node scripts/verify-singlefile.mjs
       - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-singlefile-browser.mjs
       - run: npm run test:browser
