@@ -1,0 +1,22 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+test('annual bars and trend preserve imported yearly results',async({page})=>{
+ const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
+ s.getCell('B1').value='UO: UO A';s.getCell('D11').value=new Date(2027,0,1);
+ s.getCell('E11').value=new Date(2027,1,1);s.getCell('B25').value='LO 1';
+ s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;s.getCell('E26').value=18;
+ const buffer=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.getByRole('button',{name:'Godkänn import'}).click();
+ await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await page.getByLabel('Tidsvisning').selectOption('grouped');
+ await expect(page.getByLabel('Grupperade årsstaplar')).toBeVisible();
+ await expect(page.getByRole('table',{name:'Periodtabell'})).toBeVisible();
+ await page.getByLabel('Tidsvisning').selectOption('trend');
+ await expect(page.getByRole('img',{name:'Trendlinjer per grupp'})).toBeVisible();
+ await page.getByLabel('År').selectOption('2027');
+ await expect(page.getByLabel('Tidsvisning')).toHaveCount(0);
+ await expect(page.locator('.analysis-table').first()).toBeVisible();
+});

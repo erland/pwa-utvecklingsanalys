@@ -4,9 +4,12 @@ import type {SemanticDataset} from '../domain/semantic';
 import {readConfiguration} from '../config/store';
 import type {UoGroupModel} from './groupModels';
 import ResultChart from './ResultChart';
+import YearChart,{type YearMode} from './YearChart';
+import {analyzeYears} from './yearSeries';
 import type {ChartType} from './charts';
 import {analyze,type GroupBy} from './query';
 export default function AnalyticsView({refreshKey}:{refreshKey:number}){
+ const [yearMode,setYearMode]=useState<YearMode>('total');
  const [chartType,setChartType]=useState<ChartType>('bar');
  const [models,setModels]=useState<UoGroupModel[]>([]),[modelId,setModelId]=useState('');
  const [data,setData]=useState<SemanticDataset|null>(null),[error,setError]=useState('');
@@ -19,6 +22,7 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  const query=useMemo(()=>({measureId,year:year==='all'?undefined:Number(year),datasetIds:datasets.length?datasets:undefined,uoIds:uos.length?uos:undefined,groupBy,groupModel:groupBy==='uo-group'?models.find(m=>m.id===(modelId||models[0]?.id)):undefined}),[measureId,year,datasets,uos,groupBy,models,modelId]);
  let outcome:ReturnType<typeof analyze>|null=null;
  try{if(data)outcome=analyze(data,query)}catch{outcome=null}
+ const yearly=data&&year==='all'&&yearMode!=='total'&&data.measures.find(m=>m.id===measureId)?.aggregation==='sum'?analyzeYears(data,query):null;
  const chosenMeasure=data?.measures.find(m=>m.id===measureId);
  const toggle=(id:string,selection:string[],set:(x:string[])=>void)=>set(selection.includes(id)?selection.filter(x=>x!==id):[...selection,id]);
  const fmt=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
@@ -34,8 +38,9 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  {groupBy==='uo-group'&&<><label htmlFor="group-model">Gruppmodell</label><select id="group-model" value={modelId||models[0]?.id||''} onChange={e=>setModelId(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select><p className="notice">Vid överlapp tilldelas UO första gruppen i modellen; ingen observation dubbelräknas.</p></>}
  </section><section className="panel results"><h2>Resultat</h2>{outcome?<><div className="result-head"><div><span>Totalt {chosenMeasure?.label.toLowerCase()}</span><strong>{fmt(outcome.total)} {outcome.unit}</strong></div><span className="pill">{outcome.included} detaljvärden</span></div>
  <p className="notice">{outcome.excluded} summeringar, delmängder eller dubbletter exkluderade inom aktuellt urval.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>Gruppering</th><th>Värde</th><th>Källposter</th></tr></thead><tbody>{outcome.rows.map(r=><tr key={r.key}><td>{r.label}</td><td>{fmt(r.value)} {outcome?.unit}</td><td>{r.count}</td></tr>)}</tbody></table></div>
- <label htmlFor="chart-type">Visualisering</label><select id="chart-type" value={chartType} onChange={e=>setChartType(e.target.value as ChartType)}><option value="bar">Stapeldiagram</option><option value="pie">Cirkeldiagram</option><option value="table">Endast tabell</option></select>
- <ResultChart result={outcome} type={chartType}/>
+ {year==='all'&&<><label htmlFor="year-mode">Tidsvisning</label><select id="year-mode" value={yearMode} onChange={e=>setYearMode(e.target.value as YearMode)}><option value="total">Summerat resultat</option><option value="grouped">Grupperade årsstaplar</option><option value="trend">Trendlinjer</option></select></>}
+ {year==='all'&&yearMode!=='total'&&yearly?<><p className="notice">Tidsserien använder samma mått, källor, UO-urval och gruppmodell.</p><YearChart series={yearly} mode={yearMode}/><div style={{overflowX:'auto'}}><table className="analysis-table" aria-label="Periodtabell"><thead><tr><th>Grupp</th>{yearly.years.map(y=><th key={y}>{y}</th>)}</tr></thead><tbody>{yearly.rows.map(r=><tr key={r.key}><td>{r.label}</td>{r.values.map((v,i)=><td key={yearly.years[i]}>{fmt(v)} {yearly.unit}</td>)}</tr>)}</tbody></table></div></>:<><label htmlFor="chart-type">Visualisering</label><select id="chart-type" value={chartType} onChange={e=>setChartType(e.target.value as ChartType)}><option value="bar">Stapeldiagram</option><option value="pie">Cirkeldiagram</option><option value="table">Endast tabell</option></select>
+ <ResultChart result={outcome} type={chartType}/></>}
  {!outcome.rows.length&&<p>Inga värden för valt urval.</p>}</>:<p role="alert">Detta mått kan inte summeras säkert med den valda analysen. Välj ett summerbart mått.</p>}</section></div>}
  </>;
 }
