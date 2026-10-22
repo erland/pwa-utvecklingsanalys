@@ -2,10 +2,11 @@ import {useEffect,useState} from 'react';
 import {inspectTable,parseTable,type TableMapping,type TableProfile,type TableResult} from './tabular';
 import {importTableFacts,tableIdentityIssues,type Resolution} from './tabularAdapter';
 import {loadSemantic,saveSemantic} from '../domain/semanticStore';
+import {replaceImportedSource} from './sourceManagement';
 import {saveProject} from '../storage';
 import type {AnalysisProject} from '../model';
 import type {SemanticDataset} from '../domain/semantic';
-export default function TabularImport({project,onProject,selectedFile}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;selectedFile:File}){
+export default function TabularImport({project,onProject,selectedFile,replaceId}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;selectedFile:File;replaceId:string|null}){
  const[file,setFile]=useState<File|null>(null),[bytes,setBytes]=useState<ArrayBuffer|null>(null),[mapping,setMapping]=useState<TableMapping|null>(null),[profile,setProfile]=useState<TableProfile>('generic'),[result,setResult]=useState<TableResult|null>(null),[semantic,setSemantic]=useState<SemanticDataset|null>(null),[resolutions,setResolutions]=useState<Resolution>({}),[error,setError]=useState(''),[busy,setBusy]=useState(false),[sheets,setSheets]=useState<string[]>([]);
  const start=async(f:File|undefined)=>{if(!f)return;setBusy(true);setError('');setResult(null);setResolutions({});try{
   if(!/\.xlsx$/i.test(f.name)||f.size>15*1024*1024)throw new Error('Välj en XLSX-fil på högst 15 MB.');
@@ -16,6 +17,7 @@ export default function TabularImport({project,onProject,selectedFile}:{project:
  const parse=async()=>{if(!bytes||!mapping)return;setBusy(true);setError('');try{const parsed=await parseTable(bytes,profile,mapping);setResult(parsed);setResolutions({})}catch(e){setError(e instanceof Error?e.message:'Importen misslyckades.')}finally{setBusy(false)}};
  const issues=semantic&&result?tableIdentityIssues(semantic,result,resolutions):[];
  const approve=async()=>{if(!semantic||!result||!file||!project||result.issues.some(i=>i.severity==='error')||issues.length)return;setBusy(true);try{
+  if(replaceId){const updated=await replaceImportedSource(replaceId,before=>importTableFacts(before,result,replaceId,file.name,resolutions),{name:file.name,planningYear:result.facts[0].year,source:'excel',importedAt:new Date().toISOString()});onProject(updated);setResult(null);setFile(null);setBytes(null);setError('Källan har ersatts efter godkänd tabellgranskning.');return;}
   const id=crypto.randomUUID();const next=importTableFacts(semantic,result,id,file.name,resolutions);
   await saveSemantic(next);setSemantic(next);
   const updated={...project,datasets:[...project.datasets,{id,name:file.name,planningYear:result.facts[0].year,source:'excel' as const,importedAt:new Date().toISOString()}]};await saveProject(updated);onProject(updated);setResult(null);setFile(null);setBytes(null);setError('Importen har godkänts och sparats.'); 
