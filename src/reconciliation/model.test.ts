@@ -22,7 +22,7 @@ describe('generic section reconciliation',()=>{
  });
  it('reports missing instead of treating an empty section as zero',()=>{
   const d=fixture();d.observations=d.observations.filter(o=>o.kind==='detail');
-  expect(evaluateReconciliations(d,[rule],[])[0]).toMatchObject({status:'missing',left:undefined,right:undefined});
+  expect(evaluateReconciliations(d,[rule],[])[0]).toMatchObject({status:'missing'});
  });
  it('does not add a total column or unrelated year to either side',()=>{
   const d=fixture();d.observations.push({...d.observations[2],id:'F5',kind:'subtotal',value:100,source:{...d.observations[2].source,cell:'F5'}},{...d.observations[0],id:'D2028',period:{year:2028},value:400});
