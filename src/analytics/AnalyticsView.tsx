@@ -3,8 +3,11 @@ import {loadSemantic} from '../domain/semanticStore';
 import type {SemanticDataset} from '../domain/semantic';
 import {readConfiguration} from '../config/store';
 import type {UoGroupModel} from './groupModels';
+import ResultChart from './ResultChart';
+import type {ChartType} from './charts';
 import {analyze,type GroupBy} from './query';
 export default function AnalyticsView({refreshKey}:{refreshKey:number}){
+ const [chartType,setChartType]=useState<ChartType>('bar');
  const [models,setModels]=useState<UoGroupModel[]>([]),[modelId,setModelId]=useState('');
  const [data,setData]=useState<SemanticDataset|null>(null),[error,setError]=useState('');
  const [measureId,setMeasureId]=useState('it_hours'),[year,setYear]=useState('all'),[groupBy,setGroupBy]=useState<GroupBy>('uo'),[datasets,setDatasets]=useState<string[]>([]),[uos,setUos]=useState<string[]>([]);
@@ -31,7 +34,8 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  {groupBy==='uo-group'&&<><label htmlFor="group-model">Gruppmodell</label><select id="group-model" value={modelId||models[0]?.id||''} onChange={e=>setModelId(e.target.value)}>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select><p className="notice">Vid överlapp tilldelas UO första gruppen i modellen; ingen observation dubbelräknas.</p></>}
  </section><section className="panel results"><h2>Resultat</h2>{outcome?<><div className="result-head"><div><span>Totalt {chosenMeasure?.label.toLowerCase()}</span><strong>{fmt(outcome.total)} {outcome.unit}</strong></div><span className="pill">{outcome.included} detaljvärden</span></div>
  <p className="notice">{outcome.excluded} summeringar, delmängder eller dubbletter exkluderade inom aktuellt urval.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>Gruppering</th><th>Värde</th><th>Källposter</th></tr></thead><tbody>{outcome.rows.map(r=><tr key={r.key}><td>{r.label}</td><td>{fmt(r.value)} {outcome?.unit}</td><td>{r.count}</td></tr>)}</tbody></table></div>
- {outcome.rows.map(r=><div key={r.key} className="bar-row"><div className="bar-label"><span>{r.label}</span><b>{fmt(r.value)} {outcome?.unit}</b></div><div className="bar-track"><div className="bar-fill" style={{width:(outcome.total>0?100*Math.max(0,r.value)/outcome.total:0)+'%'}}/></div></div>)}
+ <label htmlFor="chart-type">Visualisering</label><select id="chart-type" value={chartType} onChange={e=>setChartType(e.target.value as ChartType)}><option value="bar">Stapeldiagram</option><option value="pie">Cirkeldiagram</option><option value="table">Endast tabell</option></select>
+ <ResultChart result={outcome} type={chartType}/>
  {!outcome.rows.length&&<p>Inga värden för valt urval.</p>}</>:<p role="alert">Detta mått kan inte summeras säkert med den valda analysen. Välj ett summerbart mått.</p>}</section></div>}
  </>;
 }

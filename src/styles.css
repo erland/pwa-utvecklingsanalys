@@ -17,3 +17,12 @@ main :where(input,select,textarea,button){max-width:100%;min-width:0}
 main input[type="file"]{display:block;width:100%;max-width:100%;overflow:hidden}
 main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0}
 @media(max-width:480px){main :where(input,select,textarea){width:100%}}
+
+/* CHANGE-013: Responsive percentage chart; the source table always remains available. */
+.pie-layout{display:grid;grid-template-columns:minmax(160px,260px) minmax(0,1fr);align-items:center;gap:24px;margin:20px 0 28px}
+.pie-chart{width:100%;aspect-ratio:1;border-radius:50%;border:1px solid #d7e3e7;min-width:0}
+.pie-legend{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.pie-legend li{display:flex;align-items:baseline;gap:10px;overflow-wrap:anywhere}
+.pie-swatch{display:inline-block;flex:0 0 13px;width:13px;height:13px;border-radius:3px}
+.results>select{display:block;margin:8px 0 20px;border:1px solid #ccdbe1;border-radius:8px;padding:10px;max-width:100%}
+@media(max-width:560px){.pie-layout{grid-template-columns:1fr}.pie-chart{max-width:240px;margin:0 auto}}

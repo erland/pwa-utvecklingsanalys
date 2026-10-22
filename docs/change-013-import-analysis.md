@@ -5,7 +5,7 @@
 2. **Representativa importexempel:** Visa ett exempel per identifierat mått, antal detaljvärden och källcell, i stället för de första 15 råa observationerna som oftast gäller samma mått. **Steg 1.**
 3. **En begriplig Excelimportingång:** Nuvarande ”tabellfil” och ”Excelfil” accepterar båda XLSX; skillnaden är datalayout/profil. Föreslagen UI: en filväljare, automatisk layoutidentifiering och en profilväljare (UO-budget, process/personal/generisk tabell) med tydlig förklaring och möjlighet att byta. Säkerställ att gamla utkast kan återupptas. **Steg 2 – implementerat på arbetsgren: en gemensam XLSX-väljare med struktursökning och manuellt profilval; budgetutkast sparas som tidigare, tabellimport fortsätter med separat granskning.**
 4. **Redigerbara UO-grupper:** Grupperingsmodeller med stabila ID och explicit medlemskap, flera modeller, spara i befintlig konfiguration; påverkar analys utan att röra originalobservationer. Varna vid överlapp och redovisa hur dubbelräkning hanteras. **Steg 3 – implementerat i PR #15: versionssatta UO-gruppmodeller i konfigurationen, explicit medlemskap och analysgruppering med första-matchningsregel vid överlapp.**
-5. **Staplar och cirkeldiagram:** Samma aggregerade queryresultat; cirkeldiagram endast för icke-negativa andelar och positiv total, tydlig legend/tabell för tillgänglighet. **Steg 4.**
+5. **Staplar och cirkeldiagram:** Samma aggregerade queryresultat; cirkeldiagram endast för icke-negativa andelar och positiv total, tydlig legend/tabell för tillgänglighet. **Steg 4 – implementerat i PR: valbart stapel-, cirkel- eller tabelläge utifrån samma analyserade resultat, cirkel endast för icke-negativa värden med positiv total, tillgänglig legend och alltid tillgänglig tabell.**
 6. **Visa tidsförändring:** Vid ”Alla år” välj total, grupperade års-staplar eller trendlinje. Beräkna årsserier från deduplicerade detaljer och bevara filter/urval; ingen dubbelräkning av månads- och årssummeringar. **Steg 5.**
 7. **Alla timmar/alla kostnader:** Härled summeringsmått per enhetsfamilj (h respektive SEK), summera endast mått med aggregation=sum. Visa vilka delmått som ingår; blanda aldrig timmar med FTE/antal eller kostnader med andra enheter. **Steg 6.**
 
@@ -14,4 +14,4 @@
 - En byte-för-byte kompatibel projektbackup och importerade originalobservationer får inte påverkas av UI-förändringar.
 - Varje ändringssteg kräver lint, typkontroll, enhetstester, bygg, Playwright och relevanta nya regressionstester innan det slutförs.
 - Avsaknad av särskild gruppmodell får inte ändra nuvarande analysresultat. Snapshotmått som FTE ingår inte i summa timmar.
-- **Nuvarande fokus:** Steg 3 – redigerbara UO-gruppmodeller. Klarstatus kräver gröna GitHub Actions för PR #15. Därefter steg 4 – diagram.
+- **Nuvarande fokus:** Steg 4 – diagramtyper. Klarstatus kräver gröna GitHub Actions och webbläsartester. Därefter steg 5 – tidsutveckling.
