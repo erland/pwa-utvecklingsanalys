@@ -37,6 +37,20 @@ describe('distribution rule proposals',()=>{
   const data=fixture();data.observations[1].value=0;data.observations[2].value=0;
   expect(()=>calculateDistribution(data,req,rule,[])).toThrow('ZERO_WEIGHT_TOTAL');
   data.entities.push({id:'uo2',name:'UO 2',kind:'uo',aliases:[]});
-  expect(()=>calculateDistribution(data,req,rule,[])).toThrow('REQUIRES_SINGLE_UO');
+  expect(()=>calculateDistribution(data,req,rule,[])).toThrow('UO_SELECTION_REQUIRED');
  });
+ it('allocates separately for two UOs without cross-UO weights or source values',()=>{
+  const data=fixture();
+  data.entities.push({id:'uo2',name:'UO 2',kind:'uo',aliases:[]},{id:'c',name:'LO C',kind:'lo',parentId:'uo2',aliases:[]},{id:'d',name:'LO D',kind:'lo',parentId:'uo2',aliases:[]});
+  data.observations.push({...data.observations[0],id:'F5',entityId:'uo2',value:300,source:{...data.observations[0].source,cell:'F5'}},{...data.observations[1],id:'F26',entityId:'c',value:10,source:{...data.observations[1].source,cell:'F26'}},{...data.observations[2],id:'F32',entityId:'d',value:20,source:{...data.observations[2].source,cell:'F32'}});
+  const first=calculateDistribution(data,req,{...rule,uoId:'uo'},[]),second=calculateDistribution(data,req,{...rule,uoId:'uo2'},[]);
+  expect(first.sourceTotal).toBe(100);expect(first.items.map(i=>[i.entityId,i.value])).toEqual([['a',40],['b',60]]);
+  expect(second.sourceTotal).toBe(300);expect(second.items.map(i=>[i.entityId,i.value])).toEqual([['c',100],['d',200]]);
+  expect(()=>calculateDistribution(data,req,{...rule,uoId:'missing'},[])).toThrow('UNKNOWN_UO');
+ });
+ it('rejects old unscoped rules in a multi-UO project rather than guessing',()=>{
+  const data=fixture();data.entities.push({id:'uo2',name:'UO 2',kind:'uo',aliases:[]});
+  expect(()=>calculateDistribution(data,req,rule,[])).toThrow('UO_SELECTION_REQUIRED');
+ });
+
 });
