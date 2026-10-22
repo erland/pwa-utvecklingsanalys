@@ -6,3 +6,8 @@
 .sidebar :where(button,a):focus-visible{outline-color:#ffe08b}
 button:disabled{cursor:not-allowed;opacity:.65}
 @media(max-width:480px){.metric,.panel{padding:16px}.mapping-grid{grid-template-columns:minmax(0,1fr)}.actions>*{max-width:100%;overflow-wrap:anywhere}.topbar{flex-wrap:wrap}}
+
+.skip-link{position:fixed;z-index:1000;top:8px;left:8px;transform:translateY(-180%);padding:12px 16px;background:#fff;color:#173145;border:3px solid #d17817;border-radius:6px}
+.skip-link:focus{transform:translateY(0)}
+[aria-current="page"].nav-link{background:#28536c;color:#fff;border-left:3px solid #6ae2c7}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
