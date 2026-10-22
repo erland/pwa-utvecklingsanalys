@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+test('create, persist, export and restore UO grouping models',async({page})=>{
+ await page.goto('./');
+ await page.getByRole('button',{name:'Grupper'}).click();
+ await page.getByRole('button',{name:'Ny gruppmodell'}).click();
+ await page.getByLabel('Modellnamn').fill('Analysmodell 2027');
+ await page.getByRole('button',{name:'Lägg till grupp'}).click();
+ await page.getByLabel('Gruppnamn').fill('Digitalisering');
+ await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
+ await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
+ await page.reload();
+ await page.getByRole('button',{name:'Grupper'}).click();
+ await expect(page.getByLabel('Modellnamn')).toHaveValue('Analysmodell 2027');
+ await expect(page.getByLabel('Gruppnamn')).toHaveValue('Digitalisering');
+ await page.getByRole('button',{name:'Konfiguration'}).click();
+ await expect(page.getByText('UO-gruppmodeller')).toBeVisible();
+ const download=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Ladda ner konfiguration'}).click();
+ const file=await download;expect(file.suggestedFilename()).toBe('utvecklingsanalys-config-v1.json');
+});
