@@ -16,11 +16,11 @@ completed_steps:
   - DEV-010
 next:
   recommended: DEV-011
-  reason: Semantic keyboard navigation and narrow viewport tests passed; full manual screen-reader/WCAG review remains
+  reason: All-view form labeling and zoom smoke checks pass; manual WCAG/VoiceOver remains a release gate
 verification:
   dev_001:
-    implementation_commit: 122fc0a93bca39ed09930cc2d24c77681ad40253
-    github_actions_run: 39712944749
+    implementation_commit: 4ca008b00c01cbfb78fb2c1f407921a318764650
+    github_actions_run: 39586750739
     result: passed
   dev_002:
     implementation_commit: 31eee41077d1817c6f8f2acf09d68d6cad3d7ce8
@@ -118,6 +118,8 @@ verification:
     interrupted_restore_recovery: passed
     cross_profile_xlsx_bytes: passed
     manual_accessibility: pending
+    all_views_accessible_names: passed
+    zoom_200_percent_smoke: passed
     skip_link_and_aria_current: passed
     narrow_settings_label_checks: passed
     gzip_archive_roundtrip: passed
