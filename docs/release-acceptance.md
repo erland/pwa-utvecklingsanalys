@@ -34,3 +34,7 @@ Chromiumtest med 320 pixlars viewport och rootfont 64 px kontrollerar att formul
 ## Extra tangentbords- och omflödeskontroller
 
 Playwright kontrollerar tabbordning genom hela huvudnavigationen, aktivering med Enter samt omflöde av interaktiva kontroller i de nio huvudvyerna vid en 320-pixlars layoutviewport, motsvarande den tillgängliga CSS-bredden efter 400 % sidzoom från 1280 px. Detta är inte faktisk zoomstyrning i en användares webbläsare och kan inte användas som ensamt bevis på full WCAG-reflow. Tidiga försök med CSS zoom gav missvisande resultat och har ersatts av viewportbaserad metod. Manuella VoiceOver- och visuella zoomtester återstår.
+
+## Genomförande inför manuell acceptans
+
+Se `docs/manual-voiceover-acceptance.md` för fem korta scenarier på Mac med VoiceOver och kompletterande verklig zoomkontroll. Scenarierna är **förberedda men inte genomförda**. Chromiumtesterna i `e2e/keyboard-workflows.spec.ts` täcker tangentbordsåtkomlig filimport, valideringsfel utan möjlighet till osäker återställning samt att planeringsformulär kan användas utan mus. Den manuella granskningen behövs för slutlig releaseacceptans och eventuella kvarstående avvikelser ska registreras innan merge.
