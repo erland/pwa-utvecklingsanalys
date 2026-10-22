@@ -21,7 +21,7 @@ test('navigation sequence is reachable without mouse',async({page})=>{
  await page.evaluate(()=>{document.body.tabIndex=-1;document.body.focus()});
  await page.keyboard.press('Tab');
  await expect(page.getByRole('link',{name:'Hoppa till innehållet'})).toBeFocused();
- const items=['Översikt','Import','Analys','Kompletteringar','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
+ const items=['Översikt','Analys','Import','Grupper','Relationer','Konfiguration','Kompletteringar','Fördelningar','Planering','Inställningar'];
  for(const name of items){
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button',{name,exact:true})).toBeFocused();
