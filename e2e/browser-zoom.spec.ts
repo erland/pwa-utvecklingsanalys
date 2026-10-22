@@ -18,6 +18,7 @@ test('400 percent zoom equivalent viewport reflow of critical controls',async({b
 });
 test('navigation sequence is reachable without mouse',async({page})=>{
  await page.goto('./');
+ await page.evaluate(()=>{document.body.tabIndex=-1;document.body.focus()});
  await page.keyboard.press('Tab');
  await expect(page.getByRole('link',{name:'Hoppa till innehållet'})).toBeFocused();
  const items=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
