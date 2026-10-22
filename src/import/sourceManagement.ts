@@ -49,7 +49,7 @@ export async function deleteImportedSources(ids:string[]):Promise<AnalysisProjec
   const next={...project,datasets:project.datasets.filter(d=>!ids.includes(d.id))};
   await saveSemantic(withoutSources(semantic,ids));
   await saveProject(next);
-  for(const draft of await listDrafts())if(ids.includes(draft.id))await deleteDraft(draft.id);
+  for(const draft of await listDrafts())if(ids.includes(draft.id)||ids.length===project.datasets.length)await deleteDraft(draft.id);
   return next;
  });
 }
