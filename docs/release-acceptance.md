@@ -9,6 +9,9 @@
 - Projektinställningar och exportkontroller fungerar vid 320 px och ett automatiserat test med 200 % förstorad rottext.
 - Projektbackup JSON v2 och GZIP, återimport mellan separata browser-profiler, XLSX-utkastens byteintegritet och kraschåterhämtning via journal.
 
+## Kontrasttest – omfattning
+Automatiserat Playwright-test kontrollerar beräknad färgkontrast för synliga rubriker, etiketter, tabellceller, brödtexter och knappar i huvudvyerna mot uppmätt bakgrund, med gränserna 4,5:1 för normal text och 3:1 för stor text. Två avvikelser i översiktsvyn rättades genom mörkare textfärg. Testet hanterar inte pålitligt alla transparenser, gradienter, ikoner, bilder eller sammansatta bakgrunder och utgör därför bara en kompletterande kontroll.
+
 ## Kvarstående manuell acceptans
 | Kontroll | Status | Godkännandekrav |
 |---|---|---|
