@@ -16,11 +16,11 @@ completed_steps:
   - DEV-010
 next:
   recommended: DEV-011
-  reason: v2 archive with persisted XLSX drafts and config revisions verified; manual accessibility and large-backup handling remain
+  reason: GZIP project archive and 320px keyboard-focus smoke tests pass; manual WCAG/screenreader review still pending
 verification:
   dev_001:
-    implementation_commit: 598649779f251a184d344aea57cfd7915d464782
-    github_actions_run: 39584735909
+    implementation_commit: 1fdfc3e36162aa7e828a3660f1b0ee6d6d3f4edf
+    github_actions_run: 39712369374
     result: passed
   dev_002:
     implementation_commit: 31eee41077d1817c6f8f2acf09d68d6cad3d7ce8
@@ -118,5 +118,7 @@ verification:
     interrupted_restore_recovery: passed
     cross_profile_xlsx_bytes: passed
     manual_accessibility: pending
+    gzip_archive_roundtrip: passed
+    narrow_mobile_focus: passed
     full_source_backup: persisted_draft_bytes_verified
     multi_database_atomicity: unsupported
