@@ -10,9 +10,9 @@ import type {AnalysisProject} from '../model';
 import {saveProject} from '../storage';
 import {deleteImportedSources,replaceImportedSource} from './sourceManagement';
 
-export default function ImportGuide({project,onProject}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void}){
+export default function ImportGuide({project,onProject,replaceId,setReplaceId}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void}){
  const[drafts,setDrafts]=useState<Draft[]>([]),[selected,setSelected]=useState<string|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- const[replaceId,setReplaceId]=useState<string|null>(null),[pendingDelete,setPendingDelete]=useState<string|null>(null),[confirmation,setConfirmation]=useState('');
+ const[pendingDelete,setPendingDelete]=useState<string|null>(null),[confirmation,setConfirmation]=useState('');
  const[importMode,setImportMode]=useState<'auto'|'budget'|'tabular'>('auto');
  const[tabularFile,setTabularFile]=useState<File|null>(null);
  useEffect(()=>{void listDrafts().then(setDrafts).catch(()=>setMessage('Kunde inte läsa sparade utkast.'))},[]);
