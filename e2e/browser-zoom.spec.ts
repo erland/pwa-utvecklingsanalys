@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-const views=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
+const views=['Översikt','Import','Analys','Kompletteringar','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
 test('400 percent zoom equivalent viewport reflow of critical controls',async({browser})=>{
  const context=await browser.newContext({viewport:{width:320,height:720},deviceScaleFactor:1});
  const page=await context.newPage();
@@ -21,7 +21,7 @@ test('navigation sequence is reachable without mouse',async({page})=>{
  await page.evaluate(()=>{document.body.tabIndex=-1;document.body.focus()});
  await page.keyboard.press('Tab');
  await expect(page.getByRole('link',{name:'Hoppa till innehållet'})).toBeFocused();
- const items=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
+ const items=['Översikt','Import','Analys','Kompletteringar','Grupper','Relationer','Fördelningar','Planering','Konfiguration','Inställningar'];
  for(const name of items){
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button',{name,exact:true})).toBeFocused();
