@@ -1,6 +1,7 @@
+import {groupForUo,type UoGroupModel} from './groupModels';
 import type {Observation,SemanticDataset,Unit} from '../domain/semantic';
-export type GroupBy='uo'|'entity'|'year'|'source';
-export type Query={measureId:string;year?:number;datasetIds?:string[];uoIds?:string[];groupBy:GroupBy};
+export type GroupBy='uo'|'entity'|'year'|'source'|'uo-group';
+export type Query={measureId:string;year?:number;datasetIds?:string[];uoIds?:string[];groupBy:GroupBy;groupModel?:UoGroupModel};
 export type Row={key:string;label:string;value:number;count:number};
 export type Result={unit:Unit;rows:Row[];total:number;included:number;excluded:number};
 export function analyze(data:SemanticDataset,query:Query):Result{
@@ -19,8 +20,9 @@ export function analyze(data:SemanticDataset,query:Query):Result{
   const identity=[o.source.datasetId,o.source.sheet,o.source.cell,o.measureId].join('|');
   if(used.has(identity)){excluded++;continue;}used.add(identity);
   if(!Number.isFinite(o.value))throw new Error('Non-finite observation');
-  const key=query.groupBy==='uo'?uo??'unassigned':query.groupBy==='entity'?o.entityId:query.groupBy==='year'?String(o.period.year):o.source.datasetId;
-  const label=query.groupBy==='year'?key:query.groupBy==='source'?o.source.fileName:byId.get(key)?.name??key;
+  const membership=query.groupBy==='uo-group'&&uo&&query.groupModel?groupForUo(query.groupModel,uo):undefined;
+  const key=query.groupBy==='uo-group'?(membership?.id??'unassigned'):query.groupBy==='uo'?uo??'unassigned':query.groupBy==='entity'?o.entityId:query.groupBy==='year'?String(o.period.year):o.source.datasetId;
+  const label=query.groupBy==='uo-group'?(membership?.name??'Ej grupperad'):query.groupBy==='year'?key:query.groupBy==='source'?o.source.fileName:byId.get(key)?.name??key;
   const row=grouped.get(key)??{key,label,value:0,count:0};
   row.value+=o.value;row.count++;grouped.set(key,row);included++;
  }
