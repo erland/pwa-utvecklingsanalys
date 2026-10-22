@@ -1,4 +1,4 @@
-import {analyze,type Query,type Row,type Result} from './query';
+import {analyze,type Query,type Result} from './query';
 import type {SemanticDataset} from '../domain/semantic';
 export type YearSeries={years:number[];rows:{key:string;label:string;values:number[]}[];totals:number[];unit:Result['unit']};
 export function analyzeYears(data:SemanticDataset,query:Query):YearSeries{
