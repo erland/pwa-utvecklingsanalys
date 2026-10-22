@@ -19,7 +19,7 @@ export default function ResetWorkspace(){
   try{await resetLocalWorkspace(scope);window.location.reload()}
   catch(e){setMessage('Återställningen kunde inte slutföras. Vissa lokala delar kan ha rensats. Ladda INTE in nya data förrän du kontrollerat läget eller återställt en säkerhetskopia. '+String(e));setBusy(false)}
  };
- return <section className="panel" aria-label="Återställ arbetsyta"><h2>Återställ lokal arbetsyta</h2>
+ return <section className="panel reset-workspace" aria-label="Återställ arbetsyta"><h2>Återställ lokal arbetsyta</h2>
  <p className="notice">Återställning tar bort information från denna applikations lokala datalager i webbläsaren. Den kan inte ångras utan en tidigare exporterad projektbackup.</p>
  <fieldset><legend>Vad vill du återställa?</legend>
  <label className="check"><input type="radio" name="reset-scope" checked={scope==='data'} onChange={()=>{setScope('data');setConfirmation('')}}/>Töm data – projekt, importutkast, observationer, planering och kompletteringar; behåll konfiguration</label>
