@@ -4,7 +4,7 @@ import {calculateDistribution,type DistributionPreview} from './distribution';
 export type ApprovedDistribution={ruleId:string;fingerprint:string;ruleSignature?:string;approvedAt:string;items:{key:string;entityId:string;value:number}[]};
 export type EvaluatedApproval={approval:ApprovedDistribution;status:'current'|'stale'|'invalid';preview?:DistributionPreview;reason?:string};
 export function evaluateApprovals(data:SemanticDataset,state:GapState):EvaluatedApproval[]{
- const results=(state.approvals??[]).map(approval=>{
+ const results:EvaluatedApproval[]=(state.approvals??[]).map(approval=>{
   const rule=(state.rules??[]).find(r=>r.id===approval.ruleId),req=state.requirements.find(r=>r.id===rule?.requirementId);
   if(!rule||!req)return {approval,status:'invalid',reason:'Regeln eller informationskravet saknas'};
   try{
