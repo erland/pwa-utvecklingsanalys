@@ -37,7 +37,7 @@ export default function ReconciliationView({data,state,save}:Props){
  <label>Objekturval<select aria-label="Höger objektnivå" value={rightScope} onChange={e=>setRightScope(e.target.value as Operand['scope'])}><option value="self">Objektet självt</option><option value="children">Underliggande objekt</option></select></label>
  <label>Observationstyp<select aria-label="Höger observationstyp" value={rightKind} onChange={e=>setRightKind(e.target.value as Operand['kind'])}><option value="subset">Fördelning</option><option value="detail">Detaljer</option><option value="subtotal">Delsumma</option></select></label>
  <label>Sektions-ID (valfritt)<input aria-label="Höger sektion" value={rightSection} onChange={e=>setRightSection(e.target.value)}/></label>
- <label>Aktiviteter, kommaseparerade (tomt = alla)<input aria-label="Höger aktiviteter" value={rightActivities} onChange={e=>setRightActivities(e.target.value)}/></label>
+ <label>Aktiviteter, kommaseparerade (tomt = alla)<input aria-label="Höger dimensionsurval" value={rightActivities} onChange={e=>setRightActivities(e.target.value)}/></label>
  </fieldset>
  <label>Absolut tolerans<input aria-label="Absolut tolerans" type="number" min="0" value={absolute} onChange={e=>setAbsolute(Number(e.target.value))}/></label>
  <label>Relativ tolerans (%)<input aria-label="Relativ tolerans" type="number" min="0" step="0.1" value={relative} onChange={e=>setRelative(Number(e.target.value))}/></label>
