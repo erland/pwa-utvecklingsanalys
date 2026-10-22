@@ -8,7 +8,7 @@ async function db(){return openDB(DB,1,{upgrade(d){d.createObjectStore(STORE,{ke
 export async function listDrafts():Promise<Draft[]>{return (await (await db()).getAll(STORE)).sort((a:Draft,b:Draft)=>b.updatedAt.localeCompare(a.updatedAt));}
 export async function storeDraft(draft:Draft){await (await db()).put(STORE,draft);}
 export async function deleteDraft(id:string){await (await db()).delete(STORE,id);}
-export function canApprove(d:Draft){return !!d.uoName.trim()&&!d.result.issues.some(i=>i.severity==='error')&&d.result.facts.length>0&&(!d.matrixEnabled||!d.result.matrix?.issues.length);}
+export function canApprove(d:Draft){return !!d.uoName.trim()&&!d.result.issues.some(i=>i.severity==='error')&&d.result.facts.length>0&&(!d.matrixEnabled||Boolean(d.result.matrix&&d.result.matrix.issues.length===0));}
 export async function applyMapping(draft:Draft,mapping:Mapping):Promise<Draft>{const result=await importUoBudget(draft.bytes,mapping,draft.matrixMapping);const next={...draft,mapping,result,uoName:result.uo||draft.uoName,status:'review' as const,updatedAt:new Date().toISOString()};await storeDraft(next);return next;}
 export async function readDraft(file:File):Promise<Draft>{
  if(!/\.xlsx$/i.test(file.name))throw new Error('Välj en Excel-fil i XLSX-format.');
