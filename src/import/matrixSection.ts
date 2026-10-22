@@ -9,7 +9,17 @@ export const developmentMatrix=(sheet:string):MatrixMapping=>({
  activityNames:{'utv.':'development','förv.':'maintenance'},
  measureNames:{'it timmar (th)':{id:'it_hours',unit:'h',factor:1000},'v timmar (th)':{id:'business_hours',unit:'h',factor:1000},'omkostnader (mnkr)':{id:'other_cost',unit:'SEK',factor:1000000}}
 });
+export function validateMatrixMapping(mapping:MatrixMapping):string[]{
+ const errors:string[]=[];
+ if(!mapping.sheet.trim()||!mapping.id.trim())errors.push('Bladnamn eller sektions-ID saknas');
+ for(const n of ['headerRow','firstRow','lastRow','measureColumn','firstColumn','lastColumn'] as const)if(!Number.isSafeInteger(mapping[n])||mapping[n]<1)errors.push('Ogiltig position: '+n);
+ if(mapping.lastRow<mapping.firstRow||mapping.lastColumn<mapping.firstColumn)errors.push('Slutposition före startposition');
+ if(!Object.entries(mapping.activityNames).length||Object.entries(mapping.activityNames).some(([alias,type])=>!alias.trim()||!['development','maintenance'].includes(type)))errors.push('Ogiltiga aktivitetsalias');
+ if(!Object.entries(mapping.measureNames).length||Object.entries(mapping.measureNames).some(([alias,m])=>!alias.trim()||!['it_hours','business_hours','other_cost','consultant_cost'].includes(m.id)||!(m.factor>0&&Number.isFinite(m.factor))||(m.id.endsWith('hours')?m.unit!=='h':m.unit!=='SEK')))errors.push('Ogiltiga måttalias eller enhetsfaktorer');
+ return errors;
+}
 export async function readMatrix(bytes:ArrayBuffer,mapping:MatrixMapping):Promise<MatrixResult>{
+ const errors=validateMatrixMapping(mapping);if(errors.length)throw new Error(errors.join('; '));
  const book=new ExcelJS.Workbook();await book.xlsx.load(bytes);const sheet=book.getWorksheet(mapping.sheet);
  if(!sheet)throw new Error('Sektionsblad saknas');
  if(mapping.firstRow<1||mapping.lastRow<mapping.firstRow||mapping.headerRow<1||mapping.firstColumn<1||mapping.lastColumn<mapping.firstColumn)throw new Error('Ogiltigt sektionsintervall');
