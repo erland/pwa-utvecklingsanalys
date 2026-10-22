@@ -21,7 +21,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping):Promise
  let area='';const facts:Fact[]=[];let candidates=0,unresolved=0,formulas=0;
  for(let r=mapping?.startRow??19;r<=sheet.rowCount;r++){
   const row=sheet.getRow(r),a=valueText(row.getCell(mapping?.areaColumn??2)).trim(),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
-  if(a&&(/^(UO Övergripande|LO\s+\S+)/i.test(a)))area=a;
+  if(a&&row.getCell(mapping?.areaColumn??2).type!==ExcelJS.ValueType.Formula){area=/^(UO Övergripande|LO\s+\S+)/i.test(a)?a:'';}
   const kind=measure(label);
   if(!label||/\bTOT\b|\bSUMMA\b/i.test(label))continue;
   for(const [c,p] of periods){
