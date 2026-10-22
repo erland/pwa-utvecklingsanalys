@@ -5,7 +5,7 @@ export type Unit='h'|'SEK'|'people'|'FTE'|'ratio';
 export type Aggregation='sum'|'snapshot'|'weighted-ratio'|'distinct-reach';
 export interface Measure {id:string;label:string;unit:Unit;aggregation:Aggregation;description:string}
 export interface SourceRef {datasetId:string;fileName:string;sheet:string;cell:string}
-export interface Observation {id:string;entityId:string;measureId:string;value:number;period:{year:number;month?:number};planningVersion:string;scenario:string;source:SourceRef;kind:'detail'|'subtotal'|'subset';quality:'reported'|'estimated';}
+export interface Observation {id:string;entityId:string;measureId:string;value:number;period:{year:number;month?:number};planningVersion:string;scenario:string;source:SourceRef;kind:'detail'|'subtotal'|'subset';sectionId?:string;activity?:string;quality:'reported'|'estimated';}
 export interface Relation {id:string;type:'contains'|'performs'|'supports'|'enables';fromId:string;toId:string;validFrom:string;validTo?:string;source?:SourceRef}
 export interface SemanticDataset {schemaVersion:1;entities:Entity[];measures:Measure[];observations:Observation[];relations:Relation[]}
 export const DEFAULT_MEASURES:Measure[]=[
