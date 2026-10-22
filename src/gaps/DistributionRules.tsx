@@ -1,3 +1,4 @@
+import {approvalFromPreview,evaluateApprovals} from './approved';
 import {useMemo,useState} from 'react';
 import type {SemanticDataset} from '../domain/semantic';
 import {calculateDistribution,type DistributionRule} from './distribution';
@@ -8,6 +9,7 @@ export default function DistributionRules({data,state,save}:Props){
  const candidates=state.requirements.filter(r=>r.entityKind==='lo');
  const selected=candidates.find(r=>r.id===reqId)??candidates[0];
  const rules=state.rules??[];
+ const approvals=evaluateApprovals(data,state);
  const previews=useMemo(()=>rules.map(rule=>{
   const requirement=state.requirements.find(r=>r.id===rule.requirementId);
   if(!requirement)return {rule,error:'Informationskravet har tagits bort'};
@@ -34,5 +36,6 @@ export default function DistributionRules({data,state,save}:Props){
  <button className="primary" onClick={create}>Skapa och kontrollera fördelningsregel</button></>}
  {previews.length===0?<p>Inga fördelningsregler definierade.</p>:previews.map(({rule,...out})=><div key={rule.id} className="mapping-settings"><h3>{state.requirements.find(r=>r.id===rule.requirementId)?.name??rule.requirementId} · {rule.year} · {rule.activity}</h3><p>{rule.reason} · Nyckel: {data.measures.find(m=>m.id===rule.weightMeasureId)?.label??rule.weightMeasureId}</p>
  {'error'in out&&out.error?<p role="alert">Regeln kan inte användas: {out.error}. Granska källor eller kompletteringar.</p>:out.preview&&<><p data-testid="distribution-total">UO-källa: {out.preview.sourceTotal.toLocaleString('sv-SE')} · LO-fördelning: {out.preview.allocatedTotal.toLocaleString('sv-SE')}</p><table className="analysis-table"><thead><tr><th>LO</th><th>Vikt</th><th>Härlett värde</th></tr></thead><tbody>{out.preview.items.map(item=><tr key={item.key}><td>{item.entityName}</td><td>{item.weight.toLocaleString('sv-SE')}</td><td>{item.value.toLocaleString('sv-SE',{maximumFractionDigits:3})}</td></tr>)}</tbody></table></>}
- <button className="secondary" onClick={()=>{void save({...state,rules:rules.filter(r=>r.id!==rule.id)})}}>Ta bort regel</button></div>)}</section>;
+ {(()=>{const approved=approvals.find(a=>a.approval.ruleId===rule.id);return <div><p role="status">{!approved?'Inte godkänd':approved.status==='current'?'Godkänd och aktuell':'Tidigare godkännande ogiltigt: '+approved.reason}</p>{'preview'in out&&out.preview&&<button className="primary" onClick={()=>{void save({...state,approvals:[...(state.approvals??[]).filter(a=>a.ruleId!==rule.id),approvalFromPreview(out.preview!)]})}}>{approved?'Godkänn om uppdaterad fördelning':'Godkänn fördelning'}</button>}{approved&&<button className="secondary" onClick={()=>{void save({...state,approvals:(state.approvals??[]).filter(a=>a.ruleId!==rule.id)})}}>Återkalla godkännande</button>}</div>})()}
+ <button className="secondary" onClick={()=>{void save({...state,rules:rules.filter(r=>r.id!==rule.id),approvals:(state.approvals??[]).filter(a=>a.ruleId!==rule.id)})}}>Ta bort regel</button></div>)}</section>;
 }
