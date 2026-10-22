@@ -43,7 +43,7 @@ export default function ImportGuide({project,onProject}:{project:AnalysisProject
  };
  const remove=async()=>{if(!project||confirmation!=='TA BORT'||busy)return;setBusy(true);try{
   const ids=pendingDelete==='all'?project.datasets.map(d=>d.id):pendingDelete?[pendingDelete]:[];
-  const next=await deleteImportedSources(ids);onProject(next);setSelected(null);setPendingDelete(null);setConfirmation('');setReplaceId(null);await refresh();setMessage(ids.length+' källa/källor och deras observationer har tagits bort. Konfigurationen har bevarats.');
+  const next=await deleteImportedSources(ids,pendingDelete==='all');onProject(next);setSelected(null);setPendingDelete(null);setConfirmation('');setReplaceId(null);await refresh();setMessage(ids.length+' källa/källor och deras observationer har tagits bort. Konfigurationen har bevarats.');
  }catch(e){setMessage('Borttagning misslyckades: '+String(e))}finally{setBusy(false)}};
  const active=drafts.find(d=>d.id===selected)??drafts[0];
  const [preview,setPreview]=useState<Record<keyof Mapping,string>|null>(null);
