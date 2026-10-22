@@ -11,6 +11,7 @@ test('replace a source only on approval, delete it and retain configuration',asy
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.getByRole('button',{name:'Ersätt'}).click();
  await upload(page,70);
+ await expect(page.getByText('70 h')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.result-head strong')).toHaveText('42 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
