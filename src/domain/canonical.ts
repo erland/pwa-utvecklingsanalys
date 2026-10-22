@@ -62,12 +62,16 @@ export function summarizeCanonical(data:CanonicalDataset,axis:ReportingAxis,metr
   groups.set(key,[...(groups.get(key)??[]),r]);
  }
  let value=0,unknown=0,uncovered=0;
+ const childTotals=new Set(data.records.filter(r=>r.scope.axis==='work'&&Boolean(r.scope.loId)&&r.granularity==='total'&&r.authority==='original').map(r=>JSON.stringify([r.source?.datasetId,r.scope.axis==='work'?r.scope.uoId:'',r.metric,r.year,r.month??null])));
+
  for(const records of groups.values()){
   const approved=records.filter(r=>r.approval==='approved'||r.authority==='original'&&r.approval==='reported');
   const parts=approved.filter(r=>r.granularity==='activity-part');
   const complete=parts.some(r=>r.activity==='development')&&parts.some(r=>r.activity==='maintenance');
   const total=approved.find(r=>r.granularity==='total');
   if(activity==='all'){
+   const rootPart=parts.find(r=>r.scope.axis==='work'&&!r.scope.loId);
+   if(!total&&rootPart&&rootPart.scope.axis==='work'&&childTotals.has(JSON.stringify([rootPart.source?.datasetId,rootPart.scope.uoId,rootPart.metric,rootPart.year,rootPart.month??null])))continue;
    if(total){value+=total.value;uncovered++}
    else if(complete)value+=parts.reduce((n,r)=>n+r.value,0);
    else if(parts.length)unknown++;
