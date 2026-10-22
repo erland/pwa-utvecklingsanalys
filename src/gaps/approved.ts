@@ -1,7 +1,7 @@
 import type {SemanticDataset} from '../domain/semantic';
 import type {GapState} from './store';
 import {calculateDistribution,type DistributionPreview} from './distribution';
-export type ApprovedDistribution={ruleId:string;fingerprint:string;approvedAt:string;items:{key:string;entityId:string;value:number}[]};
+export type ApprovedDistribution={ruleId:string;fingerprint:string;ruleSignature?:string;approvedAt:string;items:{key:string;entityId:string;value:number}[]};
 export type EvaluatedApproval={approval:ApprovedDistribution;status:'current'|'stale'|'invalid';preview?:DistributionPreview;reason?:string};
 export function evaluateApprovals(data:SemanticDataset,state:GapState):EvaluatedApproval[]{
  return (state.approvals??[]).map(approval=>{
@@ -9,13 +9,14 @@ export function evaluateApprovals(data:SemanticDataset,state:GapState):Evaluated
   if(!rule||!req)return {approval,status:'invalid',reason:'Regeln eller informationskravet saknas'};
   try{
    const preview=calculateDistribution(data,req,rule,state.resolutions);
-   const same=preview.fingerprint===approval.fingerprint&&preview.items.length===approval.items.length&&preview.items.every((item,i)=>item.key===approval.items[i].key&&item.entityId===approval.items[i].entityId&&item.value===approval.items[i].value);
+   const signature=JSON.stringify([rule.requirementId,rule.year,rule.activity,rule.weightMeasureId,req.measureId,req.entityKind]);
+   const same=approval.ruleSignature===signature&&preview.fingerprint===approval.fingerprint&&preview.items.length===approval.items.length&&preview.items.every((item,i)=>item.key===approval.items[i].key&&item.entityId===approval.items[i].entityId&&item.value===approval.items[i].value);
    return {approval,status:same?'current':'stale',preview,reason:same?undefined:'Källvärden, vikter eller mål har ändrats'};
   }catch(e){return {approval,status:'invalid',reason:e instanceof Error?e.message:String(e)}}
  });
 }
-export function approvalFromPreview(preview:DistributionPreview):ApprovedDistribution{
- return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),items:preview.items.map(i=>({key:i.key,entityId:i.entityId,value:i.value}))};
+export function approvalFromPreview(preview:DistributionPreview,signature:string):ApprovedDistribution{
+ return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,ruleSignature:signature,approvedAt:new Date().toISOString(),items:preview.items.map(i=>({key:i.key,entityId:i.entityId,value:i.value}))};
 }
 export function approvedRows(data:SemanticDataset,state:GapState,options:{measureId?:string;year?:number;activity?:string}={}){
  const accepted=evaluateApprovals(data,state).filter(x=>x.status==='current');
@@ -26,3 +27,5 @@ export function approvedRows(data:SemanticDataset,state:GapState,options:{measur
   return approval.items.map(item=>({ruleId:rule.id,requirementId:requirement.id,measureId:requirement.measureId,activity:rule.activity,year:rule.year,entityId:item.entityId,entityName:data.entities.find(e=>e.id===item.entityId)?.name??item.entityId,value:item.value,approvedAt:approval.approvedAt}));
  });
 }
+
+export const distributionSignature=(rule:{requirementId:string;year:number;activity:string;weightMeasureId:string},req:{measureId:string;entityKind:string})=>JSON.stringify([rule.requirementId,rule.year,rule.activity,rule.weightMeasureId,req.measureId,req.entityKind]);
