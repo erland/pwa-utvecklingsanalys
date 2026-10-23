@@ -2,7 +2,7 @@ import {describe,it,expect} from 'vitest';
 import {canonicalCsv} from './canonicalCsv';
 import type {CanonicalAnalysisResult} from './canonicalQuery';
 import type {TrendPoint} from './canonicalTrend';
-const result:CanonicalAnalysisResult={total:1100,unit:'h',rows:[{key:'uo',label:'UO Övergripande',value:100},{key:'lo',label:'LO 1',value:1000}],unknownCount:0,staleApprovals:0,excludedAlternatives:2,coverage:''};
+const result:CanonicalAnalysisResult={total:1100,unit:'h',rows:[{key:'uo',label:'UO Övergripande',value:100},{key:'lo',label:'LO 1',value:1000}],rowCounts:{uo:1,lo:1},includedRecords:2,unknownCount:0,staleApprovals:0,excludedAlternatives:2,coverage:''};
 const trend:TrendPoint[]=[{year:2027,metric:'it_hours',value:1100,unit:'h',unknownCount:0,staleApprovals:0},{year:2028,metric:'it_hours',value:900,unit:'h',unknownCount:1,staleApprovals:0}];
 describe('canonical CSV export',()=>{
  it('exports BOM, source-safe rows, yearly observations and computed comparisons',()=>{
