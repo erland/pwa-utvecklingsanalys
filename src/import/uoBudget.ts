@@ -9,6 +9,21 @@ export type Coverage={candidates:number;imported:number;unresolved:number;formul
 export type DeclaredTotal={measure:Measure;period:{year:number;month?:number};value:number;source:{sheet:string;cell:string};formula:boolean};
 export type ImportResult={declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
 function valueText(cell:ExcelJS.Cell):string{const v=cell.value;if(v==null)return '';if(typeof v==='object'&&! (v instanceof Date)){if('text'in v)return String(v.text);if('result'in v)return String(v.result??'');return '';}return String(v);}
+/** Resolve only same-sheet single-cell references in area headings; ExcelJS does not calculate formulas. */
+function areaText(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen=new Set<string>()):string{
+ if(seen.has(cell.address)||seen.size>=16)return '';
+ seen.add(cell.address);
+ const v=cell.value;
+ if(v&&typeof v==='object'&&'formula'in v){
+  const formula=String(v.formula??'').trim();
+  const match=/^\$?([A-Z]{1,3})\$?([1-9][0-9]*)$/i.exec(formula);
+  if(!match)return '';
+  const column=match[1].toUpperCase(),row=Number(match[2]);
+  if(row>1048576)return '';
+  return areaText(sheet,sheet.getCell(column+row),seen);
+ }
+ return valueText(cell).trim();
+}
 function measure(s:string):Measure|null{const v=s.toLowerCase().replace(/\s+/g,' ');if(/it[ -]?timmar/.test(v))return 'it_hours';if(/v timmar|verksamhetstimmar/.test(v))return 'business_hours';if(/prod.konsulter|produktkonsulter/.test(v))return 'consultant_cost';if(/omk/.test(v)&&/övrigt/.test(v))return 'other_cost';return null;}
 function period(v:ExcelJS.Cell['value']){if(v instanceof Date)return {year:v.getFullYear(),month:v.getMonth()+1};if(typeof v==='number'&&Number.isInteger(v)&&v>=2020&&v<=2100)return {year:v};if(typeof v==='string'){const m=v.match(/^(20\d{2})(?:[-/]([01]?\d))?$/);if(m)return {year:+m[1],...(m[2]?{month:+m[2]}:{})};}return null;}
 export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMapping?:MatrixMapping|null):Promise<ImportResult>{
@@ -34,8 +49,8 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  }
  let area='';const facts:Fact[]=[];let candidates=0,unresolved=0,formulas=0;
  for(let r=mapping?.startRow??19;r<=sheet.rowCount;r++){
-  const row=sheet.getRow(r),a=valueText(row.getCell(mapping?.areaColumn??2)).trim(),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
-  if(a&&row.getCell(mapping?.areaColumn??2).type!==ExcelJS.ValueType.Formula){area=/^(UO Övergripande|LO\s+\S+)/i.test(a)?a:'';}
+  const row=sheet.getRow(r),a=areaText(sheet,row.getCell(mapping?.areaColumn??2)),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
+  if(a){area=/^(?:UO Övergripande|LO(?:\\s+)?[^\\s]+)(?:\\s.*)?$/i.test(a)?a:'';}
   const kind=measure(label);
   if(!label||/\bTOT\b|\bSUMMA\b/i.test(label))continue;
   for(const [c,p] of periods){
