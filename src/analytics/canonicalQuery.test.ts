@@ -16,6 +16,15 @@ describe('canonical analytics with source-aware completions',()=>{
   const out=analyzeCanonical(data(),gaps,q);
   expect(out.total).toBe(1000);expect(out.excludedAlternatives).toBe(2);
  });
+ it('preserves additive UO overhead totals while excluding the alternative activity matrix',()=>{
+  const d=data();
+  d.records.push({...row('D20',100,'unknown'),granularity:'total',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  const out=analyzeCanonical(d,gaps,q);
+  expect(out.total).toBe(1100);
+  expect(out.excludedAlternatives).toBe(2);
+  expect(out.rows.find(r=>r.key==='uo')?.value).toBe(100);
+  expect(analyzeCanonical(d,gaps,{...q,activity:'unknown'}).total).toBe(1100);
+ });
  it('reports incomplete activity coverage instead of zero for development',()=>{
   const out=analyzeCanonical(data(),gaps,{...q,activity:'development'});
   expect(out.total).toBe(0);expect(out.unknownCount).toBe(2);
