@@ -38,7 +38,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   const representative=total??parts[0];
   if(!representative)continue;
   const root=representative.scope.axis==='work'&&!representative.scope.loId;
-  if(root&&withLo.has(identity(representative))&&!total){excludedAlternatives+=values.length;continue}
+  if(root&&withLo.has(identity(representative))&&!total&&values.every(r=>r.workPart===undefined||r.workPart==='uo-activity-matrix')){excludedAlternatives+=values.length;continue}
   // For monthly/annual collisions reject the entire selection instead of silently adding both.
   const periodPeers=filtered.filter(r=>r.metric===representative.metric&&r.year===representative.year&&sourceId(r)===sourceId(representative)&&JSON.stringify(r.scope)===JSON.stringify(representative.scope));
   if(periodPeers.some(r=>r.month!==undefined)&&periodPeers.some(r=>r.month===undefined))throw new Error('MIXED_PERIOD_GRANULARITY');
