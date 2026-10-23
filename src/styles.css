@@ -74,3 +74,11 @@ main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0
 .canonical-analytics .canonical-result-head strong{display:block;font-size:1.6rem}
 .canonical-analytics .canonical-table{width:100%;border-collapse:collapse}
 .canonical-analytics .canonical-table :is(th,td){padding:10px 12px;text-align:left;border-bottom:1px solid #e0e8ec}
+
+/* CHANGE-031: readable, responsive trend bars; exact numeric values remain in the text. */
+.canonical-trend{display:grid;gap:10px;margin:16px 0}
+.canonical-trend-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(80px,2fr) minmax(90px,auto);align-items:center;gap:8px}
+.canonical-trend-row small{grid-column:1/-1}
+.canonical-trend-track{height:14px;border-radius:8px;background:#e6eef1;overflow:hidden}
+.canonical-trend-fill{height:100%;background:#26768c;border-radius:8px}
+@media(max-width:620px){.canonical-trend-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.canonical-trend-track{grid-column:1/-1;grid-row:2}.canonical-trend-row strong{justify-self:end}}
