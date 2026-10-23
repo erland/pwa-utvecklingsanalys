@@ -11,12 +11,10 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.getByLabel('Tidsvisning').selectOption('grouped');
- await expect(page.getByLabel('Grupperade årsstaplar')).toBeVisible();
- await expect(page.getByRole('table',{name:'Periodtabell'})).toBeVisible();
- await page.getByLabel('Tidsvisning').selectOption('trend');
- await expect(page.getByRole('img',{name:'Trendlinjer per grupp'})).toBeVisible();
- await page.getByLabel('År',{exact:true}).selectOption('2027');
- await expect(page.getByLabel('Tidsvisning')).toHaveCount(0);
- await expect(page.locator('.analysis-table').first()).toBeVisible();
+ const v2=page.locator('.canonical-analytics');
+ await v2.getByLabel('V2 tidsdiagramtyp').selectOption('lines');
+ await expect(v2.getByRole('img',{name:'Trendlinjer för v2-mått'})).toBeVisible();
+ await expect(v2.getByRole('table',{name:'Organisation per år v2'})).toBeVisible();
+ await v2.getByLabel('V2 period').selectOption('2027');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
 });
