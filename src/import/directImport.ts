@@ -1,5 +1,7 @@
 import {recognizeWorkbook} from './formats/registry';
-import {approveBudgetSource} from './sourceManagement';
+import {approveBudgetSource,approveTabularSource} from './sourceManagement';
+import {loadSemantic} from '../domain/semanticStore';
+import {tableIdentityIssues} from './tabularAdapter';
 import type {ImportResult} from './uoBudget';
 import type {Draft} from './drafts';
 
@@ -10,7 +12,7 @@ export async function prepareDirectImport(file:File):Promise<{result:ImportResul
  if(!/\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
  const bytes=await file.arrayBuffer();
  const format=await recognizeWorkbook(bytes);
- if(!format)throw new Error('Okänt Excel-format. Ingen import har gjorts.');
+ if(!format||format.kind!=='budget')throw new Error('Okänt budgetformat. Ingen import har gjorts.');
  const result=await format.parse(bytes);
  const errors=result.issues.filter(i=>i.severity==='error');
  if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
@@ -25,10 +27,24 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
  const results:DirectImportResult[]=[];
  for(const file of files){
   try{
-   const {result,draft,formatLabel}=await prepareDirectImport(file);
-   await approveBudgetSource(result,draft.id,file.name,false,draft);
-   await onCommitted?.();
-   results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:'Importerad'});
+   const bytes=await file.arrayBuffer();
+   const format=await recognizeWorkbook(bytes);
+   if(format?.kind==='table'){
+    if(!/\\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
+    const result=await format.parse(bytes);
+    const errors=result.issues.filter(i=>i.severity==='error');
+    if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.row?' (rad '+i.row+')':'')).join('; '));
+    const identities=tableIdentityIssues(await loadSemantic(),result);
+    if(identities.length)throw new Error('Objektmatchning kräver granskning: '+identities.join('; '));
+    await approveTabularSource(result,crypto.randomUUID(),file.name,{});
+    await onCommitted?.();
+    results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:'Importerad'});
+   }else{
+    const {result,draft,formatLabel}=await prepareDirectImport(file);
+    await approveBudgetSource(result,draft.id,file.name,false,draft);
+    await onCommitted?.();
+    results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:'Importerad'});
+   }
   }catch(error){
    results.push({fileName:file.name,status:'rejected',message:error instanceof Error?error.message:'Okänt importfel'});
   }
