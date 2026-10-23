@@ -23,7 +23,7 @@ test('import review survives reload and can be approved',async({page})=>{
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
- await page.getByLabel('period').selectOption('2027');
+ await page.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(page.getByRole('table',{name:'analysresultat'})).toContainText('LO 1');
 });
 
@@ -44,7 +44,7 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  const v2=page.locator('.canonical-analytics');
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('period').selectOption('2027');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await v2.getByLabel('aktivitet').selectOption('development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
