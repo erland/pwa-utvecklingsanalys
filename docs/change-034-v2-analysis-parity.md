@@ -1,27 +1,37 @@
-# CHANGE-034 – analysfunktioner: gammal vy jämfört med v2
+# CHANGE-046 – funktionsparitet inför övergång till informationsmodell v2
 
-Inventering från `src/analytics/AnalyticsView.tsx` och `src/analytics/CanonicalAnalytics.tsx` (23 oktober 2026).
+Granskning av `AnalyticsView.tsx` och `CanonicalAnalytics.tsx` efter CHANGE-045 (23 oktober 2026).
 
-| Funktion | Tidigare analys | V2 | Fortsättning |
+| Funktion | Äldre analys | V2 | Lägesbedömning |
 |---|---|---|---|
-| Urval av mått och enhet | Enskilt eller grupperat | Flerurval per enhet | Behåll v2 |
-| Årsfilter | Ja | Ja | Behåll v2 |
-| Datakällor och UO | Flerurval | Flerurval | Behåll v2 |
-| LO | Indirekt via källaobjekt | Direkt urval | Behåll v2 |
-| Aktiviteter utveckling/förvaltning | Separat redovisning | Källsäker analys med godkända fördelningar | Behåll v2 |
-| Avdelningar | Inte som samma organiseringsaxel | Separat analysaxel | Behåll v2 |
-| Årsvisa diagram | Staplar och linjer | Årsstaplar samt årsjämförelse | Trendlinjer återstår |
-| Organisationsdiagram | Stapel och cirkel | Tabell + stapel (CHANGE-034) | Cirkeldiagram återstår |
-| UO-grupper | Konfigurerbar gruppmodell och förstarankningsregel | Inte ännu | Migrera med tydlig dubbelräkningsregel |
-| Gruppering på källfil / år / UO | Valbar gruppering | Huvudtabell per organisationsdel, årsdiagram | Migrera källfilgruppering |
-| CSV-export | Saknas i äldre analysvyn | Finns | Behåll v2 |
-| Källposter och undantagna dubbletter | Antalsredovisning | Alternativräkning och täckning, men inte radantal | Komplettera |
-| Kompletteringar och underlag | Integrerat med semantiska importen | V2-granskning och beslut finns i separat flöde | Säkerställ sammanhållen navigering |
+| Mått och enheter | Enskilt eller sammansatt mått | Flerurval inom samma enhet | Implementerat; skillnader i urvals-UX |
+| Årsfilter | Ja | Ja | Implementerat; CHANGE-046 jämför samma import |
+| Datakällor och UO | Flerurval | Flerurval | Implementerat |
+| LO-urval | Via objekt och gruppering | Explicit LO-filter | Implementerat, annan semantik |
+| Utveckling/förvaltning | Separat källmatris i analysvyn | Endast godkända härledningar, täckningsmarkering | **Avsiktlig semantisk skillnad** – ersätt inte värden rakt av |
+| Avdelningsredovisning | Inte en separat axel | Separat axel utan dubbelräkning | Implementerat |
+| Årstrender och staplar | Grupperat per grupp och år samt trend | Årsserier per mått, trendlinjer, årsjämförelse | **Delvis paritet** – v2 saknar grupp × år-matris |
+| Tabell/stapel/cirkel | Ja | Ja | Implementerat |
+| UO-gruppmodeller | Ja | Ja | Implementerat |
+| Gruppering på datakälla/år | Ja | Ja | Implementerat |
+| Grupp på LO / källaobjekt | Kan välja `entity` | Organisation redovisar UO/LO | **Kontrollera radgranularitet för jämförbara urval** |
+| CSV-export | Saknas | Ja | V2 bättre |
+| Antal källposter per resultat | Ja | Nej | **Funktionslucka** – v2-tabell visar bara värde |
+| Undantagna poster | Antal undantag | Alternativa UO-matriser och täckningsstatus | Delvis paritet, olika definitioner |
+| Informationskompletteringar | `CompletionAnalysis` direkt vid analys | Hanteras i separat kompletteringsvy | **Navigationslucka** – saknar direktkoppling från v2-resultat |
 
-## Beslut och nästa prioritet
+## Automatiserade grindar
 
-Behåll de båda analysvyerna parallellt tills UO-gruppmodeller, gruppering efter källa och relevanta kompletteringsfunktioner kan användas i v2. Ingen automatisk avveckling. CHANGE-034 lägger till stapelvisning för organisationsdelar utan att förändra den kanoniska frågan eller källdata.
+- CHANGE-040: import, grupper, år, diagram, CSV
+- CHANGE-041: käll-, UO- och LO-filter, aktivitetsbeslut, avdelningsaxel
+- CHANGE-042: godkännande och återkallelse genom UI
+- CHANGE-043: källersättning och inaktuella godkännanden
+- CHANGE-044: mobil porträttlayout
+- CHANGE-045: backup/återställning av v2 och aktivitetsbeslut
+- CHANGE-046: **ny jämförande Playwright-kontroll** för totalsummor 60/42/18 h från samma XLSX i båda vyerna
 
-## Acceptans
+## Rekommendation och avvecklingsbeslut
 
-Tabell och stapeldiagram ska visa identiska värden och enheter utifrån samma `analyzeCanonical`-resultat. UO Övergripande och LO förblir additiva; alternativ aktivitetsmatris räknas inte igen. Bevara mobilresponsivitet och textvärden för tillgänglighet.
+**Avveckla inte den äldre analysvyn ännu.** Prioritera (1) källpostantal och diagnostik i v2-tabell, (2) sammanhållen navigering till kompletteringar och (3) grupp × år-analys där användarbehovet finns. Kontrollera därefter motsvarande urval på större representativa importunderlag.
+
+En grön CHANGE-046-körning bevisar bara paritet för det avgränsade importscenariot, inte för alla mått, periodnivåer och kompletteringar. Den äldre och nya vyn har avsiktligt olika hantering av godkända aktivitetsfördelningar, vilket inte ska testas som numerisk likhet utan att redovisningssemantiken uttryckligen matchar.
