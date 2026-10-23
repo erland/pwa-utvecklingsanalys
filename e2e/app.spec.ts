@@ -4,7 +4,7 @@ test('navigation, empty analysis and local project persistence',async({page})=>{
  await page.goto('./');
  await expect(page.getByRole('heading',{name:'Överblick över verksamhetsutvecklingen'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.getByText('Inga data i informationsmodell v2. Importera ett Excelunderlag.')).toBeVisible();
+ await expect(page.getByText('Inga data i analysmodellen. Importera ett Excelunderlag.')).toBeVisible();
  await page.getByRole('button',{name:'Inställningar'}).click();
  const input=page.getByLabel('Namn på lokalt projekt');
  await expect(input).toBeEnabled();
