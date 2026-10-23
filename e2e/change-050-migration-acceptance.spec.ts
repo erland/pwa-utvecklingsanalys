@@ -38,10 +38,10 @@ test('CHANGE-050: v2 migration gate checks group-year totals and source records'
  const results=v2.getByRole('table',{name:'analysresultat'});
  await expect(results).toContainText('Källposter');
  await expect(results).toContainText('Operativa UO');
- await v2.getByLabel('period').selectOption('2027');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await expect(matrix).not.toContainText('2028');
- await v2.getByLabel('period').selectOption('all');
+ await v2.getByLabel('period',{exact:true}).selectOption('all');
  await v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
  await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
