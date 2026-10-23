@@ -45,7 +45,7 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  await expect(v2.locator('.pie-legend')).toContainText('2027');
 
  const downloadPromise=page.waitForEvent('download');
- await v2.getByRole('button',{name:'Exportera v2-analys som CSV'}).click();
+ await v2.getByRole('button',{name:'Exportera analys som CSV'}).click();
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('analys.csv');
  const content=await (await import('node:fs/promises')).readFile(await download.path(),'utf8');
@@ -54,7 +54,7 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  expect(content).toContain('"Årsjämförelse";"2027";"2028"');
  expect(content).toContain('"Organisationsdel";"";"";"2027";"42";"h"');
 
- await v2.getByLabel('period').selectOption('2027');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await v2.getByLabel('aktivitet').selectOption('development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
