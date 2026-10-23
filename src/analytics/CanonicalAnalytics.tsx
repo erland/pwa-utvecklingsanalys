@@ -24,10 +24,10 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  <label>Redovisning<select aria-label="V2 organisation" value={axis} onChange={e=>setAxis(e.target.value as ReportingAxis)}><option value="work">UO och LO</option><option value="department">Avdelningar</option></select></label>
  <label>År<select aria-label="V2 år" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
  </div>
- {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div>
+ {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} godkännanden behöver omprövas efter ändrat källunderlag.</p>}
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
- <div style={{overflowX:'auto'}}><table className="analysis-table" aria-label="V2 analysresultat"><thead><tr><th>Organisationsdel</th><th>Värde</th></tr></thead><tbody>{result.rows.map(row=><tr key={row.key}><td>{row.label}</td><td>{format(row.value)} {result?.unit}</td></tr>)}</tbody></table></div></>:null}
+ <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="V2 analysresultat"><thead><tr><th>Organisationsdel</th><th>Värde</th></tr></thead><tbody>{result.rows.map(row=><tr key={row.key}><td>{row.label}</td><td>{format(row.value)} {result?.unit}</td></tr>)}</tbody></table></div></>:null}
  </section>;
 }
