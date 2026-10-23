@@ -73,6 +73,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
 
 /** Complete registration of this format lives with its code and tests. */
 export const uoBudget2027_30:ImportFormat={
+ kind:'budget',
  id:'uo-budget-2027-30',
  label:'UO Tot 2027-30',
  matches:matchesUoBudget2027_30,
