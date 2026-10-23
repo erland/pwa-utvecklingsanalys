@@ -21,5 +21,5 @@ test('define information requirement and resolve missing LO activity without alt
  await page.reload();await page.getByRole('button',{name:'Kompletteringar'}).click();
  await expect(page.getByTestId('gap-summary')).toContainText('2 kombinationer');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
+ await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
 });
