@@ -10,12 +10,12 @@ test('chart modes reuse imported data and preserve accessible totals',async({pag
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const=page.locator('.canonical-analytics');
+ const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await.getByLabel('Diagramtyp för-fördelning').selectOption('pie');
+ await v2.getByLabel('Diagramtyp för fördelning').selectOption('pie');
  await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 42 h/})).toBeVisible();
- await.getByLabel('Diagramtyp för-fördelning').selectOption('table');
+ await v2.getByLabel('Diagramtyp för fördelning').selectOption('table');
  await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
- await.getByLabel('Diagramtyp för-fördelning').selectOption('bar');
+ await v2.getByLabel('Diagramtyp för fördelning').selectOption('bar');
  await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
 });
