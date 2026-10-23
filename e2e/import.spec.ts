@@ -26,3 +26,30 @@ test('import review survives reload and can be approved',async({page})=>{
  await page.getByLabel('År').selectOption('2027');
  await expect(page.locator('.analysis-table')).toContainText('UO A');
 });
+
+test('v2 analysis controls keep units separate and filter by year and activity',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO V2';
+ sheet.getCell('D11').value=new Date(2027,0,1);
+ sheet.getCell('B25').value='LO 1';
+ sheet.getCell('C26').value='IT timmar (h)';
+ sheet.getCell('D26').value=42;
+ const buffer=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#import-files').setInputFiles({name:'uo-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.getByRole('button',{name:'Godkänn import'}).click();
+ await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ const v2=page.locator('.canonical-analytics');
+ await expect(v2.getByRole('heading',{name:'Analys – informationsmodell v2'})).toBeVisible();
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
+ await v2.getByLabel('V2 period').selectOption('2027');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
+ await v2.getByLabel('V2 aktivitet').selectOption('development');
+ await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
+ await v2.getByLabel('V2 enhet').selectOption('costs');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
+ await v2.getByLabel('V2 organisation').selectOption('department');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('0 SEK');
+});

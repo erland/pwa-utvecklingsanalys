@@ -64,3 +64,13 @@ main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0
  .analysis-filter-disclosure .filters{grid-template-columns:minmax(0,1fr)}
  .sidebar .nav-group-title{font-size:10px}
 }
+
+/* Canonical analytics: responsive high-zoom controls, independent legacy selectors. */
+.canonical-analytics .mapping-grid{min-width:0}
+.canonical-analytics fieldset{min-width:0;overflow-wrap:anywhere}
+.canonical-analytics label.check{display:flex;align-items:flex-start;gap:8px;min-width:0;overflow-wrap:anywhere;white-space:normal}
+.canonical-analytics input[type="checkbox"]{width:auto!important;min-width:1rem;max-width:none;flex:0 0 auto;margin-top:.2em}
+.canonical-analytics .canonical-result-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:15px 0}
+.canonical-analytics .canonical-result-head strong{display:block;font-size:1.6rem}
+.canonical-analytics .canonical-table{width:100%;border-collapse:collapse}
+.canonical-analytics .canonical-table :is(th,td){padding:10px 12px;text-align:left;border-bottom:1px solid #e0e8ec}

@@ -15,13 +15,13 @@ export function canonicalFromBudget(result:ImportResult,datasetId:string,include
   if(fact.value<0)throw new Error('NEGATIVE_SOURCE_AMOUNT');
   const work={axis:'work' as const,uoId:'uo:'+slug(result.uo),loId:fact.area.match(/^UO Övergripande$/i)?undefined:'lo:'+slug(result.uo)+':'+slug(fact.area)};
   const group=[datasetId,work.uoId,work.loId??'overhead',fact.measure,fact.period.year,fact.period.month??'year'].join('|');
-  add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measure].map(slug).join('|'),metric:fact.measure,value:fact.value,year:fact.period.year,...(fact.period.month?{month:fact.period.month}:{}),activity:'unknown',scope:work,authority:'original',approval:'reported',workloadId:group,granularity:'total',source:from(fact.source.sheet,fact.source.cell)});
+  add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measure].map(slug).join('|'),metric:fact.measure,value:fact.value,year:fact.period.year,...(fact.period.month?{month:fact.period.month}:{}),activity:'unknown',scope:work,authority:'original',approval:'reported',workloadId:group,granularity:'total',workPart:work.loId?'lo':'uo-overhead',source:from(fact.source.sheet,fact.source.cell)});
  }
  if(includeMatrix&&result.matrix){
   if(result.matrix.issues.length)throw new Error('MATRIX_HAS_UNREVIEWED_ISSUES');
   for(const fact of result.matrix.facts){
    if(fact.activity!=='development'&&fact.activity!=='maintenance')throw new Error('INVALID_MATRIX_ACTIVITY');
-   add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(slug).join('|'),metric:fact.measureId as Metric,value:fact.value,year:fact.year,activity:fact.activity,scope:{axis:'work',uoId:'uo:'+slug(result.uo)},authority:'original',approval:'reported',workloadId:[datasetId,'uo:'+slug(result.uo),fact.measureId,fact.year].join('|'),granularity:'activity-part',source:from(fact.source.sheet,fact.source.cell)});
+   add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(slug).join('|'),metric:fact.measureId as Metric,value:fact.value,year:fact.year,activity:fact.activity,scope:{axis:'work',uoId:'uo:'+slug(result.uo)},authority:'original',approval:'reported',workloadId:[datasetId,'uo:'+slug(result.uo),fact.measureId,fact.year].join('|'),granularity:'activity-part',workPart:'uo-activity-matrix',source:from(fact.source.sheet,fact.source.cell)});
   }
  }
  for(const fact of departments){
