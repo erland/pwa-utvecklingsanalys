@@ -1,4 +1,5 @@
 import {detectWorkbookKind} from './detectWorkbook';
+import DirectImport from './DirectImport';
 import {reconcileUoImport} from './uoReconciliation';
 import {previewMapping,representativeFacts} from './preview';
 import TabularImport from './TabularImport';
@@ -63,7 +64,7 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId,se
   const next=await approveBudgetSource({...active.result,uo:active.uoName.trim()},active.id,active.fileName,Boolean(active.matrixEnabled),active);onProject(next);
   await refresh();setMessage('Importen godkänd. Källuppgifter finns kvar lokalt och kan användas i kommande analyssteg.');
  }catch{setMessage('Kunde inte spara importen. Utkastet finns kvar för nytt försök.');}finally{setBusy(false);}};
- return <><div className="eyebrow">IMPORT · XLSX</div><h1>Importera och granska underlag</h1>
+ return <><DirectImport project={project} onProject={onProject}/><div className="eyebrow">IMPORT · XLSX</div><h1>Importera och granska underlag</h1>
  <p className="lead">Välj flera filer och granska dem en i taget. Utkast sparas lokalt, så du kan återuppta arbetet efter omladdning. Filer lämnar inte webbläsaren.</p>
  <section className="panel"><h2>Välj Excelunderlag</h2><p>Både budgetmallen och vanliga tabeller är Excel-filer i XLSX-format. Välj en fil och granska föreslagen tolkning innan godkännande. Ingen data skickas till en server.</p>
  <label htmlFor="import-mode">Hur ska filen tolkas?</label><select id="import-mode" aria-label="Importprofil" value={importMode} onChange={e=>setImportMode(e.target.value as typeof importMode)}><option value="auto">Identifiera struktur automatiskt (rekommenderas)</option><option value="budget">UO-budget 2027–2030</option><option value="tabular">Vanlig tabell – processer, personal eller egna data</option></select>
