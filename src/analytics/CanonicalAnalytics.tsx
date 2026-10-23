@@ -7,12 +7,17 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
  const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[activity,setActivity]=useState<Activity|'all'>('all'),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
+ const [selectedSources,setSelectedSources]=useState<string[]>([]),[selectedUos,setSelectedUos]=useState<string[]>([]),[selectedLos,setSelectedLos]=useState<string[]>([]);
+ const sources=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.source?.datasetId??r.workloadId.split('|')[0]).filter(Boolean))].sort(),[data]);
+ const uos=useMemo(()=>[...new Set((data?.records??[]).filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort(),[data]);
+ const los=useMemo(()=>[...new Set((data?.records??[]).filter(r=>r.scope.axis==='work'&&Boolean(r.scope.loId)).map(r=>r.scope.axis==='work'?r.scope.loId??'':''))].filter(Boolean).sort(),[data]);
+ const toggle=(old:string[],id:string)=>old.includes(id)?old.filter(x=>x!==id):[...old,id];
  const years=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.year))].sort((a,b)=>a-b),[data]);
  const metrics:Metric[]=unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
  let result:ReturnType<typeof analyzeCanonical>|null=null;
  let queryError='';
- try{if(data&&choices.length)result=analyzeCanonical(data,state,{axis,metrics:choices,activity,year:year==='all'?undefined:Number(year)})}catch(e){queryError=String(e)}
+ try{if(data&&choices.length)result=analyzeCanonical(data,state,{axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos})}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
@@ -23,6 +28,11 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  <label>Aktivitet<select aria-label="V2 aktivitet" value={activity} onChange={e=>setActivity(e.target.value as Activity|'all')}><option value="all">Alla aktiviteter</option><option value="development">Utveckling</option><option value="maintenance">Förvaltning</option><option value="unknown">Okänd aktivitetsfördelning</option></select></label>
  <label>Redovisning<select aria-label="V2 organisation" value={axis} onChange={e=>setAxis(e.target.value as ReportingAxis)}><option value="work">UO och LO</option><option value="department">Avdelningar</option></select></label>
  <label>År<select aria-label="V2 period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+ <details><summary>Fler filter – datakälla, UO och LO</summary><p>Tomt urval betyder alla. Valda LO begränsar analysen till dessa LO och tar inte med UO Övergripande.</p>
+ <div className="mapping-grid"><fieldset><legend>Datakällor</legend>{sources.map(id=><label className="check" key={id}><input type="checkbox" checked={selectedSources.includes(id)} onChange={()=>setSelectedSources(old=>toggle(old,id))}/>{id}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedSources([])}>Alla källor</button></fieldset>
+ {axis==='work'&&<><fieldset><legend>UO</legend>{uos.map(id=><label className="check" key={id}><input type="checkbox" checked={selectedUos.includes(id)} onChange={()=>setSelectedUos(old=>toggle(old,id))}/>{decodeURIComponent(id.slice(3))}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedUos([])}>Alla UO</button></fieldset>
+ <fieldset><legend>LO</legend>{los.filter(id=>!selectedUos.length||selectedUos.some(u=>id.startsWith('lo:'+u.slice(3)+':'))).map(id=><label className="check" key={id}><input type="checkbox" checked={selectedLos.includes(id)} onChange={()=>setSelectedLos(old=>toggle(old,id))}/>{decodeURIComponent(id.split(':').at(-1)??id)}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedLos([])}>Alla LO och UO Övergripande</button></fieldset></>}
+ </div></details>
  </div>
  {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
