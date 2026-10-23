@@ -1,7 +1,7 @@
 import {describe,it,expect,vi} from 'vitest';
 import ExcelJS from 'exceljs';
 
-const save=vi.fn(async()=>({}));
+const {save}=vi.hoisted(()=>({save:vi.fn(async()=>({}))}));
 vi.mock('./sourceManagement',()=>({approveBudgetSource:vi.fn(),approveTabularSource:save,replaceImportedSource:vi.fn()}));
 vi.mock('../domain/semanticStore',()=>({loadSemantic:vi.fn(async()=>({entities:[],observations:[]}))}));
 vi.mock('./tabularAdapter',()=>({tableIdentityIssues:vi.fn(()=>[]),importTableFacts:vi.fn()}));
