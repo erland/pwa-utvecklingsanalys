@@ -3,7 +3,7 @@ import {approvedActivityParts} from '../domain/activityAllocation';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric,type ReportingAxis} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
-export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'};
+export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year'};
 export type CanonicalAnalysisResult={total:number;unit:'h'|'SEK';rows:{key:string;label:string;value:number}[];unknownCount:number;staleApprovals:number;excludedAlternatives:number;coverage:string};
 const sourceId=(r:AnalysisRecord)=>r.source?.datasetId??r.workloadId.split('|')[0]??'';
 const identity=(r:AnalysisRecord)=>JSON.stringify([sourceId(r),r.scope.axis==='work'?r.scope.uoId:r.scope.departmentId,r.metric,r.year,r.month??null]);
@@ -55,8 +55,8 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   if(value===undefined)continue;
   const scope=representative.scope;
   const membership=scope.axis==='work'&&query.groupModel?groupForUo(query.groupModel,scope.uoId):undefined;
-  const key=query.groupBy==='source'?sourceId(representative):scope.axis==='work'&&query.groupModel?(membership?.id??'unassigned'):(scope.axis==='work'?(scope.loId??scope.uoId):scope.departmentId);
-  const label=query.groupBy==='source'?key:scope.axis==='work'&&query.groupModel?(membership?.name??'Ej grupperad'):decodeURIComponent(key.split(':').at(-1)??key);
+  const key=query.groupBy==='year'?String(representative.year):query.groupBy==='source'?sourceId(representative):scope.axis==='work'&&query.groupModel?(membership?.id??'unassigned'):(scope.axis==='work'?(scope.loId??scope.uoId):scope.departmentId);
+  const label=query.groupBy==='source'||query.groupBy==='year'?key:scope.axis==='work'&&query.groupModel?(membership?.name??'Ej grupperad'):decodeURIComponent(key.split(':').at(-1)??key);
   const current=results.get(key);
   results.set(key,{label,value:(current?.value??0)+value});
  }
