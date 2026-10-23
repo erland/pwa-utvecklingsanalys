@@ -24,4 +24,29 @@ describe('2027 UO budget import',()=>{
  });
  it('rejects an unsupported template',async()=>{const res=await importUoBudget(await workbook('missing'));expect(res.issues[0].code).toBe('PROFILE_NOT_MATCHED');expect(res.facts).toEqual([]);});
  it('flags invalid values instead of silently coercing them',async()=>{const res=await importUoBudget(await workbook('bad'));expect(res.facts).toHaveLength(2);expect(res.issues.some(i=>i.code==='NON_NUMERIC_INPUT'&&i.cell==='D26')).toBe(true);});
+ it('resolves =B25 and recognizes compact LOAUL without cached formula result',async()=>{
+  const w=new ExcelJS.Workbook(),sheet=w.addWorksheet('UO Tot 2027-30');
+  sheet.getCell('B1').value='UO: Test';
+  sheet.getCell('D11').value=2027;
+  sheet.getCell('B25').value='LOAUL';
+  sheet.getCell('B26').value={formula:'B25'};
+  sheet.getCell('C26').value='IT timmar (h)';
+  sheet.getCell('D26').value=42;
+  const res=await importUoBudget(await w.xlsx.writeBuffer() as ArrayBuffer);
+  expect(res.facts).toEqual([expect.objectContaining({area:'LOAUL',value:42,source:{sheet:'UO Tot 2027-30',cell:'D26'}})]);
+  expect(res.issues.some(i=>i.code==='UNKNOWN_AREA')).toBe(false);
+ });
+ it('does not evaluate arbitrary formulas or circular area references',async()=>{
+  const w=new ExcelJS.Workbook(),sheet=w.addWorksheet('UO Tot 2027-30');
+  sheet.getCell('B1').value='UO: Test';
+  sheet.getCell('D11').value=2027;
+  sheet.getCell('B25').value={formula:'B26'};
+  sheet.getCell('B26').value={formula:'B25'};
+  sheet.getCell('C26').value='IT timmar (h)';
+  sheet.getCell('D26').value=42;
+  const res=await importUoBudget(await w.xlsx.writeBuffer() as ArrayBuffer);
+  expect(res.facts).toHaveLength(0);
+  expect(res.issues.some(i=>i.code==='UNKNOWN_AREA'&&i.cell==='D26')).toBe(true);
+ });
+
 });
