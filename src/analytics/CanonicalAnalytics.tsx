@@ -4,6 +4,7 @@ import {loadGapState,type GapState} from '../gaps/store';
 import {analyzeCanonical} from './canonicalQuery';
 import {canonicalTrend} from './canonicalTrend';
 import {compareTrend} from './canonicalComparison';
+import {canonicalCsv} from './canonicalCsv';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
@@ -37,7 +38,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  <fieldset><legend>LO</legend>{los.filter(id=>!selectedUos.length||selectedUos.some(u=>id.startsWith('lo:'+u.slice(3)+':'))).map(id=><label className="check" key={id}><input type="checkbox" checked={selectedLos.includes(id)} onChange={()=>setSelectedLos(old=>toggle(old,id))}/>{decodeURIComponent(id.split(':').at(-1)??id)}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedLos([])}>Alla LO och UO Övergripande</button></fieldset></>}
  </div></details>
  </div>
- {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div>
+ {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div><div className="actions"><button type="button" className="secondary" onClick={()=>{if(!result)return;const blob=new Blob([canonicalCsv(result,trend)],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='v2-analys.csv';link.click();URL.revokeObjectURL(url)}}>Exportera v2-analys som CSV</button></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} godkännanden behöver omprövas efter ändrat källunderlag.</p>}
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
