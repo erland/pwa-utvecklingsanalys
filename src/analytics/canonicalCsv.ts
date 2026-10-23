@@ -5,7 +5,7 @@ import {compareTrend} from './canonicalComparison';
 /** Semicolon-delimited UTF-8 data intended for Swedish Excel; no source records are modified. */
 const quote=(value:string|number)=>'"'+String(value).replace(/"/g,'""')+'"';
 const row=(values:(string|number)[])=>values.map(quote).join(';');
-const safe=(value:string)=>/^[=+@\t\r\-]/.test(value)?'\''+value:value;
+const safe=(value:string)=>/^[=+@\t\r-]/.test(value)?'\''+value:value;
 export function canonicalCsv(result:CanonicalAnalysisResult,trend:TrendPoint[]):string{
  const lines=[
   row(['Sektion','År/från','Till','Mått/organisation','Värde','Enhet','Förändring','Procent','Status']),
