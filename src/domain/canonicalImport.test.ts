@@ -18,6 +18,14 @@ describe('canonical approved import mapping',()=>{
   expect(dataset.records.filter(r=>r.scope.axis==='work'&&'loId'in r.scope&&r.scope.loId).map(r=>r.value)).toEqual([600,400]);
   expect(dataset.records.filter(r=>r.activity!=='unknown').map(r=>r.value)).toEqual([650,350]);
  });
+ it('labels additive UO overhead separately from the alternative activity matrix',()=>{
+  const extended={...input,facts:[...input.facts,{...input.facts[0],area:'UO Övergripande',value:100,source:{sheet:'Budget',cell:'D20'}}]};
+  const records=canonicalFromBudget(extended,'source1',true);
+  expect(records.filter(r=>r.workPart==='uo-overhead')).toHaveLength(1);
+  expect(records.filter(r=>r.workPart==='lo')).toHaveLength(2);
+  expect(records.filter(r=>r.workPart==='uo-activity-matrix')).toHaveLength(2);
+  expect(validateCanonical({...emptyCanonical(),records})).toEqual([]);
+ });
  it('reimporting same source replaces instead of adding values',()=>{
   const previous=replaceCanonicalSource(emptyCanonical(),canonicalFromBudget(input,'source1'),'source1');
   const changed={...input,facts:[{...input.facts[0],value:500}]};
