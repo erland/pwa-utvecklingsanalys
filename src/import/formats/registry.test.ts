@@ -12,7 +12,7 @@ describe('code-defined import formats',()=>{
  it('recognizes the exact UO Tot 2027-30 sheet',async()=>{
   const format=await recognizeWorkbook(await bytesWithSheet('UO Tot 2027-30'));
   expect(format?.id).toBe('uo-budget-2027-30');
-  expect(formats).toHaveLength(2);
+  expect(formats).toHaveLength(3);
  });
  it('does not mistake unrelated files for the budget format',async()=>{
   expect(await recognizeWorkbook(await bytesWithSheet('Processarbete'))).toBeNull();
