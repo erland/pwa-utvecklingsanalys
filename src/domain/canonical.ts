@@ -9,7 +9,10 @@ export type WorkScope={axis:'work';uoId:string;loId?:string};
 export type DepartmentScope={axis:'department';departmentId:string};
 export type AnalysisScope=WorkScope|DepartmentScope;
 export type Metric='it_hours'|'business_hours'|'consultant_cost'|'other_cost';
+export type WorkPart='uo-overhead'|'lo'|'uo-activity-matrix';
 export type AnalysisRecord={
+ /** Explicit source role for UO budget rows. Legacy records may omit this field. */
+ workPart?:WorkPart;
  id:string;metric:Metric;value:number;year:number;month?:number;
  activity:Activity;scope:AnalysisScope;authority:SourceAuthority;approval:ApprovalState;
  /** Identity of the underlying workload: records with different axes can describe the same total. */
@@ -36,6 +39,9 @@ export function validateCanonical(dataset:CanonicalDataset):string[]{
   if(r.authority==='original'&&(!r.source?.datasetId||!r.source.sheet||!r.source.cell))errors.push('SOURCE_REQUIRED');
   if(r.authority!=='original'&&r.approval==='reported')errors.push('UNAPPROVED_ORIGIN');
   if(!r.workloadId?.trim())errors.push('WORKLOAD_REQUIRED');
+  if(r.workPart!==undefined){
+   if(r.scope.axis!=='work'||r.workPart==='lo'&&(!('loId' in r.scope)||!r.scope.loId)||r.workPart!=='lo'&&'loId' in r.scope&&Boolean(r.scope.loId)||r.workPart==='uo-activity-matrix'&&r.granularity!=='activity-part'||r.workPart==='uo-overhead'&&r.granularity!=='total')errors.push('INVALID_WORK_PART');
+  }
   if(r.scope.axis==='work'){if(!r.scope.uoId?.trim())errors.push('UO_REQUIRED')}
   else if(r.scope.axis==='department'){if(!r.scope.departmentId?.trim())errors.push('DEPARTMENT_REQUIRED')}
   else errors.push('INVALID_AXIS');
