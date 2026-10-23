@@ -10,7 +10,7 @@ import {useEffect,useState} from 'react';
 import {applyMapping,canApprove,deleteDraft,listDrafts,listMappings,readDraft,saveMapping,storeDraft,type Draft} from './drafts';
 import type {AnalysisProject} from '../model';
 import {saveProject} from '../storage';
-import {deleteImportedSources,replaceImportedSource} from './sourceManagement';
+import {deleteImportedSources,replaceImportedSource,approveBudgetSource} from './sourceManagement';
 
 export default function ImportGuide({project,onProject,replaceId,setReplaceId,selected,setSelected}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void;selected:string|null;setSelected:(id:string|null)=>void}){
  const[drafts,setDrafts]=useState<Draft[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
@@ -60,13 +60,9 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId,se
  const rename=async(value:string)=>{if(!active)return;await storeDraft({...active,uoName:value,updatedAt:new Date().toISOString()});await refresh();};
  const discard=async(id:string)=>{await deleteDraft(id);if(selected===id)setSelected(null);await refresh();};
  const approve=async()=>{if(!active||!project||!canApprove(active))return;setBusy(true);try{
-  if(replaceId){const updated=await replaceImportedSource(replaceId,semantic=>importBudgetFacts(semantic,{...active.result,uo:active.uoName.trim()},replaceId,active.fileName,Boolean(active.matrixEnabled)),{name:active.uoName.trim(),planningYear:2027,importedAt:new Date().toISOString(),source:'excel'},active);onProject(updated);setReplaceId(null);setSelected(null);await refresh();setMessage('Källan har ersatts efter godkänd granskning.');return;}
-  const datasets=project.datasets.filter(x=>x.id!==active.id);
-  datasets.push({id:active.id,name:active.uoName.trim(),planningYear:2027,importedAt:new Date().toISOString(),source:'excel'});
-  const next={...project,datasets};
-  const semantic=importBudgetFacts(await loadSemantic(),{...active.result,uo:active.uoName.trim()},active.id,active.fileName,Boolean(active.matrixEnabled));
-  await saveSemantic(semantic);await saveProject(next);onProject(next);
-  await storeDraft({...active,status:'ready',updatedAt:new Date().toISOString()});await refresh();setMessage('Importen godkänd. Källuppgifter finns kvar lokalt och kan användas i kommande analyssteg.');
+  if(replaceId){const updated=await replaceImportedSource(replaceId,semantic=>importBudgetFacts(semantic,{...active.result,uo:active.uoName.trim()},replaceId,active.fileName,Boolean(active.matrixEnabled)),{name:active.uoName.trim(),planningYear:2027,importedAt:new Date().toISOString(),source:'excel'},active,{result:{...active.result,uo:active.uoName.trim()},includeMatrix:Boolean(active.matrixEnabled)});onProject(updated);setReplaceId(null);setSelected(null);await refresh();setMessage('Källan har ersatts efter godkänd granskning.');return;}
+  const next=await approveBudgetSource({...active.result,uo:active.uoName.trim()},active.id,active.fileName,Boolean(active.matrixEnabled),active);onProject(next);
+  await refresh();setMessage('Importen godkänd. Källuppgifter finns kvar lokalt och kan användas i kommande analyssteg.');
  }catch{setMessage('Kunde inte spara importen. Utkastet finns kvar för nytt försök.');}finally{setBusy(false);}};
  return <><div className="eyebrow">IMPORT · XLSX</div><h1>Importera och granska underlag</h1>
  <p className="lead">Välj flera filer och granska dem en i taget. Utkast sparas lokalt, så du kan återuppta arbetet efter omladdning. Filer lämnar inte webbläsaren.</p>
