@@ -50,6 +50,6 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await v2.getByLabel('V2 enhet').selectOption('costs');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
- await v2.getByLabel('V2 organisation').selectOption('department');
+ await v2.getByLabel('V2 organisation',{exact:true}).selectOption('department');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('0 SEK');
 });

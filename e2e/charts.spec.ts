@@ -12,14 +12,14 @@ test('chart modes reuse imported data and preserve accessible totals',async({pag
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.result-head strong')).toHaveText('42 h');
  await expect(page.locator('.analysis-table')).toContainText('42 h');
- await page.getByLabel('Visualisering').selectOption('pie');
+ await page.getByLabel('Visualisering',{exact:true}).selectOption('pie');
  await expect(page.getByRole('img',{name:/Cirkeldiagram, total 42 h/})).toBeVisible();
  await expect(page.locator('.pie-legend')).toContainText('100 %');
  await expect(page.locator('.analysis-table')).toContainText('42 h');
- await page.getByLabel('Visualisering').selectOption('table');
+ await page.getByLabel('Visualisering',{exact:true}).selectOption('table');
  await expect(page.locator('.pie-chart')).toHaveCount(0);
  await expect(page.locator('.analysis-table')).toContainText('42 h');
- await page.getByLabel('Visualisering').selectOption('bar');
+ await page.getByLabel('Visualisering',{exact:true}).selectOption('bar');
  await expect(page.getByLabel('Stapeldiagram')).toBeVisible();
  await expect(page.locator('.analysis-table')).toContainText('42 h');
 });
