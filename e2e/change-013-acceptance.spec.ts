@@ -33,7 +33,7 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'Acceptansmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Digital utveckling');
  await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för v2-mått'})).toBeVisible();
+ await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
  await page.reload();await page.getByRole('button',{name:'Grupper',exact:true}).click();
  await expect(page.getByLabel('Modellnamn')).toHaveValue('Acceptansmodell');
 });
