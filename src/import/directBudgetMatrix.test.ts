@@ -5,7 +5,7 @@ import {prepareDirectImport,importFilesDirectly} from './directImport';
 
 const {approveBudget,replaceSource}=vi.hoisted(()=>({
  approveBudget:vi.fn(async(...args:unknown[])=>{void args;return {};}),
- replaceSource:vi.fn(async()=>({}))
+ replaceSource:vi.fn(async(...args:unknown[])=>{void args;return {};})
 }));
 vi.mock('./sourceManagement',()=>({
  approveBudgetSource:approveBudget,replaceImportedSource:replaceSource,approveTabularSource:vi.fn()
