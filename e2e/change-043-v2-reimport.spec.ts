@@ -65,7 +65,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  await page.getByRole('checkbox',{name:'Ta med sektionen vid godkännande'}).check();
  await expect(page.getByRole('button',{name:'Godkänn import'})).toBeEnabled();
  await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Källan har ersatts');
+ await expect(page.getByRole('status').filter({hasText:'Källan har ersatts'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const staleV2=page.locator('.canonical-analytics');
  await expect(staleV2.locator('.canonical-result-head strong')).toContainText('40 h');

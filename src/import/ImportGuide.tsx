@@ -1,5 +1,6 @@
 import {detectWorkbookKind} from './detectWorkbook';
 import DirectImport from './DirectImport';
+import SourceManager from './SourceManager';
 import {reconcileUoImport} from './uoReconciliation';
 import {previewMapping,representativeFacts} from './preview';
 import TabularImport from './TabularImport';
@@ -10,11 +11,10 @@ import {defaultMapping,type Mapping} from './uoBudget';
 import {useEffect,useState} from 'react';
 import {applyMapping,canApprove,deleteDraft,listDrafts,listMappings,readDraft,saveMapping,storeDraft,type Draft} from './drafts';
 import type {AnalysisProject} from '../model';
-import {deleteImportedSources,replaceImportedSource,approveBudgetSource} from './sourceManagement';
+import {replaceImportedSource,approveBudgetSource} from './sourceManagement';
 
 export default function ImportGuide({project,onProject,replaceId,setReplaceId,selected,setSelected}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void;selected:string|null;setSelected:(id:string|null)=>void}){
  const[drafts,setDrafts]=useState<Draft[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- const[pendingDelete,setPendingDelete]=useState<string|null>(null),[confirmation,setConfirmation]=useState('');
  const[importMode,setImportMode]=useState<'auto'|'budget'|'tabular'>('auto');
  const[tabularFile,setTabularFile]=useState<File|null>(null);
  useEffect(()=>{void listDrafts().then(setDrafts).catch(()=>setMessage('Kunde inte läsa sparade utkast.'))},[]);
@@ -43,10 +43,6 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId,se
   await refresh();setBusy(false);
   if(errors.length)setMessage(errors.join(' • '));
  };
- const remove=async()=>{if(!project||confirmation!=='TA BORT'||busy)return;setBusy(true);try{
-  const ids=pendingDelete==='all'?project.datasets.map(d=>d.id):pendingDelete?[pendingDelete]:[];
-  const next=await deleteImportedSources(ids,pendingDelete==='all');onProject(next);setSelected(null);setPendingDelete(null);setConfirmation('');setReplaceId(null);await refresh();setMessage(ids.length+' källa/källor och deras observationer har tagits bort. Konfigurationen har bevarats.');
- }catch(e){setMessage('Borttagning misslyckades: '+String(e))}finally{setBusy(false)}};
  const active=drafts.find(d=>d.id===selected)??drafts[0];
  const [preview,setPreview]=useState<Record<keyof Mapping,string>|null>(null);
  const [profile,setProfile]=useState<Mapping>(defaultMapping);
@@ -69,10 +65,7 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId,se
  <section className="panel"><h2>Välj Excelunderlag</h2><p>Både budgetmallen och vanliga tabeller är Excel-filer i XLSX-format. Välj en fil och granska föreslagen tolkning innan godkännande. Ingen data skickas till en server.</p>
  <label htmlFor="import-mode">Hur ska filen tolkas?</label><select id="import-mode" aria-label="Importprofil" value={importMode} onChange={e=>setImportMode(e.target.value as typeof importMode)}><option value="auto">Identifiera struktur automatiskt (rekommenderas)</option><option value="budget">UO-budget 2027–2030</option><option value="tabular">Vanlig tabell – processer, personal eller egna data</option></select>
  <label htmlFor="import-files">Välj Excel-filer</label><input id="import-files" type="file" accept=".xlsx" multiple disabled={busy} onChange={e=>{void files(e.target.files);e.target.value='';}}/><p className="notice">Budgetfiler kan väljas flera samtidigt. Tabellfiler granskas en åt gången och du väljer deras mått och kolumner efter filvalet. Byt importprofil ovan om det automatiska förslaget är fel.</p></section>
- {project&&<section className="panel" style={{marginTop:18}}><h2>Importerade källor</h2><p>Ta bort en godkänd källa eller välj Ersätt för att granska en ny Excel-fil innan de gamla värdena byts ut. Konfiguration och gruppmodeller bevaras.</p>
- {project.datasets.length===0?<p>Inga godkända källor.</p>:<><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>Källa</th><th>Importerad</th><th>Åtgärder</th></tr></thead><tbody>{project.datasets.map(d=><tr key={d.id}><td>{d.name}</td><td>{new Date(d.importedAt).toLocaleString('sv-SE')}</td><td><div className="actions"><button className="secondary" disabled={busy} onClick={()=>{setReplaceId(d.id);setPendingDelete(null);setMessage('Välj en ny XLSX-fil ovan för automatisk ersättning. Den gamla källan behålls om importen misslyckas.')}}>Ersätt</button><button className="secondary" disabled={busy} onClick={()=>{setPendingDelete(d.id);setConfirmation('')}}>Ta bort</button></div></td></tr>)}</tbody></table></div><button className="secondary" disabled={busy} onClick={()=>{setPendingDelete('all');setConfirmation('')}}>Töm importerade data</button></>}
- {replaceId&&<p role="status" className="notice">Ersätter: {project.datasets.find(d=>d.id===replaceId)?.name}. Välj en XLSX-fil i den automatiska importen ovan. <button className="secondary" onClick={()=>setReplaceId(null)}>Avbryt ersättning</button></p>}
- {pendingDelete&&<div className="notice" role="group" aria-label="Bekräfta borttagning"><p>{pendingDelete==='all'?'Alla importerade källor och deras analysvärden tas bort.':'Källan och dess importerade analysvärden tas bort.'} Åtgärden kan inte ångras utan projektbackup. Skriv TA BORT för att bekräfta.</p><label>Bekräftelsetext <input aria-label="Bekräftelsetext" value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label><div className="actions"><button className="primary" disabled={busy||confirmation!=='TA BORT'} onClick={()=>{void remove()}}>Bekräfta borttagning</button><button className="secondary" onClick={()=>{setPendingDelete(null);setConfirmation('')}}>Avbryt</button></div></div>}</section>}
+ <SourceManager project={project} onProject={onProject} replaceId={replaceId} setReplaceId={setReplaceId} onDeleted={()=>{setSelected(null);void refresh();}}/>
  {tabularFile&&<TabularImport key={tabularFile.name+tabularFile.lastModified} selectedFile={tabularFile} project={project} onProject={p=>{onProject(p);if(replaceId)setReplaceId(null)}} replaceId={replaceId}/>}
 
  {message&&<p role="status" className="notice">{message}</p>}
