@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {inspectTable,parseTable,type TableMapping,type TableProfile,type TableResult} from './tabular';
-import {tableIdentityIssues,type Resolution} from './tabularAdapter';
+import {importTableFacts,tableIdentityIssues,type Resolution} from './tabularAdapter';
 import {loadSemantic} from '../domain/semanticStore';
 import {approveTabularSource,replaceImportedSource} from './sourceManagement';
 import type {AnalysisProject} from '../model';
