@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',async({page})=>{
+test('CHANGE-040 end-to-end: import, UO groups, filters, charts and CSV',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
  sheet.getCell('D11').value=new Date(2027,0,1);
@@ -27,37 +27,37 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
 
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const v2=page.locator('.canonical-analytics');
+ const=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await v2.getByLabel('V2 UO-gruppmodell').selectOption({label:'V2-testmodell'});
- await expect(v2.getByRole('table',{name:'V2 analysresultat'})).toContainText('Operativa UO');
+ await.getByLabel('UO-gruppmodell').selectOption({label:'V2-testmodell'});
+ await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('Operativa UO');
 
- await v2.getByLabel('V2 resultatgruppering').selectOption('year');
- const yearTable=v2.getByRole('table',{name:'V2 analysresultat'});
+ await.getByLabel('resultatgruppering').selectOption('year');
+ const yearTable=v2.getByRole('table',{name:'analysresultat'});
  await expect(yearTable).toContainText('2027');
  await expect(yearTable).toContainText('2028');
  await expect(yearTable).toContainText('42 h');
  await expect(yearTable).toContainText('18 h');
- await v2.getByLabel('V2 tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för v2-mått'})).toBeVisible();
- await v2.getByLabel('Diagramtyp för v2-fördelning').selectOption('pie');
- await expect(v2.getByRole('img',{name:/Cirkelfördelning v2, total 60 h/})).toBeVisible();
+ await.getByLabel('tidsdiagramtyp').selectOption('lines');
+ await expect(v2.getByRole('img',{name:'Trendlinjer för-mått'})).toBeVisible();
+ await.getByLabel('Diagramtyp för-fördelning').selectOption('pie');
+ await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 60 h/})).toBeVisible();
  await expect(v2.locator('.pie-legend')).toContainText('2027');
 
  const downloadPromise=page.waitForEvent('download');
- await v2.getByRole('button',{name:'Exportera v2-analys som CSV'}).click();
+ await.getByRole('button',{name:'Exportera-analys som CSV'}).click();
  const download=await downloadPromise;
- expect(download.suggestedFilename()).toBe('v2-analys.csv');
+ expect(download.suggestedFilename()).toBe('analys.csv');
  const content=await (await import('node:fs/promises')).readFile(await download.path(),'utf8');
  expect(content).toContain('"Årstrend";"2027"');
  expect(content).toContain('"Årstrend";"2028"');
  expect(content).toContain('"Årsjämförelse";"2027";"2028"');
  expect(content).toContain('"Organisationsdel";"";"";"2027";"42";"h"');
 
- await v2.getByLabel('V2 period').selectOption('2027');
+ await.getByLabel('period').selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('V2 aktivitet').selectOption('development');
+ await.getByLabel('aktivitet').selectOption('development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
- await v2.getByLabel('V2 enhet').selectOption('costs');
+ await.getByLabel('enhet').selectOption('costs');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
 });
