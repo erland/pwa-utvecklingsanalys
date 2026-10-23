@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import type {ImportFormat} from './registry';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
 export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
 export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name));}
@@ -69,3 +70,11 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  const matrix=matrixMapping===null?undefined:await readMatrix(bytes,matrixMapping??developmentMatrix(sheet.name));
  return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
 }
+
+/** Complete registration of this format lives with its code and tests. */
+export const uoBudget2027_30:ImportFormat={
+ id:'uo-budget-2027-30',
+ label:'UO Tot 2027-30',
+ matches:matchesUoBudget2027_30,
+ parse:bytes=>importUoBudget(bytes)
+};
