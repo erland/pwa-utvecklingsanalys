@@ -20,6 +20,7 @@ export async function prepareDirectImport(file:File):Promise<{result:ImportResul
  if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
  if(!result.uo.trim())throw new Error('UO-namn saknas i filen.');
  if(!result.facts.length)throw new Error('Inga importbara detaljvärden hittades.');
+ if(result.matrix?.issues.length)throw new Error('Aktivitetsmatrisen innehåller ogiltiga värden: '+result.matrix.issues.slice(0,3).map(issue=>issue.cell+' '+issue.message).join('; '));
  const draft:Draft={id:crypto.randomUUID(),fileName:file.name,bytes,result,uoName:result.uo,status:'review',updatedAt:new Date().toISOString()};
  return {result,draft,formatLabel:format.label};
 }
@@ -46,9 +47,10 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
     results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:replaceId?'Ersatt':'Importerad'});
    }else{
     const {result,draft,formatLabel}=await prepareDirectImport(file);
+    const includeMatrix=Boolean(result.matrix?.facts.length);
     if(replaceId){
-     await replaceImportedSource(replaceId,before=>importBudgetFacts(before,result,replaceId,file.name,false),{name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},draft,{result,includeMatrix:false});
-    }else await approveBudgetSource(result,draft.id,file.name,false,draft);
+     await replaceImportedSource(replaceId,before=>importBudgetFacts(before,result,replaceId,file.name,includeMatrix),{name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},draft,{result,includeMatrix});
+    }else await approveBudgetSource(result,draft.id,file.name,includeMatrix,draft);
     await onCommitted?.();
     results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:'Importerad'});
    }
