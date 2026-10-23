@@ -24,7 +24,7 @@ test('import review survives reload and can be approved',async({page})=>{
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
  await page.getByLabel('V2 period').selectOption('2027');
- await expect(page.getByRole('table',{name:'V2 analysresultat'})).toContainText('UO A');
+ await expect(page.getByRole('table',{name:'V2 analysresultat'})).toContainText('LO 1');
 });
 
 test('v2 analysis controls keep units separate and filter by year and activity',async({page})=>{
