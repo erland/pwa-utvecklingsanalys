@@ -12,7 +12,7 @@ export async function prepareDirectImport(file:File):Promise<{result:ImportResul
  if(!/\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
  const bytes=await file.arrayBuffer();
  const format=await recognizeWorkbook(bytes);
- if(!format||format.kind!=='budget')throw new Error('Okänt budgetformat. Ingen import har gjorts.');
+ if(!format||format.kind!=='budget')throw new Error('Okänt Excel-format. Ingen import har gjorts.');
  const result=await format.parse(bytes);
  const errors=result.issues.filter(i=>i.severity==='error');
  if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
