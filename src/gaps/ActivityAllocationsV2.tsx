@@ -26,7 +26,7 @@ export default function ActivityAllocationsV2({state,save}:{state:GapState;save:
   try{previewActivityAllocation(data!,rule)}catch(e){setError('Kan inte fördela: '+String(e));return}
   void save({...state,activityAllocationRules:[...rules,rule]});setError('');
  };
- return <section className="panel"><h2>Aktivitetsfördelning till LO – </h2><p>Fördela rapporterade UO-timmar för utveckling och förvaltning proportionellt mot LO:s originaltotaler. Endast avstämda och godkända fördelningar används. Originalvärden ändras inte.</p>
+ return <section className="panel"><h2>Aktivitetsfördelning till LO</h2><p>Fördela rapporterade UO-timmar för utveckling och förvaltning proportionellt mot LO:s originaltotaler. Endast avstämda och godkända fördelningar används. Originalvärden ändras inte.</p>
  {error&&<p role="alert">{error}</p>}
  <label>Källa, UO, mått och år<select aria-label="fördelningskälla" value={current?JSON.stringify(current):''} onChange={e=>setSelection(e.target.value)}><option value="">Välj underlag</option>{candidates.map(c=><option key={JSON.stringify(c)} value={JSON.stringify(c)}>{c.uoId} · {c.metric} · {c.year} · {c.datasetId}</option>)}</select></label>
  <label>Motivering för fördelningsregel<input aria-label="regelmotivering" value={reason} onChange={e=>setReason(e.target.value)}/></label>
