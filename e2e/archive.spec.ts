@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
-test('backup v2 preserves stored workbook bytes and drafts across browser profiles',async({browser})=>{
+test('backup v3 preserves stored workbook bytes and drafts across browser profiles',async({browser})=>{
  const left=await browser.newContext({acceptDownloads:true}),a=await left.newPage();await a.goto('./');await a.getByRole('button',{name:'Inställningar'}).click();
  await expect(a.locator('#project-name')).toBeEnabled();
  await a.evaluate(async()=>{
@@ -10,7 +10,7 @@ test('backup v2 preserves stored workbook bytes and drafts across browser profil
   await new Promise<void>((resolve,reject)=>{const t=db.transaction('drafts','readwrite');t.objectStore('drafts').put(draft);t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error)});db.close();
  });
  const downloadPromise=a.waitForEvent('download');await a.getByRole('button',{name:'Ladda ner projektbackup'}).click();const file=await downloadPromise;const bytes=await readFile((await file.path())!);
- const archived=JSON.parse(bytes.toString('utf8'));expect(archived.version).toBe(2);expect(archived.drafts[0].bytesBase64).toBe('AQIDBAU=');
+ const archived=JSON.parse(bytes.toString('utf8'));expect(archived.version).toBe(3);expect(archived.canonical).toMatchObject({schemaVersion:2,records:[]});expect(archived.drafts[0].bytesBase64).toBe('AQIDBAU=');
  await left.close();
  const right=await browser.newContext(),b=await right.newPage();await b.goto('./');await b.getByRole('button',{name:'Inställningar'}).click();
  await b.getByLabel('Välj projektbackup').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:bytes});
