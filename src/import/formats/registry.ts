@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import {importUoBudget,matchesUoBudget2027_30,type ImportResult} from './uoBudget2027_30';
+import {uoBudget2027_30,type ImportResult} from './uoBudget2027_30';
 
 /** An isolated, code-defined XLSX import format. Each format owns its matching and parsing rules. */
 export type ImportFormat={
@@ -7,13 +7,6 @@ export type ImportFormat={
  label:string;
  matches:(workbook:ExcelJS.Workbook)=>boolean;
  parse:(bytes:ArrayBuffer)=>Promise<ImportResult>;
-};
-
-export const uoBudget2027_30:ImportFormat={
- id:'uo-budget-2027-30',
- label:'UO Tot 2027-30',
- matches:matchesUoBudget2027_30,
- parse:bytes=>importUoBudget(bytes)
 };
 
 /** Add/remove entire format definitions here; never infer an ambiguous format. */
