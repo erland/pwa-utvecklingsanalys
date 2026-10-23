@@ -1,3 +1,4 @@
+import {previewActivityAllocation} from '../domain/activityAllocation';
 import {validateCanonical,type CanonicalDataset} from '../domain/canonical';
 import {validateReconciliationRule} from '../reconciliation/model';
 import type {GapState} from '../gaps/store';
@@ -48,6 +49,24 @@ export function validateBackup(input:unknown):ProjectBackup{
  if(b.gapState?.reconciliations){const names=new Set<string>();for(const rule of b.gapState.reconciliations){if(names.has(rule.id)||validateReconciliationRule(rule,b.semantic).length)throw new Error('INVALID_RECONCILIATION_RULE');names.add(rule.id)}}
  if(b.gapState?.reconciliationDecisions){const keys=new Set<string>();for(const decision of b.gapState.reconciliationDecisions){if(!decision.key||keys.has(decision.key)||!decision.fingerprint||!decision.reason?.trim()||!decision.updatedAt)throw new Error('INVALID_RECONCILIATION_DECISION');keys.add(decision.key)}}
  if(b.version===3&&(!b.canonical||validateCanonical(b.canonical).length))throw new Error('INVALID_CANONICAL_BACKUP');
+ if(b.gapState?.activityAllocationRules||b.gapState?.activityAllocationDecisions){
+  if(b.version!==3||!b.canonical)throw new Error('ACTIVITY_ALLOCATIONS_REQUIRE_V3');
+  const rules=b.gapState?.activityAllocationRules??[],decisions=b.gapState?.activityAllocationDecisions??[];
+  const ids=new Set<string>();
+  for(const rule of rules){
+   if(!rule.id||ids.has(rule.id)||!rule.reason?.trim()||!rule.datasetId||!rule.uoId||!Number.isInteger(rule.year)||!['it_hours','business_hours'].includes(rule.metric))throw new Error('INVALID_ACTIVITY_ALLOCATION_RULE');
+   ids.add(rule.id);
+  }
+  const decided=new Set<string>();
+  for(const decision of decisions){
+   if(!ids.has(decision.ruleId)||decided.has(decision.ruleId)||!decision.fingerprint||!decision.approvedAt||!decision.reason?.trim())throw new Error('INVALID_ACTIVITY_ALLOCATION_DECISION');
+   decided.add(decision.ruleId);
+  }
+  // Import of an otherwise well-formed historic approval is permitted; the live projection
+  // re-evaluates the fingerprint against actual source data and treats stale approvals as inactive.
+  for(const rule of rules)try{previewActivityAllocation(b.canonical,rule)}catch{/* historic or stale rule; keep for review */}
+ }
+
  const datasets=new Set(b.project.datasets.map(x=>x.id));
  if(b.version===3)for(const row of b.canonical!.records)if(row.source&&!datasets.has(row.source.datasetId))throw new Error('MISSING_CANONICAL_SOURCE');
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');

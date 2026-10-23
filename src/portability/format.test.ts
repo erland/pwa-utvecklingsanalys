@@ -16,6 +16,10 @@ it('roundtrips a source-aware project',()=>{
  const canonical={...emptyCanonical(),records:[{id:'v2-cell',metric:'it_hours' as const,value:42,year:2027,activity:'unknown' as const,scope:{axis:'work' as const,uoId:'uo'},authority:'original' as const,approval:'reported' as const,workloadId:'workload',granularity:'total' as const,source:{datasetId:'d',sheet:'Data',cell:'C2'}}]};
  const v3={...extended,version:3 as const,canonical};
  expect(validateBackup(JSON.parse(backupToJson(v3)))).toEqual(v3);
+ const allocations={...v3,gapState:{requirements:[],resolutions:[],activityAllocationRules:[{id:'v2rule',datasetId:'d',uoId:'uo',metric:'it_hours' as const,year:2027,reason:'LO proportions'}],activityAllocationDecisions:[{ruleId:'v2rule',fingerprint:'source-fingerprint',approvedAt:'2026-10-23',reason:'Reviewed'}]}};
+ expect(validateBackup(JSON.parse(backupToJson(allocations)))).toEqual(allocations);
+ expect(()=>validateBackup({...allocations,gapState:{...allocations.gapState,activityAllocationDecisions:[{...allocations.gapState.activityAllocationDecisions[0],reason:''}]}})).toThrow('INVALID_ACTIVITY_ALLOCATION_DECISION');
+ expect(()=>validateBackup({...extended,gapState:allocations.gapState})).toThrow('ACTIVITY_ALLOCATIONS_REQUIRE_V3');
  expect(()=>validateBackup({...v3,canonical:{...canonical,records:[{...canonical.records[0],source:{datasetId:'unknown',sheet:'Data',cell:'C2'}}]}})).toThrow('MISSING_CANONICAL_SOURCE');
  expect(()=>validateBackup({...v3,canonical:undefined})).toThrow('INVALID_CANONICAL_BACKUP');
  expect(exportFactsCsv(semantic)).toContain('source.xlsx');
