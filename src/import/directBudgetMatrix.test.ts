@@ -4,7 +4,7 @@ import {canonicalFromBudget} from '../domain/canonicalImport';
 import {prepareDirectImport,importFilesDirectly} from './directImport';
 
 const {approveBudget,replaceSource}=vi.hoisted(()=>({
- approveBudget:vi.fn(async(..._args:unknown[])=>({})),
+ approveBudget:vi.fn(async(...args:unknown[])=>{void args;return {};}),
  replaceSource:vi.fn(async()=>({}))
 }));
 vi.mock('./sourceManagement',()=>({
