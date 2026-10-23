@@ -58,6 +58,19 @@ describe('canonical analytics with source-aware completions',()=>{
   expect(analyzeCanonical(d,gaps,{...q,uoIds:['other']}).total).toBe(0);
   expect(analyzeCanonical(d,gaps,{...q,datasetIds:['other']}).total).toBe(50);
  });
+ it('groups whole UO including overhead and LO, with first membership winning',()=>{
+  const d=data();
+  d.records.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  const groupModel={id:'m',name:'Modell',groups:[{id:'g1',name:'Operativt',uoIds:['uo']},{id:'g2',name:'Dubbel medlem',uoIds:['uo']}]};
+  const out=analyzeCanonical(d,gaps,{...q,groupModel});
+  expect(out.total).toBe(1100);
+  expect(out.rows).toEqual([{key:'g1',label:'Operativt',value:1100}]);
+  expect(analyzeCanonical(d,gaps,{...q,groupModel,loIds:['lo1']}).rows).toEqual([{key:'g1',label:'Operativt',value:700}]);
+ });
+ it('places unmatched UO in one unassigned group',()=>{
+  const out=analyzeCanonical(data(),gaps,{...q,groupModel:{id:'m',name:'M',groups:[]}});
+  expect(out.rows).toEqual([{key:'unassigned',label:'Ej grupperad',value:1000}]);
+ });
  it('rejects mixing hours and costs',()=>{
   expect(()=>analyzeCanonical(data(),gaps,{...q,metrics:['it_hours','consultant_cost']})).toThrow('MIXED_UNITS');
  });
