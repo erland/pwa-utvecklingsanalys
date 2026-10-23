@@ -1,0 +1,33 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('CHANGE-048: v2 analysis opens completion and approval workflow using accessible navigation',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: Test UO';
+ sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';
+ sheet.getCell('C26').value='IT timmar (h)';
+ sheet.getCell('D26').value=42;
+ sheet.getCell('D4').value='Utv. 27';
+ sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';
+ sheet.getCell('D5').value=0.025;
+ sheet.getCell('E5').value=0.017;
+ const buffer=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#import-files').setInputFiles({name:'navigation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await page.getByRole('checkbox',{name:'Ta med sektionen vid godkännande'}).check();
+ await page.getByRole('button',{name:'Godkänn import'}).click();
+ await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ const v2=page.locator('.canonical-analytics');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
+ const open=v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'});
+ await expect(open).toBeVisible();
+ await open.click();
+ await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Aktivitetsfördelning till LO – modell v2'})).toBeVisible();
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
+});
