@@ -32,7 +32,7 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await expect(page.locator('.result-head strong')).toHaveText('60 h');
  await page.getByLabel('Gruppera efter').selectOption('uo-group');
  await expect(page.locator('.analysis-table').first()).toContainText('Digital utveckling');
- await page.getByLabel('Visualisering').selectOption('pie');
+ await page.getByLabel('Visualisering',{exact:true}).selectOption('pie');
  await expect(page.getByRole('img',{name:/Cirkeldiagram, total 60 h/})).toBeVisible();
  await page.getByLabel('Tidsvisning').selectOption('trend');
  await expect(page.getByRole('img',{name:'Trendlinjer per grupp'})).toBeVisible();
