@@ -22,9 +22,9 @@ test('import review survives reload and can be approved',async({page})=>{
  await expect(page.getByText('Importerade filer').locator('..')).toContainText('1');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
- await page.getByLabel('År',{exact:true}).selectOption('2027');
- await expect(page.locator('.analysis-table')).toContainText('UO A');
+ await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
+ await page.getByLabel('V2 period').selectOption('2027');
+ await expect(page.getByRole('table',{name:'V2 analysresultat'})).toContainText('UO A');
 });
 
 test('v2 analysis controls keep units separate and filter by year and activity',async({page})=>{
