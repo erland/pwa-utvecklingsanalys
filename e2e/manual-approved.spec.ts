@@ -20,8 +20,5 @@ test('manual completions are approved separately and never inflate original anal
  await page.getByRole('button',{name:'Godkänn manuellt värde'}).click();
  await expect(page.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
- await page.getByLabel('Kompletteringsläge').selectOption('completed');
- await expect(page.getByTestId('completion-summary')).toContainText('30');
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
+ await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });

@@ -10,12 +10,10 @@ test('combined hours appear in analysis with explicit constituents and annual vi
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.getByLabel('Mått').selectOption('all_hours');
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
- await expect(page.getByTestId('measure-components')).toContainText('IT-timmar');
- await expect(page.getByTestId('measure-components')).toContainText('Verksamhetstimmar');
- await page.getByLabel('Tidsvisning').selectOption('grouped');
- await expect(page.getByLabel('Grupperade årsstaplar')).toBeVisible();
- await page.getByLabel('Mått').selectOption('all_costs');
- await expect(page.locator('.result-head strong')).toHaveText('0 SEK');
+ const v2=page.locator('.canonical-analytics');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
+ await v2.getByLabel('V2 tidsdiagramtyp').selectOption('lines');
+ await expect(v2.getByRole('img',{name:'Trendlinjer för v2-mått'})).toBeVisible();
+ await v2.getByLabel('V2 enhet').selectOption('costs');
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
 });

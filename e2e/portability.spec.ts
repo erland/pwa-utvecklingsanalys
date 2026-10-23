@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
-test('restore backup in a fresh browser profile with identical analysis',async({browser})=>{
+test('restore historical semantic backup in a fresh profile without resurrecting legacy UI',async({browser})=>{
  const contextA=await browser.newContext({acceptDownloads:true});
  const first=await contextA.newPage();
  await first.goto('./');
@@ -20,13 +20,15 @@ test('restore backup in a fresh browser profile with identical analysis',async({
  });
  await first.reload();
  await first.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(first.locator('.result-head strong')).toHaveText('42 h');
+ await expect(first.locator('.analysis-layout')).toHaveCount(0);
  await first.getByRole('button',{name:'Inställningar'}).click();
  await expect(first.getByRole('button',{name:'Ladda ner projektbackup'})).toBeEnabled();
  const requested=first.waitForEvent('download');
  await first.getByRole('button',{name:'Ladda ner projektbackup'}).click();
  const downloaded=await requested;
  const bytes=await readFile((await downloaded.path())!);
+ const exported=JSON.parse(bytes.toString('utf8'));
+ expect(exported.semantic.observations[0].value).toBe(42);
  await contextA.close();
  const contextB=await browser.newContext({acceptDownloads:true});
  const second=await contextB.newPage();
@@ -38,6 +40,11 @@ test('restore backup in a fresh browser profile with identical analysis',async({
  await expect(second.getByRole('status')).toContainText('Projekt återställt');
  await second.reload();
  await second.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(second.locator('.result-head strong')).toHaveText('42 h');
+ await expect(second.locator('.analysis-layout')).toHaveCount(0);
+ await second.getByRole('button',{name:'Inställningar'}).click();
+ const check=second.waitForEvent('download');
+ await second.getByRole('button',{name:'Ladda ner projektbackup'}).click();
+ const restored=JSON.parse((await readFile(await (await check).path())).toString('utf8'));
+ expect(restored.semantic.observations[0].value).toBe(42);
  await contextB.close();
 });

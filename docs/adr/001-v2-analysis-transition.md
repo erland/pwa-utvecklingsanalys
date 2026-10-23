@@ -47,3 +47,9 @@ Arkitekturdrivande krav: ingen tyst dubbelräkning, inga ej godkända härlednin
 ## Omprövning
 
 Om v2 ger oacceptabla avvikelser, om backup inte kan återställas eller om verksamheten inte accepterar arbetsflödet ska avveckling skjutas upp. Återgå då till parallell drift tills rotorsaken är åtgärdad.
+
+## Implementationsbeslut – CHANGE-052 (2026-10-23)
+
+Användaren har uttryckligen godkänt att den äldre analysvyn tas bort. Därför ersätts den parallella presentationsvyn med en enda kanonisk v2-analys. Detta är ett beslut om **användargränssnitt**, inte om att radera äldre semantisk lagring, historiska projektbackuper eller kompatibilitetskoden för import och återställning. Den tidigare versionen före CHANGE-052 finns kvar som Git-commit `b83c5f459996e95e23621895e66e342f81ec2f5a` och kan användas för återgång efter verifierad kompatibilitet med backup.
+
+Tidigare villkor om separat GO-beslut för att dölja den äldre vyn ersätts av det uttryckliga godkännandet, medan CI, backupåterställning och kontroll med verkliga underlag fortfarande rekommenderas innan produktionsutrullning. Ingen automatisk IndexedDB-radering eller migrering utförs.

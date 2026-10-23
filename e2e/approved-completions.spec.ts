@@ -23,10 +23,5 @@ test('approve LO allocation and compare with source without double counting',asy
  await page.getByRole('button',{name:'Godkänn fördelning'}).click();
  await expect(page.getByText('Godkänd och aktuell')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.result-head strong')).toHaveText('50 h');
- await page.getByLabel('Kompletteringsläge').selectOption('compare');
- await expect(page.getByRole('table',{name:'Godkända fördelningar'})).toContainText('LO AUL');
- await expect(page.getByRole('table',{name:'Godkända fördelningar'})).toContainText('400');
- await expect(page.getByRole('table',{name:'Godkända fördelningar'})).toContainText('600');
- await expect(page.locator('.result-head strong')).toHaveText('50 h');
+ await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('50 h');
 });

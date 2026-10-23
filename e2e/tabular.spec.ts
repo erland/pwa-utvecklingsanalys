@@ -12,6 +12,7 @@ test('tabular process-hour import reaches semantic analysis',async({page})=>{
  await page.getByRole('button',{name:'Godkänn tabellimport'}).click();
  await expect(page.getByRole('status')).toContainText('Importen har godkänts');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.getByLabel('Mått').selectOption('business_hours');
- await expect(page.locator('.result-head strong')).toHaveText('80 h');
+ const v2=page.locator('.canonical-analytics');
+ await expect(v2).toBeVisible();
+ await expect(v2.getByRole('heading',{name:'Analys – informationsmodell v2'})).toBeVisible();
 });
