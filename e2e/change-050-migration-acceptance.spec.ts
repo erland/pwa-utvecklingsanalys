@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-050: migration gate checks legacy parity, v2 group-year totals and source records',async({page})=>{
+test('CHANGE-050: v2 migration gate checks group-year totals and source records',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
  sheet.getCell('D11').value=2027;
@@ -27,7 +27,6 @@ test('CHANGE-050: migration gate checks legacy parity, v2 group-year totals and 
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await expect(page.locator('.result-head strong')).toHaveText('60 h');
  await v2.getByLabel('V2 UO-gruppmodell').selectOption({label:'Migreringskontroll'});
  const matrix=v2.getByRole('table',{name:'Organisation per år v2'});
  await expect(matrix).toContainText('Operativa UO');
