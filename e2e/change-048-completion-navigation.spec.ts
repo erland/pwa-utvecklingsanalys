@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-048: analysis opens completion and approval workflow using accessible navigation',async({page})=>{
+test('CHANGE-048: v2 analysis opens completion and approval workflow using accessible navigation',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: Test UO';
  sheet.getCell('D11').value=2027;
@@ -21,7 +21,7 @@ test('CHANGE-048: analysis opens completion and approval workflow using accessib
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const=page.locator('.canonical-analytics');
+ const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  const open=v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'});
  await expect(open).toBeVisible();
