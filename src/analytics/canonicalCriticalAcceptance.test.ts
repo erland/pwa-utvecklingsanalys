@@ -30,7 +30,7 @@ const query={axis:'work' as const,metrics:['it_hours' as const],activity:'all' a
 describe('CHANGE-041 critical v2 migration regression',()=>{
  it('isolates work and department axes and honors intersecting source, UO and LO selection',()=>{
   const d=fixture();
-  d.records.push({...record('F2',999,'uo:a','lo:a:1','unknown'),scope:{axis:'department',departmentId:'department:operations'},workloadId:'ds|department|operations|it_hours|2027'});
+  d.records.push({...record('F2',999,'uo:a','lo:a:1','unknown'),scope:{axis:'department',departmentId:'department:operations'},workPart:undefined,workloadId:'ds|department|operations|it_hours|2027'});
   expect(analyzeCanonical(d,state,{...query,year:2027}).total).toBe(1080);
   expect(analyzeCanonical(d,state,{...query,year:2027,uoIds:['uo:a'],loIds:['lo:a:1'],datasetIds:['ds']}).total).toBe(700);
   expect(analyzeCanonical(d,state,{...query,year:2027,uoIds:['uo:a'],loIds:['lo:b:1']}).total).toBe(0);
