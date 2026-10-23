@@ -11,11 +11,12 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const metrics:Metric[]=unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
  let result:ReturnType<typeof analyzeCanonical>|null=null;
- try{if(data&&choices.length)result=analyzeCanonical(data,state,{axis,metrics:choices,activity,year:year==='all'?undefined:Number(year)})}catch(e){error=String(e)}
+ let queryError='';
+ try{if(data&&choices.length)result=analyzeCanonical(data,state,{axis,metrics:choices,activity,year:year==='all'?undefined:Number(year)})}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
- {error&&<p role="alert">{error}</p>}
+ {(error||queryError)&&<p role="alert">{error||queryError}</p>}
  <div className="mapping-grid">
  <label>Enhet<select aria-label="V2 enhet" value={unit} onChange={e=>{const next=e.target.value as 'hours'|'costs';setUnit(next);setSelected(next==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label>
  <fieldset><legend>Ingår i analysen</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{labels[m]}</label>)}</fieldset>
