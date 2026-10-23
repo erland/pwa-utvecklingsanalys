@@ -14,5 +14,5 @@ test('tabular process-hour import reaches semantic analysis',async({page})=>{
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2).toBeVisible();
- await expect(v2.getByRole('heading',{name:'Analys – informationsmodell v2'})).toBeVisible();
+ await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
 });
