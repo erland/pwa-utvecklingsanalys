@@ -6,7 +6,8 @@ export type Issue={code:string;severity:'error'|'warning';message:string;cell?:s
 export type Mapping={sheet:string;uoCell:string;headerRow:number;areaColumn:number;labelColumn:number;startRow:number};
 export const defaultMapping:Mapping={sheet:'UO Tot 2027-30',uoCell:'B1',headerRow:11,areaColumn:2,labelColumn:3,startRow:19};
 export type Coverage={candidates:number;imported:number;unresolved:number;formulas:number;perArea:{name:string;count:number}[]};
-export type ImportResult={profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
+export type DeclaredTotal={measure:Measure;period:{year:number;month?:number};value:number;source:{sheet:string;cell:string};formula:boolean};
+export type ImportResult={declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
 function valueText(cell:ExcelJS.Cell):string{const v=cell.value;if(v==null)return '';if(typeof v==='object'&&! (v instanceof Date)){if('text'in v)return String(v.text);if('result'in v)return String(v.result??'');return '';}return String(v);}
 function measure(s:string):Measure|null{const v=s.toLowerCase().replace(/\s+/g,' ');if(/it[ -]?timmar/.test(v))return 'it_hours';if(/v timmar|verksamhetstimmar/.test(v))return 'business_hours';if(/prod.konsulter|produktkonsulter/.test(v))return 'consultant_cost';if(/omk/.test(v)&&/övrigt/.test(v))return 'other_cost';return null;}
 function period(v:ExcelJS.Cell['value']){if(v instanceof Date)return {year:v.getFullYear(),month:v.getMonth()+1};if(typeof v==='number'&&Number.isInteger(v)&&v>=2020&&v<=2100)return {year:v};if(typeof v==='string'){const m=v.match(/^(20\d{2})(?:[-/]([01]?\d))?$/);if(m)return {year:+m[1],...(m[2]?{month:+m[2]}:{})};}return null;}
@@ -19,6 +20,18 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  const periods=new Map<number,{year:number;month?:number}>();
  for(let c=4;c<=sheet.columnCount;c++){const header=sheet.getCell(mapping?.headerRow??11,c);const p=period(header.value);if(p)periods.set(c,p);else {const annual=valueText(header).match(/^ÅRSBEHOV\s+(20\d{2})$/i);if(annual&&Number(annual[1])>2027)periods.set(c,{year:Number(annual[1])});}}
  if(!periods.size)issues.push({code:'PERIOD_HEADERS_MISSING',severity:'error',message:'Periodrubriker saknas i rad 11.'});
+ const declaredTotals:DeclaredTotal[]=[];
+ // Summary section above detail rows, limited to explicitly recognised metric labels.
+ // Formula results are cached Excel values and may be stale; never import them as facts.
+ for(let r=(mapping?.headerRow??11)+1;r<(mapping?.startRow??19);r++){
+  const row=sheet.getRow(r),kind=measure(valueText(row.getCell(mapping?.labelColumn??3)));
+  if(!kind)continue;
+  for(const [c,p] of periods){
+   const cell=row.getCell(c),formula=cell.type===ExcelJS.ValueType.Formula;
+   const v=formula&&cell.value&&typeof cell.value==='object'&&'result'in cell.value?cell.value.result:cell.value;
+   if(typeof v==='number'&&Number.isFinite(v))declaredTotals.push({measure:kind,period:p,value:v,source:{sheet:sheet.name,cell:cell.address},formula});
+  }
+ }
  let area='';const facts:Fact[]=[];let candidates=0,unresolved=0,formulas=0;
  for(let r=mapping?.startRow??19;r<=sheet.rowCount;r++){
   const row=sheet.getRow(r),a=valueText(row.getCell(mapping?.areaColumn??2)).trim(),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
@@ -37,5 +50,5 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  if(!facts.length)issues.push({code:'NO_DETAIL_VALUES',severity:'warning',message:'Inga ifyllda detaljvärden hittades.'});
  const counts=new Map<string,number>();for(const f of facts)counts.set(f.area,(counts.get(f.area)??0)+1);
  const matrix=matrixMapping===null?undefined:await readMatrix(bytes,matrixMapping??developmentMatrix(sheet.name));
- return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
+ return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
 }
