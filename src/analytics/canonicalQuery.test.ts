@@ -50,6 +50,14 @@ describe('canonical analytics with source-aware completions',()=>{
   expect(analyzeCanonical(d,gaps,{...q,axis:'department'}).total).toBe(1000);
   expect(analyzeCanonical(d,gaps,q).total).toBe(1000);
  });
+ it('filters sources and selected LO without adding overhead or alternative UO matrix',()=>{
+  const d=data();d.records.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  d.records.push({...row('D40',50,'unknown','lo1'),id:'other-D40',workloadId:'other|uo|lo1|it_hours|2027|year',source:{datasetId:'other',sheet:'S',cell:'D40'}});
+  expect(analyzeCanonical(d,gaps,{...q,datasetIds:['ds']}).total).toBe(1100);
+  expect(analyzeCanonical(d,gaps,{...q,datasetIds:['ds'],loIds:['lo1']}).total).toBe(700);
+  expect(analyzeCanonical(d,gaps,{...q,uoIds:['other']}).total).toBe(0);
+  expect(analyzeCanonical(d,gaps,{...q,datasetIds:['other']}).total).toBe(50);
+ });
  it('rejects mixing hours and costs',()=>{
   expect(()=>analyzeCanonical(data(),gaps,{...q,metrics:['it_hours','consultant_cost']})).toThrow('MIXED_UNITS');
  });
