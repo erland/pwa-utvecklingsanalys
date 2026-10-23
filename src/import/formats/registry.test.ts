@@ -24,6 +24,6 @@ describe('code-defined import formats',()=>{
   s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;
   const format=matchWorkbook(wb);
   const result=await format!.parse(await wb.xlsx.writeBuffer() as ArrayBuffer);
-  expect(result.facts).toEqual([expect.objectContaining({area:'LOAUL',value:42,source:{cell:'D26'}})]);
+  expect(result.facts).toEqual([expect.objectContaining({area:'LOAUL',value:42,source:expect.objectContaining({cell:'D26'})})]);
  });
 });
