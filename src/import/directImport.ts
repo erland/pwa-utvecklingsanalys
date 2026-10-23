@@ -1,5 +1,7 @@
 import {recognizeWorkbook} from './formats/registry';
-import {approveBudgetSource,approveTabularSource} from './sourceManagement';
+import {approveBudgetSource,approveTabularSource,replaceImportedSource} from './sourceManagement';
+import {importBudgetFacts} from '../domain/importAdapter';
+import {importTableFacts} from './tabularAdapter';
 import {loadSemantic} from '../domain/semanticStore';
 import {tableIdentityIssues} from './tabularAdapter';
 import type {ImportResult} from './uoBudget';
@@ -23,7 +25,8 @@ export async function prepareDirectImport(file:File):Promise<{result:ImportResul
 }
 
 /** Sequential commits use the existing source-recovery journal; a bad file does not block subsequent files. */
-export async function importFilesDirectly(files:readonly File[],onCommitted?:()=>Promise<void>|void):Promise<DirectImportResult[]>{
+export async function importFilesDirectly(files:readonly File[],onCommitted?:()=>Promise<void>|void,replaceId?:string|null):Promise<DirectImportResult[]>{
+ if(replaceId&&files.length!==1)return files.map(file=>({fileName:file.name,status:'rejected',message:'Välj exakt en fil när en befintlig källa ska ersättas.'}));
  const results:DirectImportResult[]=[];
  for(const file of files){
   try{
@@ -36,12 +39,16 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
     if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.row?' (rad '+i.row+')':'')).join('; '));
     const identities=tableIdentityIssues(await loadSemantic(),result);
     if(identities.length)throw new Error('Objektmatchning kräver granskning: '+identities.join('; '));
-    await approveTabularSource(result,crypto.randomUUID(),file.name,{});
+    if(replaceId){
+     await replaceImportedSource(replaceId,before=>importTableFacts(before,result,replaceId,file.name,{}),{name:file.name,planningYear:result.facts[0].year,source:'excel',importedAt:new Date().toISOString()},undefined,{table:result,resolutions:{}});
+    }else await approveTabularSource(result,crypto.randomUUID(),file.name,{});
     await onCommitted?.();
-    results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:'Importerad'});
+    results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:replaceId?'Ersatt':'Importerad'});
    }else{
     const {result,draft,formatLabel}=await prepareDirectImport(file);
-    await approveBudgetSource(result,draft.id,file.name,false,draft);
+    if(replaceId){
+     await replaceImportedSource(replaceId,before=>importBudgetFacts(before,result,replaceId,file.name,false),{name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},draft,{result,includeMatrix:false});
+    }else await approveBudgetSource(result,draft.id,file.name,false,draft);
     await onCommitted?.();
     results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:'Importerad'});
    }
