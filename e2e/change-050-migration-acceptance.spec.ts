@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-050: migration gate checks group-year totals and source records',async({page})=>{
+test('CHANGE-050: v2 migration gate checks group-year totals and source records',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
  sheet.getCell('D11').value=2027;
@@ -25,9 +25,9 @@ test('CHANGE-050: migration gate checks group-year totals and source records',as
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const=page.locator('.canonical-analytics');
+ const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await.getByLabel('UO-gruppmodell').selectOption({label:'Migreringskontroll'});
+ await v2.getByLabel('UO-gruppmodell').selectOption({label:'Migreringskontroll'});
  const matrix=v2.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toContainText('Operativa UO');
  await expect(matrix).toContainText('2027');
@@ -38,11 +38,11 @@ test('CHANGE-050: migration gate checks group-year totals and source records',as
  const results=v2.getByRole('table',{name:'analysresultat'});
  await expect(results).toContainText('Källposter');
  await expect(results).toContainText('Operativa UO');
- await.getByLabel('period').selectOption('2027');
+ await v2.getByLabel('period').selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await expect(matrix).not.toContainText('2028');
- await.getByLabel('period').selectOption('all');
- await.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
+ await v2.getByLabel('period').selectOption('all');
+ await v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
  await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('60 h');
