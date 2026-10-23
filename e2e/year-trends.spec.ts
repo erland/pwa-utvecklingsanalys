@@ -16,7 +16,7 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
  await expect(page.getByRole('table',{name:'Periodtabell'})).toBeVisible();
  await page.getByLabel('Tidsvisning').selectOption('trend');
  await expect(page.getByRole('img',{name:'Trendlinjer per grupp'})).toBeVisible();
- await page.getByLabel('År').selectOption('2027');
+ await page.getByLabel('År',{exact:true}).selectOption('2027');
  await expect(page.getByLabel('Tidsvisning')).toHaveCount(0);
  await expect(page.locator('.analysis-table').first()).toBeVisible();
 });
