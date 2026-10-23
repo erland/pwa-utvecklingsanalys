@@ -15,6 +15,8 @@ describe('canonical analytics with source-aware completions',()=>{
  it('does not add alternative UO activity matrix to LO totals',()=>{
   const out=analyzeCanonical(data(),gaps,q);
   expect(out.total).toBe(1000);expect(out.excludedAlternatives).toBe(2);
+  expect(out.includedRecords).toBe(2);
+  expect(out.rowCounts).toEqual({lo1:1,lo2:1});
  });
  it('preserves additive UO overhead totals while excluding the alternative activity matrix',()=>{
   const d=data();
@@ -22,6 +24,7 @@ describe('canonical analytics with source-aware completions',()=>{
   const out=analyzeCanonical(d,gaps,q);
   expect(out.total).toBe(1100);
   expect(out.excludedAlternatives).toBe(2);
+  expect(out.includedRecords).toBe(3);
   expect(out.rows.find(r=>r.key==='uo')?.value).toBe(100);
   expect(analyzeCanonical(d,gaps,{...q,activity:'unknown'}).total).toBe(1100);
  });
@@ -37,7 +40,9 @@ describe('canonical analytics with source-aware completions',()=>{
   const d=data(),rule={id:'r',datasetId:'ds',uoId:'uo',metric:'it_hours' as const,year:2027,reason:'Reviewed allocation'};
   const decision=approveActivityAllocation(previewActivityAllocation(d,rule),'Approved');
   const state={...gaps,activityAllocationRules:[rule],activityAllocationDecisions:[decision]};
-  expect(analyzeCanonical(d,state,{...q,activity:'development'}).total).toBe(600);
+  const devResult=analyzeCanonical(d,state,{...q,activity:'development'});
+  expect(devResult.total).toBe(600);
+  expect(devResult.includedRecords).toBe(2);
   expect(analyzeCanonical(d,state,{...q,activity:'maintenance'}).total).toBe(400);
   expect(analyzeCanonical(d,state,q).total).toBe(1000);
   const changed=data();changed.records[2].value=680;changed.records[3].value=320;
