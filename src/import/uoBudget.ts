@@ -50,7 +50,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  let area='';const facts:Fact[]=[];let candidates=0,unresolved=0,formulas=0;
  for(let r=mapping?.startRow??19;r<=sheet.rowCount;r++){
   const row=sheet.getRow(r),a=areaText(sheet,row.getCell(mapping?.areaColumn??2)),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
-  if(a){area=/^(?:UO Övergripande|LO(?:\\s+)?[^\\s]+)(?:\\s.*)?$/i.test(a)?a:'';}
+  if(a){area=/^(?:UO Övergripande|LO(?:\s+)?[^\s]+)(?:\s.*)?$/i.test(a)?a:'';}
   const kind=measure(label);
   if(!label||/\bTOT\b|\bSUMMA\b/i.test(label))continue;
   for(const [c,p] of periods){
