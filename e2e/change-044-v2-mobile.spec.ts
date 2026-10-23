@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-044: narrow portrait viewport keeps analysis usable with charts and filters',async({page})=>{
+test('CHANGE-044: narrow portrait viewport keeps v2 analysis usable with charts and filters',async({page})=>{
  await page.setViewportSize({width:390,height:844});
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: Mobiltest';
@@ -16,17 +16,17 @@ test('CHANGE-044: narrow portrait viewport keeps analysis usable with charts and
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const=page.locator('.canonical-analytics');
+ const v2=page.locator('.canonical-analytics');
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await.getByLabel('period').selectOption('2027');
- await.getByLabel('tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för-mått'})).toBeVisible();
- await.getByLabel('Diagramtyp för-fördelning').selectOption('pie');
+ await v2.getByLabel('period').selectOption('2027');
+ await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
+ await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
+ await v2.getByLabel('Diagramtyp för fördelning').selectOption('pie');
  await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 42 h/})).toBeVisible();
  await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
  // Check that the key interactive controls and result are within the visible viewport width.
- for(const locator of [v2.getByLabel('period'),v2.getByLabel('tidsdiagramtyp'),v2.getByLabel('Diagramtyp för-fördelning'),v2.locator('.canonical-result-head strong')]){
+ for(const locator of [v2.getByLabel('period'),v2.getByLabel('tidsdiagramtyp'),v2.getByLabel('Diagramtyp för fördelning'),v2.locator('.canonical-result-head strong')]){
   const box=await locator.boundingBox();
   expect(box,'Control or result must have a measurable position').not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
