@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
-test('CHANGE-042: approve and revoke allocation through real UI',async({page})=>{
+test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
  sheet.getCell('D11').value=2027;
@@ -23,18 +23,18 @@ test('CHANGE-042: approve and revoke allocation through real UI',async({page})=>
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const=page.locator('.canonical-analytics');
+ const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await.getByLabel('aktivitet').selectOption('development');
+ await v2.getByLabel('aktivitet').selectOption('development');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('0 h');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  const allocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await expect(allocation.getByLabel('fördelningskälla')).toContainText('it_hours');
- await allocation.getByRole('button',{name:'Skapa-fördelning'}).click();
+ await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await allocation.getByLabel('godkännandemotivering', {exact:false}).fill('Testad källavstämning');
- await allocation.getByRole('button',{name:'Godkänn-fördelning'}).click();
+ await allocation.getByRole('button',{name:'Godkänn fördelning'}).click();
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const updated=page.locator('.canonical-analytics');
@@ -45,7 +45,7 @@ test('CHANGE-042: approve and revoke allocation through real UI',async({page})=>
  await updated.getByLabel('aktivitet').selectOption('all');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('42 h');
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
- await allocation.getByRole('button',{name:'Återkalla-godkännande'}).click();
+ await allocation.getByRole('button',{name:'Återkalla godkännande'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await page.locator('.canonical-analytics').getByLabel('aktivitet').selectOption('development');
