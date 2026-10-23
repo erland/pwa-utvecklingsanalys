@@ -22,7 +22,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  <fieldset><legend>Ingår i analysen</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{labels[m]}</label>)}</fieldset>
  <label>Aktivitet<select aria-label="V2 aktivitet" value={activity} onChange={e=>setActivity(e.target.value as Activity|'all')}><option value="all">Alla aktiviteter</option><option value="development">Utveckling</option><option value="maintenance">Förvaltning</option><option value="unknown">Okänd aktivitetsfördelning</option></select></label>
  <label>Redovisning<select aria-label="V2 organisation" value={axis} onChange={e=>setAxis(e.target.value as ReportingAxis)}><option value="work">UO och LO</option><option value="department">Avdelningar</option></select></label>
- <label>År<select aria-label="V2 år" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+ <label>År<select aria-label="V2 period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
  </div>
  {!data?<p>Hämtar v2-data…</p>:!data.records.length?<p>Inga data i informationsmodell v2. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong></div></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
