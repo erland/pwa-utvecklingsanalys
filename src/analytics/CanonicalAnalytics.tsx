@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import {analyzeCanonical} from './canonicalQuery';
+import {canonicalTrend} from './canonicalTrend';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
@@ -16,8 +17,9 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const metrics:Metric[]=unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
  let result:ReturnType<typeof analyzeCanonical>|null=null;
+ let trend:ReturnType<typeof canonicalTrend>=[];
  let queryError='';
- try{if(data&&choices.length)result=analyzeCanonical(data,state,{axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos})}catch(e){queryError=String(e)}
+ try{if(data&&choices.length){const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos};result=analyzeCanonical(data,state,query);trend=canonicalTrend(data,state,query)}}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
@@ -38,6 +40,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} godkännanden behöver omprövas efter ändrat källunderlag.</p>}
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
+ <section aria-label="Årstrend v2"><h3>Årsvis utveckling</h3><p>Varje stapel visar ett separat års- och måtturval. Ofullständig aktivitetstäckning markeras och saknade mätvärden visas inte som noll.</p><div className="canonical-trend">{trend.map(point=>{const max=Math.max(1,...trend.filter(p=>p.metric===point.metric).map(p=>p.value));return <div className="canonical-trend-row" key={point.year+'-'+point.metric}><span>{point.year} · {labels[point.metric]}</span><div className="canonical-trend-track"><div className="canonical-trend-fill" style={{width:(point.value/max*100)+'%'}}/></div><strong>{format(point.value)} {point.unit}</strong>{point.unknownCount>0&&<small>Ofullständig täckning ({point.unknownCount})</small>}{point.staleApprovals>0&&<small>Inaktuella godkännanden ({point.staleApprovals})</small>}</div>})}</div></section>
  <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="V2 analysresultat"><thead><tr><th>Organisationsdel</th><th>Värde</th></tr></thead><tbody>{result.rows.map(row=><tr key={row.key}><td>{row.label}</td><td>{format(row.value)} {result?.unit}</td></tr>)}</tbody></table></div></>:null}
  </section>;
 }
