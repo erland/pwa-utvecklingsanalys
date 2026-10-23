@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs';
 test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
- sheet.getCell('D11').value=new Date(2027,0,1);
+ sheet.getCell('D11').value=2027;
  sheet.getCell('B25').value='LO 1';
  sheet.getCell('C26').value='IT timmar (h)';
  sheet.getCell('D26').value=42;
