@@ -27,7 +27,7 @@ test('CHANGE-048: v2 analysis opens completion and approval workflow using acces
  await expect(open).toBeVisible();
  await open.click();
  await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Aktivitetsfördelning till LO – modell v2'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Aktivitetsfördelning till LO'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });

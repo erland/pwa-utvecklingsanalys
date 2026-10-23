@@ -16,8 +16,8 @@ test('CHANGE-046: v2 preserves historical period totals without rendering the le
  const v2=page.locator('.canonical-analytics');
  await expect(page.locator('.analysis-layout')).toHaveCount(0);
  await expect(v2.locator('.canonical-result-head strong')).toHaveText('60 h');
- await v2.getByLabel('V2 period').selectOption('2027');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toHaveText('42 h');
- await v2.getByLabel('V2 period').selectOption('2028');
+ await v2.getByLabel('period',{exact:true}).selectOption('2028');
  await expect(v2.locator('.canonical-result-head strong')).toHaveText('18 h');
 });

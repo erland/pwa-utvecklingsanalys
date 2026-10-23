@@ -17,16 +17,16 @@ test('CHANGE-044: narrow portrait viewport keeps v2 analysis usable with charts 
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
- await expect(v2.getByRole('heading',{name:'Analys – informationsmodell v2'})).toBeVisible();
+ await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('V2 period').selectOption('2027');
- await v2.getByLabel('V2 tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för v2-mått'})).toBeVisible();
- await v2.getByLabel('Diagramtyp för v2-fördelning').selectOption('pie');
- await expect(v2.getByRole('img',{name:/Cirkelfördelning v2, total 42 h/})).toBeVisible();
- await expect(v2.getByRole('table',{name:'V2 analysresultat'})).toContainText('42 h');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
+ await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
+ await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
+ await v2.getByLabel('Diagramtyp för fördelning').selectOption('pie');
+ await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 42 h/})).toBeVisible();
+ await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
  // Check that the key interactive controls and result are within the visible viewport width.
- for(const locator of [v2.getByLabel('V2 period'),v2.getByLabel('V2 tidsdiagramtyp'),v2.getByLabel('Diagramtyp för v2-fördelning'),v2.locator('.canonical-result-head strong')]){
+ for(const locator of [v2.getByLabel('period',{exact:true}),v2.getByLabel('tidsdiagramtyp'),v2.getByLabel('Diagramtyp för fördelning'),v2.locator('.canonical-result-head strong')]){
   const box=await locator.boundingBox();
   expect(box,'Control or result must have a measurable position').not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);

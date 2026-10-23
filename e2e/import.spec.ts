@@ -23,8 +23,8 @@ test('import review survives reload and can be approved',async({page})=>{
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
- await page.getByLabel('V2 period').selectOption('2027');
- await expect(page.getByRole('table',{name:'V2 analysresultat'})).toContainText('LO 1');
+ await page.getByLabel('period',{exact:true}).selectOption('2027');
+ await expect(page.getByRole('table',{name:'analysresultat'})).toContainText('LO 1');
 });
 
 test('v2 analysis controls keep units separate and filter by year and activity',async({page})=>{
@@ -42,14 +42,14 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
- await expect(v2.getByRole('heading',{name:'Analys – informationsmodell v2'})).toBeVisible();
+ await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('V2 period').selectOption('2027');
+ await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('V2 aktivitet').selectOption('development');
+ await v2.getByLabel('aktivitet').selectOption('development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
- await v2.getByLabel('V2 enhet').selectOption('costs');
+ await v2.getByLabel('enhet').selectOption('costs');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
- await v2.getByLabel('V2 organisation',{exact:true}).selectOption('department');
+ await v2.getByLabel('organisation',{exact:true}).selectOption('department');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('0 SEK');
 });

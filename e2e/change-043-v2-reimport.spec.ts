@@ -25,24 +25,24 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('V2 aktivitet').selectOption('development');
+ await v2.getByLabel('aktivitet').selectOption('development');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('0 h');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
- const allocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO – modell v2'}).locator('..');
- await expect(allocation.getByLabel('V2 fördelningskälla')).toContainText('it_hours');
- await allocation.getByRole('button',{name:'Skapa v2-fördelning'}).click();
+ const allocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
+ await expect(allocation.getByLabel('fördelningskälla')).toContainText('it_hours');
+ await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
- await allocation.getByLabel('V2 godkännandemotivering', {exact:false}).fill('Testad källavstämning');
- await allocation.getByRole('button',{name:'Godkänn v2-fördelning'}).click();
+ await allocation.getByLabel('godkännandemotivering', {exact:false}).fill('Testad källavstämning');
+ await allocation.getByRole('button',{name:'Godkänn fördelning'}).click();
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const updated=page.locator('.canonical-analytics');
- await updated.getByLabel('V2 aktivitet').selectOption('development');
+ await updated.getByLabel('aktivitet').selectOption('development');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('25 h');
- await updated.getByLabel('V2 aktivitet').selectOption('maintenance');
+ await updated.getByLabel('aktivitet').selectOption('maintenance');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('17 h');
- await updated.getByLabel('V2 aktivitet').selectOption('all');
+ await updated.getByLabel('aktivitet').selectOption('all');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('42 h');
 
  // Replace the exact previously approved source; no imported record is manually edited.
@@ -69,17 +69,17 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const staleV2=page.locator('.canonical-analytics');
  await expect(staleV2.locator('.canonical-result-head strong')).toContainText('40 h');
- await staleV2.getByLabel('V2 aktivitet').selectOption('development');
+ await staleV2.getByLabel('aktivitet').selectOption('development');
  await expect(staleV2.locator('.canonical-result-head strong')).toContainText('0 h');
  await expect(staleV2.getByText('godkännanden behöver omprövas',{exact:false})).toBeVisible();
 
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
- const changedAllocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO – modell v2'}).locator('..');
+ const changedAllocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await expect(changedAllocation.getByText('Kräver nytt godkännande')).toBeVisible();
- await changedAllocation.getByLabel('V2 godkännandemotivering',{exact:false}).fill('Kontrollerad efter källbyte');
- await changedAllocation.getByRole('button',{name:'Godkänn v2-fördelning'}).click();
+ await changedAllocation.getByLabel('godkännandemotivering',{exact:false}).fill('Kontrollerad efter källbyte');
+ await changedAllocation.getByRole('button',{name:'Godkänn fördelning'}).click();
  await expect(changedAllocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.locator('.canonical-analytics').getByLabel('V2 aktivitet').selectOption('development');
+ await page.locator('.canonical-analytics').getByLabel('aktivitet').selectOption('development');
  await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('24 h');
 });
