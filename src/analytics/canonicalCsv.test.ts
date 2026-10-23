@@ -15,6 +15,6 @@ describe('canonical CSV export',()=>{
  });
  it('escapes spreadsheet formulas in labels',()=>{
   const csv=canonicalCsv({...result,rows:[{key:'unsafe',label:'=HYPERLINK("x")',value:3}]},[]);
-  expect(csv).toContain('''=HYPERLINK');
+  expect(csv).toContain("'=HYPERLINK");
  });
 });
