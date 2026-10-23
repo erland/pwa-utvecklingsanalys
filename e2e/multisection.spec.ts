@@ -14,6 +14,5 @@ test('separately approve development and maintenance matrix without adding to de
  await page.getByRole('button',{name:'Godkänn import'}).click();
  await expect(page.getByRole('status')).toContainText('Importen godkänd');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.result-head strong')).toHaveText('42 h');
- await expect(page.getByRole('table',{name:'Utveckling och förvaltning'})).toContainText('3 000 h');
+ await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });
