@@ -71,6 +71,17 @@ describe('canonical analytics with source-aware completions',()=>{
   const out=analyzeCanonical(data(),gaps,{...q,groupModel:{id:'m',name:'M',groups:[]}});
   expect(out.rows).toEqual([{key:'unassigned',label:'Ej grupperad',value:1000}]);
  });
+ it('groups by dataset source without counting alternative UO activity summaries twice',()=>{
+  const d=data();
+  d.records.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  d.records.push({...row('D40',50,'unknown','lo1'),id:'other-D40',workloadId:'other|uo|lo1|it_hours|2027|year',source:{datasetId:'other',sheet:'S',cell:'D40'}});
+  const grouped=analyzeCanonical(d,gaps,{...q,groupBy:'source'});
+  expect(grouped.total).toBe(1150);
+  expect(grouped.rows).toEqual([{key:'ds',label:'ds',value:1100},{key:'other',label:'other',value:50}]);
+  expect(grouped.excludedAlternatives).toBe(2);
+  expect(analyzeCanonical(d,gaps,{...q,groupBy:'source',datasetIds:['other']}).rows).toEqual([{key:'other',label:'other',value:50}]);
+  expect(analyzeCanonical(d,gaps,{...q,groupBy:'source',loIds:['lo1']}).total).toBe(750);
+ });
  it('rejects mixing hours and costs',()=>{
   expect(()=>analyzeCanonical(data(),gaps,{...q,metrics:['it_hours','consultant_cost']})).toThrow('MIXED_UNITS');
  });
