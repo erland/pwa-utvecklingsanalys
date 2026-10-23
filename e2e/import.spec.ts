@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
-test('import review survives reload and can be approved',async({page})=>{
+test('direct import persists after reload and is available for analysis',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: UO A';
  sheet.getCell('D11').value=new Date(2027,0,1);
@@ -10,14 +10,12 @@ test('import review survives reload and can be approved',async({page})=>{
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByText('42 h')).toBeVisible();
- await expect(page.getByRole('button',{name:'Godkänn import'})).toBeEnabled();
+ await page.locator('#direct-import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerade');
  await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await expect(page.getByText('42 h')).toBeVisible();
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await expect(page.getByRole('heading',{name:'Importerade källor'})).toBeVisible();
+ await expect(page.getByRole('table').first()).toContainText('UO A');
  await page.getByRole('button',{name:'Översikt',exact:true}).click();
  await expect(page.getByText('Importerade filer').locator('..')).toContainText('1');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
@@ -37,9 +35,8 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'uo-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'uo-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status').filter({hasText:'uo-v2.xlsx'})).toContainText('importerade');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
