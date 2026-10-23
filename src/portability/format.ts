@@ -1,3 +1,4 @@
+import {validateCanonical,type CanonicalDataset} from '../domain/canonical';
 import {validateReconciliationRule} from '../reconciliation/model';
 import type {GapState} from '../gaps/store';
 import {validateResolution,validateRequirement} from '../gaps/model';
@@ -13,19 +14,19 @@ import {validateAllocation} from '../allocations/model';
 export interface ArchivedDraft {id:string;fileName:string;bytesBase64:string;result:import('../import/uoBudget').ImportResult;uoName:string;status:'review'|'ready';updatedAt:string;mapping?:import('../import/uoBudget').Mapping}
 export interface ArchivedRevision {id:string;createdAt:string;reason:string;data:ConfigPackage}
 export interface ProjectBackup {
- format:'utvecklingsanalys-project';version:1|2;exportedAt:string;
- project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;drafts?:ArchivedDraft[];configurationHistory?:ArchivedRevision[];gapState?:GapState;
+ format:'utvecklingsanalys-project';version:1|2|3;exportedAt:string;
+ project:AnalysisProject;semantic:SemanticDataset;planning:PlanningState;configuration:ConfigPackage|null;legacyAllocations:Allocations;drafts?:ArchivedDraft[];configurationHistory?:ArchivedRevision[];gapState?:GapState;canonical?:CanonicalDataset;
 }
 export function validateBackup(input:unknown):ProjectBackup{
  if(!input||typeof input!=='object')throw new Error('INVALID_BACKUP');
  const b=input as ProjectBackup;
- if(b.format!=='utvecklingsanalys-project'||b.version!==1&&b.version!==2)throw new Error('UNSUPPORTED_BACKUP_VERSION');
+ if(b.format!=='utvecklingsanalys-project'||b.version!==1&&b.version!==2&&b.version!==3)throw new Error('UNSUPPORTED_BACKUP_VERSION');
  if(!b.project||b.project.schemaVersion!==1||typeof b.project.id!=='string'||typeof b.project.name!=='string'||!Array.isArray(b.project.datasets))throw new Error('INVALID_PROJECT');
  migrateSemantic(b.semantic);
  if(!b.planning||b.planning.schemaVersion!==1||!Array.isArray(b.planning.scenarios))throw new Error('INVALID_PLANNING');
  if(b.configuration!==null)parsePackage(b.configuration);
  if(!b.legacyAllocations||validateAllocation(b.legacyAllocations).length||b.legacyAllocations.schemaVersion!==1)throw new Error('INVALID_ALLOCATIONS');
- if(b.version===2){
+ if(b.version>=2){
   if(!Array.isArray(b.drafts)||!Array.isArray(b.configurationHistory))throw new Error('INCOMPLETE_PROJECT_ARCHIVE');
   const unique=new Set<string>();
   for(const d of b.drafts){
@@ -46,7 +47,9 @@ export function validateBackup(input:unknown):ProjectBackup{
  if(b.gapState?.manualApprovals){const seen=new Set<string>();for(const a of b.gapState.manualApprovals){if(!a.key||seen.has(a.key)||!a.resolutionUpdatedAt||!a.approvedAt||!b.gapState.resolutions.some(r=>r.key===a.key&&r.status==='manual'))throw new Error('INVALID_MANUAL_APPROVAL');seen.add(a.key)}}
  if(b.gapState?.reconciliations){const names=new Set<string>();for(const rule of b.gapState.reconciliations){if(names.has(rule.id)||validateReconciliationRule(rule,b.semantic).length)throw new Error('INVALID_RECONCILIATION_RULE');names.add(rule.id)}}
  if(b.gapState?.reconciliationDecisions){const keys=new Set<string>();for(const decision of b.gapState.reconciliationDecisions){if(!decision.key||keys.has(decision.key)||!decision.fingerprint||!decision.reason?.trim()||!decision.updatedAt)throw new Error('INVALID_RECONCILIATION_DECISION');keys.add(decision.key)}}
+ if(b.version===3&&(!b.canonical||validateCanonical(b.canonical).length))throw new Error('INVALID_CANONICAL_BACKUP');
  const datasets=new Set(b.project.datasets.map(x=>x.id));
+ if(b.version===3)for(const row of b.canonical!.records)if(row.source&&!datasets.has(row.source.datasetId))throw new Error('MISSING_CANONICAL_SOURCE');
  for(const o of b.semantic.observations)if(!datasets.has(o.source.datasetId))throw new Error('MISSING_DATASET_SUMMARY');
  const ids=new Set(b.semantic.observations.map(o=>o.id));
  for(const scenario of b.planning.scenarios){if(!scenario.id||!['draft','approved'].includes(scenario.status)||!Array.isArray(scenario.adjustments)||scenario.adjustments.some(a=>!ids.has(a.observationId)||!Number.isFinite(a.value)))throw new Error('INVALID_SCENARIO_REFERENCE');}
