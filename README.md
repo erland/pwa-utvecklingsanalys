@@ -1,16 +1,17 @@
 # Utvecklingsanalys
 
-React + TypeScript + Vite PWA för verksamhetsutvecklingsanalys, lokalt i webbläsaren.
+React + TypeScript + Vite-baserad PWA för att samla in, komplettera och analysera uppgifter om verksamhetsutveckling. Projektdata lagras lokalt i webbläsarens IndexedDB.
 
-## DEV-001 – avgränsning
+## Funktioner
 
-- Navigation med fem arbetsytor; responsivt och tillgängliga formulär.
-- Syntetisk demoanalys för urval, gruppering och timmar (inga importdata utges för att vara verkliga).
-- Tomt projekt och projektnamn lagras i IndexedDB.
-- PWA-manifest, service worker, appikon och grund för offline.
-- Unit-tester, Playwright-test och GitHub Actions-verifiering.
+- Import och granskning av Excelunderlag, inklusive tabeller och olika sektioner i UO-mallar.
+- Kanonisk informationsmodell v2 som **enda analysvy**, med filter för mått, perioder, källor, UO och LO samt redovisning per avdelning.
+- Analys av utveckling och förvaltning, källspårbarhet, årstrender, organisation × år, diagram och CSV-export.
+- Informationsluckor, kompletteringar, fördelningsregler och godkännande/återkallelse med omprövning när källunderlaget ändras.
+- Konfiguration av UO-grupper och relationer, projektbackup och återställning.
+- Responsivt gränssnitt och PWA med stöd för användning utan nätverk efter installation/cachelagring.
 
-**Excelimport, fullständig analysmodell och konfigurationspaket kommer i senare steg.** Importvyn visar tydligt att uppladdning ännu inte stöds.
+Den äldre analysvyn har avvecklats. Historiska semantiska data och backupformat finns kvar för kompatibilitet; använd informationsmodell v2 för analyser.
 
 ## Kom igång
 
@@ -19,13 +20,33 @@ npm install
 npm run dev
 ```
 
-Verifiering: `npm run lint && npm run typecheck && npm test && npm run build && npm run test:browser`.
+Kör den lokala verifieringen:
 
-För GitHub Pages ska `base` och PWA-manifestets scope anpassas om appen distribueras under en undermapp; vi har valt relativa länkar tills dess deploymentprofilen bestäms.
+```sh
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run build:singlefile
+node scripts/verify-singlefile.mjs
+npm run test:browser
+```
 
-Plan och krav finns i `docs/` och projektstatus i `.system-builder/`.
+Browser- och single-file-verifieringen förutsätter att Playwright Chromium är installerat. CI installerar detta automatiskt.
 
+## Distribution och release
 
-## Verifiering med Agent Workspace (2026-10-21)
+Workflowfilen `.github/workflows/release.yml` startar när en GitHub Release publiceras. Det kör hela verifieringen, publicerar PWA till GitHub Pages och bifogar en självständig `utvecklingsanalys-standalone.html` som releasefil. Den kan öppnas lokalt, men webbläsaren kan begränsa lagring och nätverksanrop från `file://`. Kontrollera funktionerna i målmiljön innan användning av verkliga data.
 
-Efter korrigering av Vitest-avgränsning och oanvända imports passerade npm-installation, 4 enhetstester samt TypeScript/Vite-produktionsbygge inklusive service worker. Lint och Playwright E2E har ännu inte körts; DEV-001 är därför fortsatt öppet. CI använder tills vidare npm install eftersom package-lock.json saknas; inför låsfil och npm ci innan release.
+För releasekandidat **v0.2.0**:
+
+1. Merga releaseförberedande PR efter grön CI.
+2. Skapa taggen `v0.2.0` från den då aktuella `main`-committen och publicera en GitHub Release med releaseanteckningarna i `docs/releases/v0.2.0.md`.
+3. Kontrollera att `Publish release (Pages + standalone HTML)` är grön och att HTML-filen bifogats releasen.
+4. Provöppna både Pages-versionen och HTML-filen, importera syntetiskt testunderlag och kontrollera analys och projektbackup.
+
+> Säkerhetsråd: exportera och spara projektbackup innan uppdatering av en befintlig installation. Lokala data får inte antas överföras automatiskt mellan GitHub Pages och `file://`, eftersom webbläsaren behandlar dem som olika ursprung.
+
+## Dokumentation
+
+Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
