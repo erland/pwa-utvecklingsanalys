@@ -1,4 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
+import {readConfiguration} from '../config/store';
+import type {UoGroupModel} from './groupModels';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import {analyzeCanonical} from './canonicalQuery';
@@ -10,6 +12,8 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
  const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[activity,setActivity]=useState<Activity|'all'>('all'),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
+ const [models,setModels]=useState<UoGroupModel[]>([]),[groupModelId,setGroupModelId]=useState('');
+ useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active)setModels(c?.sections.groups??[])}).catch(()=>{if(active)setModels([])});return()=>{active=false}},[refreshKey]);
  const [organizationDisplay,setOrganizationDisplay]=useState<'table'|'bar'>('table');
  const [selectedSources,setSelectedSources]=useState<string[]>([]),[selectedUos,setSelectedUos]=useState<string[]>([]),[selectedLos,setSelectedLos]=useState<string[]>([]);
  const sources=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.source?.datasetId??r.workloadId.split('|')[0]).filter(Boolean))].sort(),[data]);
@@ -22,7 +26,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  let result:ReturnType<typeof analyzeCanonical>|null=null;
  let trend:ReturnType<typeof canonicalTrend>=[];
  let queryError='';
- try{if(data&&choices.length){const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos};result=analyzeCanonical(data,state,query);trend=canonicalTrend(data,state,query)}}catch(e){queryError=String(e)}
+ try{if(data&&choices.length){const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos,groupModel:axis==='work'&&groupModelId?models.find(m=>m.id===groupModelId):undefined};result=analyzeCanonical(data,state,query);trend=canonicalTrend(data,state,query)}}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
@@ -32,7 +36,9 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  <fieldset><legend>Ingår i analysen</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{labels[m]}</label>)}</fieldset>
  <label>Aktivitet<select aria-label="V2 aktivitet" value={activity} onChange={e=>setActivity(e.target.value as Activity|'all')}><option value="all">Alla aktiviteter</option><option value="development">Utveckling</option><option value="maintenance">Förvaltning</option><option value="unknown">Okänd aktivitetsfördelning</option></select></label>
  <label>Redovisning<select aria-label="V2 organisation" value={axis} onChange={e=>setAxis(e.target.value as ReportingAxis)}><option value="work">UO och LO</option><option value="department">Avdelningar</option></select></label>
+ {axis==='work'&&<label>Gruppera UO<select aria-label="V2 UO-gruppmodell" value={groupModelId} onChange={e=>setGroupModelId(e.target.value)}><option value="">Ingen gruppmodell (UO/LO)</option>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>}
  <label>År<select aria-label="V2 period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+ {axis==='work'&&groupModelId&&<p className="notice">Varje UO tilldelas första matchande grupp i vald modell. UO utan grupp visas som Ej grupperad. Årssummor och jämförelser räknas fortfarande från källuppgifter.</p>}
  <details><summary>Fler filter – datakälla, UO och LO</summary><p>Tomt urval betyder alla. Valda LO begränsar analysen till dessa LO och tar inte med UO Övergripande.</p>
  <div className="mapping-grid"><fieldset><legend>Datakällor</legend>{sources.map(id=><label className="check" key={id}><input type="checkbox" checked={selectedSources.includes(id)} onChange={()=>setSelectedSources(old=>toggle(old,id))}/>{id}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedSources([])}>Alla källor</button></fieldset>
  {axis==='work'&&<><fieldset><legend>UO</legend>{uos.map(id=><label className="check" key={id}><input type="checkbox" checked={selectedUos.includes(id)} onChange={()=>setSelectedUos(old=>toggle(old,id))}/>{decodeURIComponent(id.slice(3))}</label>)}<button type="button" className="secondary" onClick={()=>setSelectedUos([])}>Alla UO</button></fieldset>
