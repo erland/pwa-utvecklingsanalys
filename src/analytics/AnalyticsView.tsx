@@ -1,3 +1,4 @@
+import CanonicalAnalytics from './CanonicalAnalytics';
 import CompletionAnalysis from '../gaps/CompletionAnalysis';
 import {useEffect,useMemo,useState} from 'react';
 import {loadSemantic} from '../domain/semanticStore';
@@ -38,6 +39,7 @@ export default function AnalyticsView({refreshKey}:{refreshKey:number}){
  const toggle=(id:string,selection:string[],set:(x:string[])=>void)=>set(selection.includes(id)?selection.filter(x=>x!==id):[...selection,id]);
  const fmt=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <><div className="eyebrow">ANALYS · IMPORTERADE DATA</div><h1>Analysera utvecklingsbehoven</h1><p className="lead">Resultaten baseras på godkända importer i webbläsaren. Varje mått visas separat och källornas totalrader räknas inte dubbelt.</p>
+ <CanonicalAnalytics refreshKey={refreshKey}/>
  {error&&<p role="alert">{error}</p>}
  {!data?<p>Hämtar analysdata…</p>:!data.observations.length?<section className="panel"><h2>Inga importerade analysvärden ännu</h2><p>Gå till Import och godkänn en Excel-fil. Demoanalysen visas inte som verkliga uppgifter.</p></section>:
  <div className="analysis-layout"><details className="analysis-filter-disclosure" open><summary>Analysfilter – visa eller dölj</summary><section className="panel filters">
