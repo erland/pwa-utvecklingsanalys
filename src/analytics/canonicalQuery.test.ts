@@ -82,6 +82,16 @@ describe('canonical analytics with source-aware completions',()=>{
   expect(analyzeCanonical(d,gaps,{...q,groupBy:'source',datasetIds:['other']}).rows).toEqual([{key:'other',label:'other',value:50}]);
   expect(analyzeCanonical(d,gaps,{...q,groupBy:'source',loIds:['lo1']}).total).toBe(750);
  });
+ it('groups by year while respecting source and LO filters and excluding alternative matrices',()=>{
+  const d=data();
+  d.records.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  d.records.push({...row('D28',250,'unknown','lo1'),id:'other-year',year:2028,workloadId:'ds|uo|lo1|it_hours|2028|year',source:{datasetId:'ds',sheet:'S',cell:'D28'}});
+  const out=analyzeCanonical(d,gaps,{axis:'work',metrics:['it_hours'],activity:'all',groupBy:'year'});
+  expect(out.total).toBe(1350);
+  expect(out.rows).toEqual([{key:'2027',label:'2027',value:1100},{key:'2028',label:'2028',value:250}]);
+  expect(out.excludedAlternatives).toBe(2);
+  expect(analyzeCanonical(d,gaps,{axis:'work',metrics:['it_hours'],activity:'all',groupBy:'year',loIds:['lo1']}).rows).toEqual([{key:'2027',label:'2027',value:700},{key:'2028',label:'2028',value:250}]);
+ });
  it('rejects mixing hours and costs',()=>{
   expect(()=>analyzeCanonical(data(),gaps,{...q,metrics:['it_hours','consultant_cost']})).toThrow('MIXED_UNITS');
  });
