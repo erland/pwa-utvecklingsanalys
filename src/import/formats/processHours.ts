@@ -7,6 +7,7 @@ import {parseTable,type TableResult,type TableMapping} from '../tabular';
  * Two-column sheets without an explicit year remain unsupported: never invent a year.
  */
 export const processHoursFormat={
+ kind:'table' as const,
  id:'process-hours-year',
  label:'Processtimmar per år',
  matches(workbook:ExcelJS.Workbook):boolean{
