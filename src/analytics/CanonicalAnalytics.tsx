@@ -10,7 +10,7 @@ import {compareTrend} from './canonicalComparison';
 import {canonicalCsv} from './canonicalCsv';
 import {CHART_COLORS,pieEligibility,pieSlices} from './charts';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
-export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
+export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refreshKey:number;onOpenCompletions:()=>void}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
  const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[activity,setActivity]=useState<Activity|'all'>('all'),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
@@ -33,7 +33,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number}){
  try{if(data&&choices.length){const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos,groupModel:axis==='work'&&resultGrouping==='organization'&&groupModelId?models.find(m=>m.id===groupModelId):undefined,groupBy:resultGrouping};result=analyzeCanonical(data,state,query);trend=canonicalTrend(data,state,query)}}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
- return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
+ return <section className="panel canonical-analytics"><h2>Analys – informationsmodell v2</h2><div className="actions"><button type="button" className="secondary" onClick={onOpenCompletions}>Granska kompletteringar och godkännanden</button></div><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
  {(error||queryError)&&<p role="alert">{error||queryError}</p>}
  <div className="mapping-grid">
  <label>Enhet<select aria-label="V2 enhet" value={unit} onChange={e=>{const next=e.target.value as 'hours'|'costs';setUnit(next);setSelected(next==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label>
