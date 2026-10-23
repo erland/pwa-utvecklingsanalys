@@ -3,6 +3,7 @@ import {uoBudget2027_30,type ImportResult} from './uoBudget2027_30';
 import {processHoursFormat} from './processHours';
 import {processHoursTwoColumnFormat} from './processHoursTwoColumn';
 import {staffHeadcountFormat} from './staffHeadcount';
+import {staffHeadcountTwoColumnFormat} from './staffHeadcountTwoColumn';
 import type {TableResult} from '../tabular';
 
 /** An isolated, code-defined XLSX import format. Each format owns its matching and parsing rules. */
@@ -11,7 +12,7 @@ export type ImportFormat=
  | {kind:'table';id:string;label:string;matches:(workbook:ExcelJS.Workbook)=>boolean;parse:(bytes:ArrayBuffer)=>Promise<TableResult>};
 
 /** Add/remove entire format definitions here; never infer an ambiguous format. */
-export const formats:readonly ImportFormat[]=[uoBudget2027_30,processHoursFormat,processHoursTwoColumnFormat,staffHeadcountFormat];
+export const formats:readonly ImportFormat[]=[uoBudget2027_30,processHoursFormat,processHoursTwoColumnFormat,staffHeadcountFormat,staffHeadcountTwoColumnFormat];
 
 export function matchWorkbook(workbook:ExcelJS.Workbook):ImportFormat|null{
  const matches=formats.filter(format=>format.matches(workbook));
