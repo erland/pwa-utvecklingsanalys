@@ -1,5 +1,7 @@
 import ExcelJS from 'exceljs';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
+export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
+export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name));}
 export type Measure='it_hours'|'business_hours'|'other_cost'|'consultant_cost';
 export type Fact={uo:string;area:string;measure:Measure;period:{year:number;month?:number};value:number;unit:'h'|'SEK';source:{sheet:string;cell:string}};
 export type Issue={code:string;severity:'error'|'warning';message:string;cell?:string};
@@ -28,7 +30,7 @@ function measure(s:string):Measure|null{const v=s.toLowerCase().replace(/\s+/g,'
 function period(v:ExcelJS.Cell['value']){if(v instanceof Date)return {year:v.getFullYear(),month:v.getMonth()+1};if(typeof v==='number'&&Number.isInteger(v)&&v>=2020&&v<=2100)return {year:v};if(typeof v==='string'){const m=v.match(/^(20\d{2})(?:[-/]([01]?\d))?$/);if(m)return {year:+m[1],...(m[2]?{month:+m[2]}:{})};}return null;}
 export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMapping?:MatrixMapping|null):Promise<ImportResult>{
  const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);
- const sheet=mapping?wb.getWorksheet(mapping.sheet):wb.worksheets.find(s=>/^UO Tot 2027[-–]30$/.test(s.name));
+ const sheet=mapping?wb.getWorksheet(mapping.sheet):wb.worksheets.find(s=>UO_BUDGET_SHEET.test(s.name));
  if(!sheet)return {profile:'uo-budget-2027-v1',uo:'',facts:[],issues:[{code:'PROFILE_NOT_MATCHED',severity:'error',message:'UO totalblad hittades inte.'}],excludedSheets:wb.worksheets.map(s=>s.name)};
  const issues:Issue[]=[];const uo=valueText(sheet.getCell(mapping?.uoCell??'B1')).replace(/^UO:\s*/i,'').replace(/^["“]|["”]$/g,'').trim();
  if(!uo||/skriv namn/i.test(uo))issues.push({code:'UO_NAME_MISSING',severity:'warning',message:'UO-namn saknas eller är en platshållare.',cell:'B1'});
