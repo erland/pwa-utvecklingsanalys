@@ -18,7 +18,7 @@ describe('automated import preparation',()=>{
   const prepared=await prepareDirectImport(await file('UO Tot 2027-30'));
   expect(prepared.formatLabel).toBe('UO Tot 2027-30');
   expect(prepared.result.facts).toEqual([expect.objectContaining({area:'LOAUL',value:42,source:expect.objectContaining({cell:'D26'})})]);
-  expect(prepared.draft.id).toBeTruthy();
+  expect(prepared.result.uo).toBe('UO A');
  });
  it('rejects unknown workbook layouts instead of guessing',async()=>{
   await expect(prepareDirectImport(await file('Unknown format'))).rejects.toThrow('Okänt Excel-format');

@@ -43,7 +43,7 @@ describe('fixed UO matrix through direct import',()=>{
   const response=await importFilesDirectly([await file()],undefined,'existing-source');
   expect(response[0].status).toBe('imported');
   expect(replaceSource).toHaveBeenCalledOnce();
-  expect(replaceSource.mock.calls[0][4]).toEqual(expect.objectContaining({includeMatrix:true}));
+  expect(replaceSource.mock.calls[0][3]).toEqual(expect.objectContaining({includeMatrix:true}));
  });
  it('rejects unknown matrix headers rather than silently dropping entered values',async()=>{
   const input=await file(0.025,'Okänt 27');

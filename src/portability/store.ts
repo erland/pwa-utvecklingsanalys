@@ -7,13 +7,10 @@ import {loadAllocations,saveAllocations} from '../allocations/store';
 import {readConfiguration,commitConfiguration,revisions,replaceConfigurationHistory} from '../config/store';
 import {backupToJson,validateBackup,type ProjectBackup} from './format';
 import {openDB} from 'idb';
-import {listDrafts} from '../import/drafts';
 
-const encode=(bytes:ArrayBuffer)=>{const data=new Uint8Array(bytes);let str='';for(let i=0;i<data.length;i+=8192)str+=String.fromCharCode(...data.subarray(i,i+8192));return btoa(str)};
-const decode=(s:string)=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer;
 export async function captureProject():Promise<ProjectBackup>{
- const [project,semantic,planning,configuration,legacyAllocations,drafts,configurationHistory,gapState,canonical]=await Promise.all([loadProject(),loadSemantic(),loadPlanning(),readConfiguration(),loadAllocations(),listDrafts(),revisions(),loadGapState(),loadCanonical()]);
- return validateBackup({format:'utvecklingsanalys-project',version:3,exportedAt:new Date().toISOString(),project,semantic,planning,configuration,legacyAllocations,drafts:drafts.map(({bytes,...d})=>({...d,bytesBase64:encode(bytes)})),configurationHistory,gapState,canonical});
+ const [project,semantic,planning,configuration,legacyAllocations,configurationHistory,gapState,canonical]=await Promise.all([loadProject(),loadSemantic(),loadPlanning(),readConfiguration(),loadAllocations(),revisions(),loadGapState(),loadCanonical()]);
+ return validateBackup({format:'utvecklingsanalys-project',version:3,exportedAt:new Date().toISOString(),project,semantic,planning,configuration,legacyAllocations,drafts:[],configurationHistory,gapState,canonical});
 }
 export async function backupJson(){return backupToJson(await captureProject())}
 /** Browser databases are independent; rollback is best-effort, not a distributed transaction. */
@@ -26,8 +23,6 @@ async function apply(b:ProjectBackup){
  if(b.configuration){await commitConfiguration(b.configuration,'Restore project backup', (await revisions()).at(-1)?.id)}
  else {const existing=await readConfiguration();if(existing)await commitConfiguration({...existing,sections:{...existing.sections,allocations:b.legacyAllocations}},'Restore legacy project configuration',(await revisions()).at(-1)?.id);else await saveAllocations(b.legacyAllocations);}
  if(b.version>=2){
-  const db=await openDB('utvecklingsanalys-imports',1,{upgrade(d){if(!d.objectStoreNames.contains('drafts'))d.createObjectStore('drafts',{keyPath:'id'})}});
-  const tx=db.transaction('drafts','readwrite');await tx.store.clear();for(const d of b.drafts??[]){const {bytesBase64,...rest}=d;await tx.store.put({...rest,bytes:decode(bytesBase64)})}await tx.done;
   await replaceConfigurationHistory(b.configurationHistory??[]);
  }
 }
@@ -49,7 +44,4 @@ export async function restoreProject(input:unknown):Promise<void>{
   throw new Error('RESTORE_FAILED_ROLLED_BACK: '+String(cause));
  }
 }
-export async function clearImportDraftsAfterRestore(){
- const db=await openDB('utvecklingsanalys-imports',1,{upgrade(d){if(!d.objectStoreNames.contains('drafts'))d.createObjectStore('drafts',{keyPath:'id'})}});
- await db.clear('drafts');
-}
+export async function clearImportDraftsAfterRestore(){/* No legacy drafts are persisted by direct import. */}
