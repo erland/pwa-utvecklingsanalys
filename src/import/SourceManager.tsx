@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {AnalysisProject} from '../model';
 import {deleteImportedSources} from './sourceManagement';
 
-export default function SourceManager({project,onProject,replaceId,setReplaceId,onDeleted}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void;onDeleted:()=>void}){
+export default function SourceManager({project,onProject,replaceId,setReplaceId}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void}){
  const [pendingDelete,setPendingDelete]=useState<string|null>(null);
  const [confirmation,setConfirmation]=useState('');
  const [busy,setBusy]=useState(false);
@@ -13,7 +13,7 @@ export default function SourceManager({project,onProject,replaceId,setReplaceId,
   try{
    const ids=pendingDelete==='all'?project.datasets.map(d=>d.id):pendingDelete?[pendingDelete]:[];
    const next=await deleteImportedSources(ids,pendingDelete==='all');
-   onProject(next);onDeleted();setPendingDelete(null);setConfirmation('');setReplaceId(null);
+   onProject(next);setPendingDelete(null);setConfirmation('');setReplaceId(null);
    setMessage(ids.length+' källa/källor och deras observationer har tagits bort. Konfigurationen har bevarats.');
   }catch(e){setMessage('Borttagning misslyckades: '+String(e))}
   finally{setBusy(false)}
