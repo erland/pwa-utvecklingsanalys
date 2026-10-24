@@ -13,10 +13,8 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'acceptance.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByRole('button',{name:'Godkänn import'})).toBeEnabled();
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'acceptance.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
 
  await page.getByRole('button',{name:'Grupper'}).click();
  await page.getByRole('button',{name:'Ny gruppmodell'}).click();

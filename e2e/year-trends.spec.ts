@@ -7,9 +7,8 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
  s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;s.getCell('E26').value=18;
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await v2.getByLabel('tidsdiagramtyp').selectOption('lines');

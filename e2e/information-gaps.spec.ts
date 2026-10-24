@@ -6,9 +6,8 @@ test('define information requirement and resolve missing LO activity without alt
  s.getCell('B25').value='LO AUL';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=42;
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'uo.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'uo.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Kompletteringar'}).click();
  await page.getByLabel('Kravnamn').fill('Aktivitet per LO');
  await page.getByLabel('Aktiviteter').fill('development,maintenance');

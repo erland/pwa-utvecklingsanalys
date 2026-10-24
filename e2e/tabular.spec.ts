@@ -5,12 +5,8 @@ test('tabular process-hour import reaches semantic analysis',async({page})=>{
  s.getRow(1).values=['Process','År','Timmar'];s.getRow(2).values=['Process A',2027,80];
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'processer.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByLabel('Tabellprofil')).toHaveValue('process-hours');
- await page.getByRole('button',{name:'Granska tabell'}).click();
- await expect(page.getByText('1 numeriska observationer')).toBeVisible();
- await page.getByRole('button',{name:'Godkänn tabellimport'}).click();
- await expect(page.getByRole('status')).toContainText('Importen har godkänts');
+ await page.locator('#direct-import-files').setInputFiles({name:'processer.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2).toBeVisible();

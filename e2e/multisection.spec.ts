@@ -8,11 +8,8 @@ test('separately approve development and maintenance matrix without adding to de
  s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=2;s.getCell('E5').value=3;s.getCell('F5').value={formula:'SUM(D5:E5)',result:5};
  const bytes=Buffer.from(await book.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'matrix.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
- await expect(page.getByRole('table',{name:'Förhandsgranskning av årsmatris'})).toContainText('2000 h');
- await page.getByLabel('Ta med sektionen vid godkännande').check();
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'matrix.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });

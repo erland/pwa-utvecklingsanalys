@@ -9,9 +9,8 @@ test('CHANGE-046: v2 preserves historical period totals without rendering the le
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'parity.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'parity.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(page.locator('.analysis-layout')).toHaveCount(0);

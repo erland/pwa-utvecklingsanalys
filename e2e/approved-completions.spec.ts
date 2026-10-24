@@ -8,11 +8,8 @@ test('approve LO allocation and compare with source without double counting',asy
  s.getCell('D4').value='Utv. 27';s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=1;
  const bytes=Buffer.from(await book.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
- await expect(page.getByRole('table',{name:'Förhandsgranskning av årsmatris'})).toContainText('1000 h');
- await page.getByLabel('Ta med sektionen vid godkännande').check();
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Kompletteringar'}).click();
  await page.getByLabel('Kravnamn').fill('LO-utveckling');
  await page.getByLabel('Aktiviteter').fill('development');

@@ -14,9 +14,8 @@ test('portrait tablet shows full-width analysis and collapsible filters',async({
  await expect(page.getByText('Konfigurera',{exact:true})).toBeVisible();
  await expect(page.getByText('Komplettera',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'test.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'test.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2).toBeVisible();

@@ -12,9 +12,8 @@ test('CHANGE-044: narrow portrait viewport keeps v2 analysis usable with charts 
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'mobile.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'mobile.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();

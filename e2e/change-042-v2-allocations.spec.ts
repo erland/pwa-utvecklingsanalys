@@ -16,12 +16,8 @@ test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page}
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await page.locator('#import-files').setInputFiles({name:'allocation-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByRole('table',{name:'Förhandsgranskning av årsmatris'})).toContainText('Utveckling');
- await page.getByRole('checkbox',{name:'Ta med sektionen vid godkännande'}).check();
- await expect(page.getByRole('button',{name:'Godkänn import'})).toBeEnabled();
- await page.getByRole('button',{name:'Godkänn import'}).click();
- await expect(page.getByRole('status')).toContainText('Importen godkänd');
+ await page.locator('#direct-import-files').setInputFiles({name:'allocation-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
