@@ -2,14 +2,13 @@ import {useEffect,useState} from 'react';
 import {loadSemantic} from '../domain/semanticStore';
 import {commitConfiguration,initializeConfiguration,readConfiguration,revisions} from '../config/store';
 import {loadAllocations} from '../allocations/store';
-import {listMappings} from '../import/drafts';
 import {groupOverlap,validateGroupModels,type UoGroupModel} from './groupModels';
 import type {Entity} from '../domain/semantic';
 
 export default function GroupsView({onSaved}:{onSaved:()=>void}){
  const [units,setUnits]=useState<Entity[]>([]),[models,setModels]=useState<UoGroupModel[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
- useEffect(()=>{let active=true;Promise.all([loadSemantic(),loadAllocations(),listMappings()]).then(async([semantic,allocations,mappings])=>{
-  await initializeConfiguration(allocations,Object.fromEntries(mappings.map(m=>[m.name,m.mapping])));
+ useEffect(()=>{let active=true;Promise.all([loadSemantic(),loadAllocations()]).then(async([semantic,allocations])=>{
+  await initializeConfiguration(allocations,{});
   const config=await readConfiguration();if(active){setUnits(semantic.entities.filter(e=>e.kind==='uo'));setModels(config?.sections.groups??[])}
  }).catch(()=>{if(active)setError('Kunde inte läsa gruppmodeller och UO.')});return()=>{active=false}},[]);
  const model=models.find(m=>m.id===selected)??models[0];

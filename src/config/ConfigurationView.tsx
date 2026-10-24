@@ -1,6 +1,5 @@
 import {useEffect,useState} from 'react';
 import {loadAllocations} from '../allocations/store';
-import {listMappings} from '../import/drafts';
 import {buildPackage,conflicts,parsePackage,proposeYear,type ConfigPackage} from './packages';
 import {initializeConfiguration,readConfiguration,commitConfiguration,importConfiguration,revisions,restoreRevision,type ConfigRevision} from './store';
 
@@ -11,7 +10,7 @@ export default function ConfigurationView(){
  const [incoming,setIncoming]=useState<ConfigPackage|null>(null),[policy,setPolicy]=useState<'reject'|'replace'>('reject');
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[fromYear,setFromYear]=useState(2027),[toYear,setToYear]=useState(2028);
  const refresh=async()=>{setCurrent(await readConfiguration());setHistory(await revisions())};
- useEffect(()=>{void Promise.all([loadAllocations(),listMappings()]).then(async([a,m])=>{await initializeConfiguration(a,Object.fromEntries(m.map(x=>[x.name,x.mapping])));await refresh()}).catch(e=>setMessage('Kunde inte initiera konfiguration: '+String(e)))},[]);
+ useEffect(()=>{void loadAllocations().then(async a=>{await initializeConfiguration(a,{});await refresh()}).catch(e=>setMessage('Kunde inte initiera konfiguration: '+String(e)))},[]);
  const download=()=>{if(!current)return;const pkg=buildPackage(selected.includes('allocations')?current.sections.allocations:undefined,selected.includes('mappings')?current.sections.mappings:undefined,mode,selected.includes('groups')?current.sections.groups:undefined);
   const blob=new Blob([JSON.stringify(pkg,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='utvecklingsanalys-config-v1.json';a.click();URL.revokeObjectURL(url);
  };
