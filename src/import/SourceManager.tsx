@@ -12,7 +12,7 @@ export default function SourceManager({project,onProject,replaceId,setReplaceId}
   setBusy(true);
   try{
    const ids=pendingDelete==='all'?project.datasets.map(d=>d.id):pendingDelete?[pendingDelete]:[];
-   const next=await deleteImportedSources(ids,pendingDelete==='all');
+   const next=await deleteImportedSources(ids);
    onProject(next);setPendingDelete(null);setConfirmation('');setReplaceId(null);
    setMessage(ids.length+' källa/källor och deras observationer har tagits bort. Konfigurationen har bevarats.');
   }catch(e){setMessage('Borttagning misslyckades: '+String(e))}
