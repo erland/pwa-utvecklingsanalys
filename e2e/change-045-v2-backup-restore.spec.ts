@@ -19,11 +19,8 @@ test('CHANGE-045: approved v2 allocation survives real backup and restore in a f
  const buffer=Buffer.from(await wb.xlsx.writeBuffer());
  await first.goto('./');
  await first.getByRole('button',{name:'Import',exact:true}).click();
- await first.locator('#import-files').setInputFiles({name:'v2-backup.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(first.getByRole('table',{name:'Förhandsgranskning av årsmatris'})).toContainText('Utveckling');
- await first.getByRole('checkbox',{name:'Ta med sektionen vid godkännande'}).check();
- await first.getByRole('button',{name:'Godkänn import'}).click();
- await expect(first.getByRole('status')).toContainText('Importen godkänd');
+ await first.locator('#direct-import-files').setInputFiles({name:'v2-backup.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(first.getByRole('status')).toContainText('importerad');
  await first.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  const allocation=first.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
