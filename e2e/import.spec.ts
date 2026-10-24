@@ -11,7 +11,7 @@ test('direct import persists after reload and is available for analysis',async({
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerade');
+ await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Importerade källor'})).toBeVisible();
@@ -36,7 +36,7 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'uo-v2.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByRole('status').filter({hasText:'uo-v2.xlsx'})).toContainText('importerade');
+ await expect(page.getByRole('status').filter({hasText:'uo-v2.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
