@@ -2,9 +2,9 @@ import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 const workbook=async(value:number)=>{const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');s.getCell('B1').value='UO: UO A';s.getCell('D11').value=new Date(2027,0,1);s.getCell('B25').value='LO 1';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=value;return Buffer.from(await wb.xlsx.writeBuffer())};
 const upload=async(page:import('@playwright/test').Page,value:number)=>{await page.locator('#direct-import-files').setInputFiles({name:'uo-a.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:await workbook(value)})};
-test('replace a source only on approval, delete it and retain configuration',async({page})=>{
+test('replace a source directly, delete it and retain configuration',async({page})=>{
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
- await expect(page.getByRole('status')).toContainText('importerad');
+ await upload(page,42);await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
@@ -12,7 +12,7 @@ test('replace a source only on approval, delete it and retain configuration',asy
  await upload(page,70);
  await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
+ await expect(page.locator('.canonical-result-head strong')).toHaveText('70 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('70 h');
@@ -26,6 +26,7 @@ test('replace a source only on approval, delete it and retain configuration',asy
 });
 test('clear all sources with explicit confirmation',async({page})=>{
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
+ await upload(page,12);await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Töm importerade data'}).click();
  await expect(page.getByRole('button',{name:'Bekräfta borttagning'})).toBeDisabled();
  await page.getByLabel('Bekräftelsetext').fill('TA BORT');
