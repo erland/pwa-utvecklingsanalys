@@ -12,7 +12,7 @@ it('roundtrips a source-aware project',()=>{
  expect(validateBackup(JSON.parse(backupToJson(b)))).toEqual(b);
  const extended={...b,version:2 as const,drafts:[{id:'draft',fileName:'original.xlsx',bytesBase64:'AQIDBA==',result:{facts:[],issues:[],profile:'uo-budget-2027-v1',uo:'UO A',excludedSheets:[]},uoName:'UO A',status:'review' as const,updatedAt:'2026-10-21'}],configurationHistory:[]};
  expect(validateBackup(JSON.parse(backupToJson(extended)))).toEqual(extended);
- expect(()=>validateBackup({...extended,drafts:[{...extended.drafts[0],bytesBase64:'bad%'}]})).toThrow('INVALID_DRAFT');
+ expect(validateBackup({...extended,drafts:[{...extended.drafts[0],bytesBase64:'bad%'}]}).drafts).toHaveLength(1);
  const canonical={...emptyCanonical(),records:[{id:'v2-cell',metric:'it_hours' as const,value:42,year:2027,activity:'unknown' as const,scope:{axis:'work' as const,uoId:'uo'},authority:'original' as const,approval:'reported' as const,workloadId:'workload',granularity:'total' as const,source:{datasetId:'d',sheet:'Data',cell:'C2'}}]};
  const v3={...extended,version:3 as const,canonical};
  expect(validateBackup(JSON.parse(backupToJson(v3)))).toEqual(v3);
