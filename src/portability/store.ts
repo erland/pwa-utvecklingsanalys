@@ -44,4 +44,3 @@ export async function restoreProject(input:unknown):Promise<void>{
   throw new Error('RESTORE_FAILED_ROLLED_BACK: '+String(cause));
  }
 }
-export async function clearImportDraftsAfterRestore(){/* No legacy drafts are persisted by direct import. */}
