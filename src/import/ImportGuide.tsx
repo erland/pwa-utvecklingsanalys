@@ -9,6 +9,6 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId}:{
   <h1>Importera Excelunderlag</h1>
   <p className="lead">Välj en eller flera Excel-filer. Kända format importeras automatiskt utan manuell mappning eller förhandsgranskning. Filerna behandlas lokalt i webbläsaren.</p>
   <DirectImport project={project} onProject={onProject} replaceId={replaceId} onReplaced={()=>setReplaceId(null)}/>
-  <SourceManager project={project} onProject={onProject} replaceId={replaceId} setReplaceId={setReplaceId} onDeleted={()=>{}}/>
+  <SourceManager project={project} onProject={onProject} replaceId={replaceId} setReplaceId={setReplaceId}/>
  </>;
 }
