@@ -7,7 +7,7 @@ import type {GapState} from './store';
 
 export default function ActivityAllocationsV2({state,save}:{state:GapState;save:(s:GapState)=>Promise<void>}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[error,setError]=useState('');
- const [selection,setSelection]=useState(''),[reason,setReason]=useState('Fördelning proportionellt mot LO-totaler'),[approvalReasons,setApprovalReasons]=useState<Record<string,string>>({});
+ const [selection,setSelection]=useState(''),[reason,setReason]=useState('Fördelning proportionellt mot LO-totaler');
  useEffect(()=>{void loadCanonical().then(setData).catch(e=>setError(String(e)))},[]);
  const rules=state.activityAllocationRules??[],decisions=state.activityAllocationDecisions??[];
  const candidates=useMemo(()=>{
@@ -40,10 +40,8 @@ export default function ActivityAllocationsV2({state,save}:{state:GapState;save:
   const status=parts.length?'Godkänd':problem?'Blockerad: '+problem:decision?'Kräver nytt godkännande':'Inväntar godkännande';
   return <section key={rule.id} className="mapping-settings"><h3>{rule.uoId} · {rule.metric} · {rule.year}</h3><p role="status">{status}</p><p>{rule.reason}</p>
   {preview&&<><p>UO: {preview.uo.development.toLocaleString('sv-SE')} timmar utveckling, {preview.uo.maintenance.toLocaleString('sv-SE')} timmar förvaltning.</p>
-  <LoAllocationDraft key={preview.fingerprint} preview={preview}/>
-  <p>Godkännandet nedan gäller enbart den ursprungliga proportionella standardfördelningen, inte osparade justeringar.</p>
-  <label>Godkännandemotivering<input aria-label={'godkännandemotivering '+rule.id} value={approvalReasons[rule.id]??''} onChange={e=>setApprovalReasons(p=>({...p,[rule.id]:e.target.value}))}/></label>
-  <button className="secondary" onClick={()=>{try{const next=approveActivityAllocation(preview!,approvalReasons[rule.id]??'');void save({...state,activityAllocationDecisions:[...decisions.filter(d=>d.ruleId!==rule.id),next]});setError('')}catch(e){setError(String(e))}}}>Godkänn fördelning</button></>}
+  <LoAllocationDraft key={rule.id+'|'+preview.fingerprint} preview={preview} decision={decision} onApprove={async(overrides,reason)=>{const next=approveActivityAllocation(preview!,reason,overrides);await save({...state,activityAllocationDecisions:[...decisions.filter(d=>d.ruleId!==rule.id),next]})}}/>
+  </>}
   {decision&&<button className="secondary" onClick={()=>{void save({...state,activityAllocationDecisions:decisions.filter(d=>d.ruleId!==rule.id)})}}>Återkalla godkännande</button>}
   <button className="secondary" onClick={()=>{void save({...state,activityAllocationRules:rules.filter(r=>r.id!==rule.id),activityAllocationDecisions:decisions.filter(d=>d.ruleId!==rule.id)})}}>Ta bort regel</button>
   </section>;
