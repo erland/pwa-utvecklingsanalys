@@ -11,10 +11,20 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  const errors=validateCanonical(data);if(errors.length)throw new Error(errors.join(','));
  if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!['it_hours','business_hours'].includes(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
  const original=data.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===rule.datasetId&&r.metric===rule.metric&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId);
- // This phase intentionally rejects mixed monthly/annual data, rather than silently double counting.
- if(original.some(r=>r.month!==undefined))throw new Error('MONTHLY_ALLOCATION_UNSUPPORTED');
- const matrix=original.filter(r=>r.granularity==='activity-part'&&r.scope.axis==='work'&&!r.scope.loId);
- const loTotals=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&Boolean(r.scope.loId));
+ // Use annual LO records when available; otherwise roll up monthly LO source values
+ // into a virtual annual total for approval. Never mutate source records or add months
+ // on top of an annual record for the same LO.
+ const matrix=original.filter(r=>r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId);
+ const loSources=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&Boolean(r.scope.loId));
+ const loIdsForYear=[...new Set(loSources.map(r=>r.scope.axis==='work'?r.scope.loId:''))];
+ const loTotals:AnalysisRecord[]=loIdsForYear.flatMap(loId=>{
+  const items=loSources.filter(r=>r.scope.axis==='work'&&r.scope.loId===loId);
+  const annual=items.filter(r=>r.month===undefined);
+  if(annual.length)return annual;
+  if(!items.length)return [];
+  const representative=items[0];
+  return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:items.reduce((sum,r)=>sum+r.value,0)}];
+ });
  if(matrix.length!==2||!loTotals.length||!matrix.some(r=>r.activity==='development')||!matrix.some(r=>r.activity==='maintenance'))throw new Error('INCOMPLETE_UO_OR_LO');
  const dev=matrix.find(r=>r.activity==='development')!.value,maintenance=matrix.find(r=>r.activity==='maintenance')!.value,sourceTotal=dev+maintenance;
  const loIds=new Set(loTotals.map(r=>r.scope.axis==='work'?r.scope.loId:''));
@@ -31,7 +41,7 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
   return {loId,total:r.value,development,maintenance:r.value-development,workloadId:r.workloadId};
  });
  // Source proportions apply only when the LO and UO totals reconcile. All provenance is fingerprinted.
- const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loTotals])]);
+ const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loSources])]);
  return {ruleId:rule.id,fingerprint,uo:{development:dev,maintenance},items};
 }
 export function approveActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]=[]):ActivityAllocationDecision{
