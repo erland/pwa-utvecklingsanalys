@@ -6,7 +6,7 @@ import type {AnalysisProject} from '../model';
 
 /** The only supported user-facing flow is registered-format direct import. */
 export default function ImportGuide({project,onProject,replaceId,setReplaceId,onAnalyze}:{project:AnalysisProject|null;onProject:(p:AnalysisProject)=>void;replaceId:string|null;setReplaceId:(id:string|null)=>void;onAnalyze:()=>void}){
- const [completedImport,setCompletedImport]=useState(0);{
+ const [completedImport,setCompletedImport]=useState(0);
  return <>
   <div className="eyebrow">IMPORT · XLSX</div>
   <h1>Importera Excelunderlag</h1>
