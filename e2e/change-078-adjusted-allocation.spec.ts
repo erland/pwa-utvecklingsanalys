@@ -26,6 +26,7 @@ test('approved edited LO shares rebalance the UO and survive reload without chan
  await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await allocation.getByLabel(/^Utvecklingsandel /).first().fill('60');
+ await expect(allocation.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
  await expect(allocation.getByText('UO-avstämning:',{exact:false})).toContainText('stämmer');
  await expect(allocation.getByRole('button',{name:'Godkänn justerad fördelning'})).toBeDisabled();
  await allocation.getByLabel('godkännandemotivering',{exact:false}).fill('LO 1 prioriterar utveckling');
@@ -35,7 +36,8 @@ test('approved edited LO shares rebalance the UO and survive reload without chan
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  const restored=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await expect(restored.getByText('Godkänd',{exact:true})).toBeVisible();
- await expect(restored.getByLabel('Utvecklingsandel lo:UO A:LO 1')).toHaveValue('60');
+ await expect(restored.getByLabel(/^Utvecklingsandel /).first()).toHaveValue('60');
+ await expect(restored.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('100 h');
