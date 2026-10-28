@@ -66,7 +66,7 @@ describe('v2 approved activity allocations',()=>{
  });
  it('prefers a yearly LO total instead of adding its monthly rows',()=>{
   const data=fixture();
-  data.records.push({...base('D26',300,'unknown','lo1'),month:1});
+  data.records.push({...base('E26',300,'unknown','lo1'),month:1});
   const preview=previewActivityAllocation(data,rule);
   expect(preview.items.find(x=>x.loId==='lo1')?.total).toBe(700);
  });
