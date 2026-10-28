@@ -19,7 +19,7 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,ope
      <div style={{width:pct(v.maintenance)+'%',background:'#c66d26',minHeight:16}}/>
      <div style={{width:pct(v.unallocated)+'%',background:'#9ca3af',minHeight:16}}/>
     </div>:<span>Fördelning saknas</span>}
-    <strong>{format(row.value)}</strong>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
+    <div><strong>{format(row.value)}</strong>{v&&<small style={{display:'block'}}>Utveckling {pct(v.development).toLocaleString('sv-SE',{maximumFractionDigits:1})} % · Förvaltning {pct(v.maintenance).toLocaleString('sv-SE',{maximumFractionDigits:1})} %{v.unallocated>0?' · Ej fördelat '+pct(v.unallocated).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':''}</small>}</div>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
    </div>})}
    <p>Blå: utveckling · Orange: förvaltning · Grå: ej fördelat</p>
   </div>:display==='table'?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
