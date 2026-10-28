@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
+import LoAllocationDraft from './LoAllocationDraft';
 import {previewActivityAllocation,approveActivityAllocation,approvedActivityParts,type ActivityAllocationRule} from '../domain/activityAllocation';
 import type {CanonicalDataset} from '../domain/canonical';
 import type {GapState} from './store';
@@ -39,7 +40,8 @@ export default function ActivityAllocationsV2({state,save}:{state:GapState;save:
   const status=parts.length?'Godkänd':problem?'Blockerad: '+problem:decision?'Kräver nytt godkännande':'Inväntar godkännande';
   return <section key={rule.id} className="mapping-settings"><h3>{rule.uoId} · {rule.metric} · {rule.year}</h3><p role="status">{status}</p><p>{rule.reason}</p>
   {preview&&<><p>UO: {preview.uo.development.toLocaleString('sv-SE')} timmar utveckling, {preview.uo.maintenance.toLocaleString('sv-SE')} timmar förvaltning.</p>
-  <div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>LO</th><th>Totalt</th><th>Utveckling</th><th>Förvaltning</th></tr></thead><tbody>{preview.items.map(i=><tr key={i.loId}><td>{i.loId}</td><td>{i.total.toLocaleString('sv-SE')}</td><td>{i.development.toLocaleString('sv-SE')}</td><td>{i.maintenance.toLocaleString('sv-SE')}</td></tr>)}</tbody></table></div>
+  <LoAllocationDraft key={preview.fingerprint} preview={preview}/>
+  <p>Godkännandet nedan gäller enbart den ursprungliga proportionella standardfördelningen, inte osparade justeringar.</p>
   <label>Godkännandemotivering<input aria-label={'godkännandemotivering '+rule.id} value={approvalReasons[rule.id]??''} onChange={e=>setApprovalReasons(p=>({...p,[rule.id]:e.target.value}))}/></label>
   <button className="secondary" onClick={()=>{try{const next=approveActivityAllocation(preview!,approvalReasons[rule.id]??'');void save({...state,activityAllocationDecisions:[...decisions.filter(d=>d.ruleId!==rule.id),next]});setError('')}catch(e){setError(String(e))}}}>Godkänn fördelning</button></>}
   {decision&&<button className="secondary" onClick={()=>{void save({...state,activityAllocationDecisions:decisions.filter(d=>d.ruleId!==rule.id)})}}>Återkalla godkännande</button>}
