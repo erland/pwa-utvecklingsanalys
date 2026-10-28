@@ -44,7 +44,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   {candidates.map(({rule,preview,decision,approved})=><div key={rule.id} className="mapping-settings">
    <h3>{rule.uoId} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
    <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
-   <LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(decision?.overrides??[])} preview={preview} decision={approved?decision:undefined} quick onApprove={async(overrides,reason)=>{
+   <LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(decision?.overrides??[])} preview={preview} decision={approved?decision:undefined} quick onApproved={candidates.length===1?onAnalyze:undefined} onApprove={async(overrides,reason)=>{
     const decision=approveActivityAllocation(preview,reason,overrides);
     const latest=await loadGapState();
     const matching=latest.activityAllocationRules?.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
