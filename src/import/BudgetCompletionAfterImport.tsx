@@ -22,7 +22,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>}>();
   for(const record of data.records){
    if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
-   const candidate={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric,year:record.year};
+   const candidate={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
    const key=JSON.stringify(candidate);
    if(found.has(key))continue;
    const existing=state?.activityAllocationRules?.find(r=>r.datasetId===candidate.datasetId&&r.uoId===candidate.uoId&&r.metric===candidate.metric&&r.year===candidate.year);
