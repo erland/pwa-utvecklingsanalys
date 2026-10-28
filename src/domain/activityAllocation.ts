@@ -20,10 +20,11 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  const loTotals:AnalysisRecord[]=loIdsForYear.flatMap(loId=>{
   const items=loSources.filter(r=>r.scope.axis==='work'&&r.scope.loId===loId);
   const annual=items.filter(r=>r.month===undefined);
-  if(annual.length)return annual;
-  if(!items.length)return [];
+  const monthly=items.filter(r=>r.month!==undefined);
+  if(annual.length&&!(annual.length===1&&annual[0].value===0&&monthly.some(r=>r.value!==0)))return annual;
+  if(!monthly.length)return annual;
   const representative=items[0];
-  return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:items.reduce((sum,r)=>sum+r.value,0)}];
+  return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:monthly.reduce((sum,r)=>sum+r.value,0)}];
  });
  if(matrix.length!==2||!loTotals.length||!matrix.some(r=>r.activity==='development')||!matrix.some(r=>r.activity==='maintenance'))throw new Error('INCOMPLETE_UO_OR_LO');
  const dev=matrix.find(r=>r.activity==='development')!.value,maintenance=matrix.find(r=>r.activity==='maintenance')!.value,sourceTotal=dev+maintenance;
