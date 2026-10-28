@@ -1,0 +1,26 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('all UO navigation opens shared LO detail and supports breadcrumb back',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=42;
+ sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.025;sheet.getCell('E5').value=0.017;
+ const buffer=Buffer.from(await wb.xlsx.writeBuffer());
+ await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'navigation-uo.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status').filter({hasText:'navigation-uo.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ const navigator=page.getByRole('region',{name:'Utforska UO'});
+ await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO A');
+ await navigator.getByRole('button',{name:'Visa LO'}).click();
+ await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('LO 1');
+ await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('42');
+ await navigator.getByRole('navigation',{name:'Analysnivå'}).getByRole('button',{name:'Alla UO'}).click();
+ await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO A');
+ await navigator.getByRole('button',{name:'UO-grupper'}).click();
+ await expect(navigator).toContainText('Skapa en UO-gruppmodell');
+ await navigator.getByRole('button',{name:'Alla UO'}).first().click();
+ await expect(navigator.getByRole('table',{name:'UO i analys'})).toBeVisible();
+});
