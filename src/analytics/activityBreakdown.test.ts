@@ -23,15 +23,15 @@ describe('organization activity distribution',()=>{
   expect(rows['uo-overhead:uo:A']).toEqual({total:10,development:0,maintenance:0,unallocated:10});
   expect(addActivitySplits(Object.values(rows))).toEqual({total:110,development:0,maintenance:0,unallocated:110});
  });
- it('uses approved adjusted LO activity but never treats overhead as an LO',()=>{
+ it('allocates approved activity across LO and overhead without treating overhead as an LO',()=>{
   const d=data(),rule={id:'r',datasetId:'ds',uoId:'uo:A',metric:'it_hours' as const,year:2027,reason:'Reviewed'};
   const decision=approveActivityAllocation(previewActivityAllocation(d,rule),'Approved',[{loId:'lo:1',developmentPercent:60}]);
   const approved={...state,activityAllocationRules:[rule],activityAllocationDecisions:[decision]};
   const before=JSON.stringify(d),rows=uoActivityRows(d,approved,['it_hours'],2027,'uo:A');
   expect(rows['lo:1']).toEqual({total:60,development:36,maintenance:24,unallocated:0});
-  expect(rows['lo:2']).toEqual({total:40,development:14,maintenance:26,unallocated:0});
-  expect(rows['uo-overhead:uo:A']).toEqual({total:10,development:0,maintenance:0,unallocated:10});
-  expect(addActivitySplits(Object.values(rows))).toEqual({total:110,development:50,maintenance:50,unallocated:10});
+  expect(rows['lo:2']).toEqual({total:40,development:15.2,maintenance:24.8,unallocated:0});
+  expect(rows['uo-overhead:uo:A']).toEqual({total:10,development:3.8,maintenance:6.2,unallocated:0});
+  expect(addActivitySplits(Object.values(rows))).toEqual({total:110,development:55,maintenance:55,unallocated:0});
   expect(JSON.stringify(d)).toBe(before);
  });
  it('reverts to undistributed when approval is stale',()=>{
