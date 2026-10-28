@@ -17,7 +17,13 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[activity,setActivity]=useState<Activity|'all'>('all'),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
  // Annual reporting uses published annual records; monthly source rows remain preserved for future analyses.
- const annualData=useMemo(()=>data?{...data,records:data.records.filter(record=>record.month===undefined)}:null,[data]);
+ const annualData=useMemo(()=>{
+  if(!data)return null;
+  // Prefer annual records for an identical source, scope, metric and year.
+  // Preserve month-only legacy imports until their annual replacement exists.
+  const annualKeys=new Set(data.records.filter(r=>r.month===undefined).map(r=>JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])));
+  return {...data,records:data.records.filter(r=>r.month===undefined||!annualKeys.has(JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])))};
+ },[data]);
  const [models,setModels]=useState<UoGroupModel[]>([]),[groupModelId,setGroupModelId]=useState('');
  useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active)setModels(c?.sections.groups??[])}).catch(()=>{if(active)setModels([])});return()=>{active=false}},[refreshKey]);
  const [resultGrouping,setResultGrouping]=useState<'organization'|'source'|'year'>('organization');
