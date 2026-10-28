@@ -28,6 +28,29 @@ describe('canonical analytics with source-aware completions',()=>{
   expect(out.rows.find(r=>r.key==='uo')?.value).toBe(100);
   expect(analyzeCanonical(d,gaps,{...q,activity:'unknown'}).total).toBe(1100);
  });
+ it('shows overhead last as a separate UO detail row while preserving source identities and totals',()=>{
+  const d=data(),before=JSON.stringify(d);
+  d.records.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  const out=analyzeCanonical(d,gaps,{...q,detailUoId:'uo'});
+  expect(out.rows).toEqual([
+   {key:'lo1',label:'lo1',value:700},
+   {key:'lo2',label:'lo2',value:300},
+   {key:'uo-overhead:uo',label:'UO Övergripande',value:100}
+  ]);
+  expect(out.total).toBe(1100);
+  expect(out.excludedAlternatives).toBe(2);
+  expect(d.records.at(-1)?.scope).toEqual({axis:'work',uoId:'uo'});
+  expect(JSON.stringify({...d,records:d.records.slice(0,-1)})).toBe(before);
+  expect(analyzeCanonical(d,gaps,{...q,detailUoId:'missing'}).total).toBe(0);
+ });
+ it('excludes the alternate UO activity matrix even when overhead is the only detail row',()=>{
+  const d=data().records.slice(0,2);
+  d.push({...row('D20',100,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027|year'});
+  const out=analyzeCanonical({...emptyCanonical(),records:d},gaps,{...q,detailUoId:'uo'});
+  expect(out.total).toBe(100);
+  expect(out.excludedAlternatives).toBe(2);
+  expect(out.rows[0].label).toBe('UO Övergripande');
+ });
  it('rejects inconsistent explicit UO work roles',()=>{
   const d=data();d.records[2].workPart='uo-overhead';
   expect(()=>analyzeCanonical(d,gaps,q)).toThrow('INVALID_WORK_PART');
