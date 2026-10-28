@@ -1,8 +1,9 @@
+import {rebalanceUoBudgetAllocation,type LoDevelopmentOverride} from '../import/formats/uoBudgetCompletion';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric} from './canonical';
 
 /** Decisions are kept separately from immutable imported observations. */
 export type ActivityAllocationRule={id:string;datasetId:string;uoId:string;metric:Metric;year:number;reason:string};
-export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string};
+export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string;overrides?:LoDevelopmentOverride[]};
 export type AllocationPreview={ruleId:string;fingerprint:string;uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
 
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
@@ -33,9 +34,11 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loTotals])]);
  return {ruleId:rule.id,fingerprint,uo:{development:dev,maintenance},items};
 }
-export function approveActivityAllocation(preview:AllocationPreview,reason:string):ActivityAllocationDecision{
+export function approveActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]=[]):ActivityAllocationDecision{
  if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
- return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim()};
+ // Validate the complete balancing before storing any user-supplied percentages.
+ rebalanceUoBudgetAllocation(preview,overrides);
+ return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim(),...(overrides.length?{overrides:overrides.map(o=>({...o}))}:{})};
 }
 /** Generate read-only approved completions; never write them into original source storage. */
 export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocationRule,decision:ActivityAllocationDecision):AnalysisRecord[]{
@@ -43,6 +46,7 @@ export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocat
  let preview:AllocationPreview;
  try{preview=previewActivityAllocation(data,rule)}catch{return []}
  if(preview.fingerprint!==decision.fingerprint)return [];
+ try{preview=rebalanceUoBudgetAllocation(preview,decision.overrides??[])}catch{return []}
  return preview.items.flatMap(item=>['development','maintenance'].map(activity=>({
   id:['allocation',rule.id,item.loId,activity,rule.year].join('|'),metric:rule.metric,year:rule.year,
   value:activity==='development'?item.development:item.maintenance,
