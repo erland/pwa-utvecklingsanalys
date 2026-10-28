@@ -4,6 +4,8 @@ import type {ActivitySplit} from './activityBreakdown';
 export type ComparisonRow={key:string;label:string;value:number|null;split?:ActivitySplit};
 export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,openLabel}:{rows:ComparisonRow[];unit:'h'|'SEK';title:string;totalLabel:string;onOpen?:(key:string)=>void;openLabel?:string}){
  const [display,setDisplay]=useState<'table'|'bars'|'distribution'>('table');
+ const [activityOrder,setActivityOrder]=useState<'original'|'development'|'maintenance'>('original');
+ const orderedRows=display==='distribution'&&activityOrder!=='original'?[...rows].sort((a,b)=>{const difference=(b.split?.[activityOrder]??-1)-(a.split?.[activityOrder]??-1);return difference||a.label.localeCompare(b.label,'sv')}):rows;
  const values=rows.map(row=>row.value).filter((v):v is number=>v!==null);
  const total=values.length===rows.length?values.reduce((sum,n)=>sum+n,0):null;
  const max=Math.max(1,...values);
@@ -19,7 +21,8 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,ope
    <p>Utveckling, förvaltning och ej fördelad aktivitet. Ej fördelat innebär att fördelningen saknas eller inte är godkänd.</p>
    {completeSplits&&<p role="status">Sammanlagt för visade delområden: utveckling {format(developmentSum)}, förvaltning {format(maintenanceSum)}{unallocatedSum>0?', ej fördelat '+format(unallocatedSum):''}. Jämför respektive delområdes bidrag nedan.</p>}
    {!completeSplits&&<p role="status">Alla delområden har inte en beräkningsbar aktivitetsfördelning. Någon fullständig sammanställning visas därför inte.</p>}
-   {rows.map(row=>{const v=row.split;const pct=(n:number)=>v&&v.total>0?100*n/v.total:0;return <div className="canonical-trend-row" key={row.key}>
+   <label>Sortera delområden<select aria-label={'Sortera fördelning: '+title} value={activityOrder} onChange={e=>setActivityOrder(e.target.value as 'original'|'development'|'maintenance')}><option value="original">Ursprunglig ordning</option><option value="development">Störst utvecklingsbidrag först</option><option value="maintenance">Störst förvaltningsbidrag först</option></select></label>
+   {orderedRows.map(row=>{const v=row.split;const pct=(n:number)=>v&&v.total>0?100*n/v.total:0;return <div className="canonical-trend-row" key={row.key}>
     <span>{row.label}</span>
     {v?<div className="canonical-trend-track" role="img" aria-label={row.label+': utveckling '+format(v.development)+', förvaltning '+format(v.maintenance)+', ej fördelat '+format(v.unallocated)} style={{display:'flex',overflow:'hidden'}}>
      <div style={{width:pct(v.development)+'%',background:'#26768c',minHeight:16}}/>
