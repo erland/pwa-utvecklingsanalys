@@ -17,7 +17,7 @@ test('CHANGE-048: v2 analysis opens completion and approval workflow using acces
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'navigation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
- await expect(page.getByRole('status')).toContainText('importerad');
+ await expect(page.getByRole('status').filter({hasText:'navigation.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
