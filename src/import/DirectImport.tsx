@@ -3,7 +3,7 @@ import {importFilesDirectly,type DirectImportResult} from './directImport';
 import type {AnalysisProject} from '../model';
 import {loadProject} from '../storage';
 
-export default function DirectImport({project,onProject,replaceId,onReplaced}:{project:AnalysisProject|null;onProject:(project:AnalysisProject)=>void;replaceId?:string|null;onReplaced?:()=>void}){
+export default function DirectImport({project,onProject,replaceId,onReplaced,onImported}:{project:AnalysisProject|null;onProject:(project:AnalysisProject)=>void;replaceId?:string|null;onReplaced?:()=>void;onImported?:()=>void}){
  const [busy,setBusy]=useState(false);
  const [results,setResults]=useState<DirectImportResult[]>([]);
  const run=async(files:FileList|null)=>{
@@ -12,6 +12,7 @@ export default function DirectImport({project,onProject,replaceId,onReplaced}:{p
   try{
    const result=await importFilesDirectly(Array.from(files),async()=>onProject(await loadProject()),replaceId);
    setResults(result);
+   if(result.some(item=>item.status==='imported'))onImported?.();
    if(replaceId&&result.some(item=>item.status==='imported'))onReplaced?.();
   }finally{setBusy(false);}
  };
