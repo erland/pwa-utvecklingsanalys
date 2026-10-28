@@ -14,11 +14,14 @@ test('all UO navigation opens shared LO detail and supports breadcrumb back',asy
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const navigator=page.getByRole('region',{name:'Utforska UO'});
  await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO A');
- await navigator.getByRole('button',{name:'Visa LO'}).click();
+ await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('bars');
+ await expect(navigator.getByRole('group',{name:'Stapeldiagram: UO i analys'})).toContainText('UO A');
+ await navigator.getByRole('group',{name:'Stapeldiagram: UO i analys'}).getByRole('button',{name:'Visa LO'}).click();
  await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('LO 1');
  await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('42');
+ await navigator.getByRole('combobox',{name:'Presentation för LO och UO Övergripande'}).selectOption('bars');
+ await expect(navigator.getByRole('group',{name:'Stapeldiagram: LO och UO Övergripande'})).toContainText('LO 1');
  await navigator.getByRole('navigation',{name:'Analysnivå'}).getByRole('button',{name:'Alla UO'}).click();
- await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO A');
  await navigator.getByRole('button',{name:'UO-grupper'}).click();
  await expect(navigator).toContainText('Skapa en UO-gruppmodell');
  await navigator.getByRole('button',{name:'Alla UO'}).first().click();
