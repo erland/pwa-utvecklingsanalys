@@ -19,7 +19,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
  },[refreshKey]);
  const candidates=useMemo(()=>{
   if(!data)return [];
-  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>}>();
+  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ReturnType<typeof approveActivityAllocation>;approved:boolean}>();
   for(const record of data.records){
    if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
    const candidate={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
@@ -30,20 +30,21 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
    try{
     const preview=previewActivityAllocation(data,rule);
     const decision=state?.activityAllocationDecisions?.find(d=>d.ruleId===rule.id);
-    if(!decision||!approvedActivityParts(data,rule,decision).length)found.set(key,{rule,preview});
+    found.set(key,{rule,preview,decision,approved:Boolean(decision&&approvedActivityParts(data,rule,decision).length)});
    }catch{/* No valid UO/LO reconciliation: do not offer an unsafe quick approval. */}
   }
   return [...found.values()];
  },[data,state]);
  if(error)return <p role="alert">Kunde inte läsa kompletteringar: {error}</p>;
  if(!data||!state)return null;
- if(!candidates.length)return <div className="panel"><p>Inga nya avstämda LO-fördelningar behöver godkännas.</p><button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
+ if(!candidates.length)return <div className="panel"><p>Det finns inga LO-fördelningar att justera för importerade budgetunderlag.</p><button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
  return <section className="panel" aria-label="Komplettera efter import">
   <h2>Fördela utveckling och förvaltning per LO</h2>
-  <p>Excel-formatet har föreslagit en fördelning. Justera bara de LO som behöver ändras. UO:s och LO:s totaler är låsta.</p>
-  {candidates.map(({rule,preview})=><div key={rule.id} className="mapping-settings">
+  <p>Justera utvecklingsandel per LO direkt här, även för tidigare godkända fördelningar. UO:s och LO:s totaler är låsta. Spara för att uppdatera analysen.</p>
+  {candidates.map(({rule,preview,decision,approved})=><div key={rule.id} className="mapping-settings">
    <h3>{rule.uoId} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
-   <LoAllocationDraft key={preview.fingerprint} preview={preview} quick onApproved={candidates.length===1?onAnalyze:undefined} onApprove={async(overrides,reason)=>{
+   <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
+   <LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(decision?.overrides??[])} preview={preview} decision={approved?decision:undefined} quick onApproved={candidates.length===1?onAnalyze:undefined} onApprove={async(overrides,reason)=>{
     const decision=approveActivityAllocation(preview,reason,overrides);
     const latest=await loadGapState();
     const matching=latest.activityAllocationRules?.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
@@ -56,7 +57,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
     setState(next);
    }}/>
   </div>)}
-  <p>Godkänn samtliga visade fördelningar innan du analyserar deras utvecklings- och förvaltningsuppdelning.</p>
+  <p>Ej godkända fördelningar ingår inte som fastställd uppdelning i analysen. Du kan återkomma till Import och justera tidigare beslut.</p>
   <button className="secondary" onClick={onAnalyze}>Gå till analys</button>
  </section>;
 }

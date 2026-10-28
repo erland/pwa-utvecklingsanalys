@@ -26,7 +26,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
  const aligned=!problem&&Math.abs(totalDev-preview.uo.development)<1e-6&&Math.abs(totalMaint-preview.uo.maintenance)<1e-6;
  const format=(n:number)=>n.toLocaleString('sv-SE',{maximumFractionDigits:2});
  return <div>
-  <p>Pröva utvecklingsandel per LO. Ändrade andelar balanseras automatiskt. Förslaget används i analysen först när du godkänner det.</p>
+  <p>Ändra utvecklingsandel per LO. Övriga andelar balanseras automatiskt. Fördelningen används i analysen när du sparar den.</p>
   <div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>LO</th><th>Totalt</th><th>Utveckling %</th><th>Utveckling (h)</th><th>Förvaltning (h)</th></tr></thead>
   <tbody>{shown.items.map(item=>{
    const original=preview.items.find(x=>x.loId===item.loId)!;
@@ -37,7 +37,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
   <p role="status">UO-avstämning: utveckling {format(totalDev)} / {format(preview.uo.development)} h, förvaltning {format(totalMaint)} / {format(preview.uo.maintenance)} h – {aligned?'stämmer':'inte avstämd'}.</p>
   {adjusted&&<button className="secondary" disabled={busy} onClick={()=>setChanges({})}>Återställ föreslagen fördelning</button>}
   {!quick&&<label>Godkännandemotivering<input aria-label={'godkännandemotivering '+preview.ruleId} value={reason} onChange={e=>setReason(e.target.value)}/></label>}
-  <button className="secondary" disabled={busy||!aligned||(!quick&&!reason.trim())} onClick={()=>{setBusy(true);setApprovalError('');void onApprove(overrides,quick?'Automatiskt avstämd LO-fördelning från importflödet':reason).then(()=>{setReason('');onApproved?.()}).catch(e=>setApprovalError(String(e))).finally(()=>setBusy(false))}}>{quick?(onApproved?'Spara fördelning och analysera':'Spara fördelning'):'Godkänn '+(adjusted?'justerad':'föreslagen')+' fördelning'}</button>
+  <button className="secondary" disabled={busy||!aligned||(!quick&&!reason.trim())} onClick={()=>{setBusy(true);setApprovalError('');void onApprove(overrides,quick?'Automatiskt avstämd LO-fördelning från importflödet':reason).then(()=>{setReason('');onApproved?.()}).catch(e=>setApprovalError(String(e))).finally(()=>setBusy(false))}}>{quick?(onApproved?'Spara fördelning och analysera':'Spara LO-fördelning'):'Godkänn '+(adjusted?'justerad':'föreslagen')+' fördelning'}</button>
   {approvalError&&<p role="alert">Kunde inte godkänna: {approvalError}</p>}
   {decision?.overrides?.length?<p role="status">En manuellt justerad fördelning är sparad. Den gäller bara så länge källvärdena är oförändrade.</p>:null}
  </div>;
