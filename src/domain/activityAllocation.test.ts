@@ -44,9 +44,9 @@ describe('v2 approved activity allocations',()=>{
   const changed=fixture();changed.records[2].value=680;changed.records[3].value=320;
   expect(approvedActivityParts(changed,rule,decision)).toEqual([]);
  });
- it('rejects unbalanced source totals and existing LO activity values',()=>{
+ it('uses UO matrix percentages when source totals differ and rejects existing LO activity values',()=>{
   const data=fixture();data.records[3].value=290;
-  expect(()=>previewActivityAllocation(data,rule)).toThrow('UO_LO_TOTAL_MISMATCH');
+  expect(previewActivityAllocation(data,rule).uo.development).toBeCloseTo(594);
   const prior=fixture();prior.records.push({...base('F26',500,'development','lo1'),granularity:'activity-part',workloadId:'other'});
   expect(()=>previewActivityAllocation(prior,rule)).toThrow('EXISTING_LO_ACTIVITY_DATA');
  });
@@ -75,6 +75,21 @@ describe('v2 approved activity allocations',()=>{
   data.records[2].value=0;
   data.records.push({...base('E26',700,'unknown','lo1'),month:1});
   expect(previewActivityAllocation(data,rule).items.find(x=>x.loId==='lo1')?.total).toBe(700);
+ });
+ it('includes UO overhead alongside LO and uses their summed total with UO matrix percentages',()=>{
+  const data=fixture();
+  data.records.push({...base('F26',200,'unknown'),granularity:'total',workPart:'uo-overhead',workloadId:'ds|uo|overhead|it_hours|2027'});
+  const original=JSON.stringify(data);
+  const preview=previewActivityAllocation(data,rule);
+  expect(preview.items.map(i=>i.total).reduce((a,b)=>a+b,0)).toBe(1200);
+  expect(preview.uo.development).toBe(720);
+  expect(preview.uo.maintenance).toBe(480);
+  const decision=approveActivityAllocation(preview,'Godkänd fördelning');
+  const derived=approvedActivityParts(data,rule,decision);
+  expect(derived).toHaveLength(6);
+  expect(derived.filter(r=>r.workPart==='uo-overhead')).toHaveLength(2);
+  expect(derived.filter(r=>r.workPart==='uo-overhead').every(r=>r.scope.axis==='work'&&!r.scope.loId)).toBe(true);
+  expect(JSON.stringify(data)).toBe(original);
  });
  it('requires approval reason and rejects stale or absent decision',()=>{
   const data=fixture(),preview=previewActivityAllocation(data,rule);
