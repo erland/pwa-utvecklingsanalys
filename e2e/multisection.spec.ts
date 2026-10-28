@@ -9,7 +9,7 @@ test('separately approve development and maintenance matrix without adding to de
  const bytes=Buffer.from(await book.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'matrix.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
- await expect(page.getByRole('status')).toContainText('importerad');
+ await expect(page.getByRole('status').filter({has:page.getByRole('heading',{name:'Importresultat'})})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });
