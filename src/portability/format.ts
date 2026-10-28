@@ -53,7 +53,7 @@ export function validateBackup(input:unknown):ProjectBackup{
   }
   const decided=new Set<string>();
   for(const decision of decisions){
-   if(!ids.has(decision.ruleId)||decided.has(decision.ruleId)||!decision.fingerprint||!decision.approvedAt||!decision.reason?.trim())throw new Error('INVALID_ACTIVITY_ALLOCATION_DECISION');
+   if(!ids.has(decision.ruleId)||decided.has(decision.ruleId)||!decision.fingerprint||!decision.approvedAt||!decision.reason?.trim()||decision.overrides!==undefined&&(!Array.isArray(decision.overrides)||decision.overrides.some(o=>!o||typeof o.loId!=='string'||!o.loId||!Number.isFinite(o.developmentPercent)||o.developmentPercent<0||o.developmentPercent>100)||new Set(decision.overrides.map(o=>o.loId)).size!==decision.overrides.length))throw new Error('INVALID_ACTIVITY_ALLOCATION_DECISION');
    decided.add(decision.ruleId);
   }
   // Import of an otherwise well-formed historic approval is permitted; the live projection
