@@ -10,6 +10,8 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
  const [data,setData]=useState<CanonicalDataset|null>(null);
  const [state,setState]=useState<GapState|null>(null);
  const [error,setError]=useState('');
+ const [bulkBusy,setBulkBusy]=useState(false);
+ const [bulkMessage,setBulkMessage]=useState('');
  useEffect(()=>{
   let active=true;
   void Promise.all([loadCanonical(),loadGapState()]).then(([canonical,gaps])=>{
@@ -36,12 +38,39 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   }
   return {candidates:[...found.values()],diagnostics};
  },[data,state]);
+ const pending=candidates.filter(item=>!item.approved);
+ const approveAll=async()=>{
+  if(!data||!pending.length)return;
+  setBulkBusy(true);setBulkMessage('');
+  try{
+   const latest=await loadGapState();
+   const rules=[...(latest.activityAllocationRules??[])];
+   const decisions=[...(latest.activityAllocationDecisions??[])];
+   for(const {rule,preview} of pending){
+    const existing=rules.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
+    const target=existing??rule;
+    const decision=approveActivityAllocation(preview,'Gemensamt godkännande av föreslagen fördelning');
+    if(!existing)rules.push(target);
+    const index=decisions.findIndex(d=>d.ruleId===target.id);
+    const updated={...decision,ruleId:target.id};
+    if(index>=0)decisions[index]=updated;else decisions.push(updated);
+   }
+   const next:GapState={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
+   await saveGapState(next);
+   setState(next);
+   setBulkMessage(`${pending.length} fördelningar godkända. Analysen använder nu de sparade fördelningarna.`);
+  }catch(e){setBulkMessage(`Kunde inte godkänna alla fördelningar: ${e instanceof Error?e.message:String(e)}`)}
+  finally{setBulkBusy(false)}
+ };
  if(error)return <p role="alert">Kunde inte läsa kompletteringar: {error}</p>;
  if(!data||!state)return null;
  if(!candidates.length)return <div className="panel"><p>{diagnostics.length?'LO-fördelningen kan inte visas eftersom underlaget inte stämmer med aktivitetsmatrisen.':'Det finns inga LO-fördelningar att justera för importerade budgetunderlag.'}</p>{diagnostics.length>0&&<ul>{diagnostics.map((item,i)=><li key={i}>{item}</li>)}</ul>}<button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
  return <section className="panel" aria-label="Komplettera efter import">
   <h2>Fördela utveckling och förvaltning per LO</h2>
-  <p>Justera utvecklingsandel per LO direkt här, även för tidigare godkända fördelningar. UO:s och LO:s totaler är låsta. Spara för att uppdatera analysen.</p>
+  <p>Ändra utvecklingsandel per LO eller UO Övergripande. Föreslagna fördelningar används först efter godkännande. Du kan godkänna alla återstående förslag samtidigt eller spara individuella justeringar per tabell.</p>
+  {pending.length>0&&<button className="primary" disabled={bulkBusy} onClick={()=>void approveAll()}>{bulkBusy?'Godkänner…':`Godkänn alla föreslagna fördelningar (${pending.length})`}</button>}
+  {pending.length>0&&<p>Massgodkännande använder de automatiskt föreslagna procentandelarna. Osparade ändringar i reglagen ingår inte; spara sådana i respektive tabell först.</p>}
+  {bulkMessage&&<p role="status">{bulkMessage}</p>}
   {candidates.map(({rule,preview,decision,approved})=><div key={rule.id} className="mapping-settings">
    <h3>{decodeURIComponent(rule.uoId.startsWith('uo:')?rule.uoId.slice(3):rule.uoId)} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
    <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
