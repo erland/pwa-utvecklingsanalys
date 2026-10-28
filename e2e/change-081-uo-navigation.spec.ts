@@ -29,5 +29,5 @@ test('all UO navigation opens shared LO detail and supports breadcrumb back',asy
  await navigator.getByRole('button',{name:'UO-grupper'}).click();
  await expect(navigator).toContainText('Skapa en UO-gruppmodell');
  await navigator.getByRole('button',{name:'Alla UO'}).first().click();
- await expect(navigator.getByRole('table',{name:'UO i analys'})).toBeVisible();
+ await expect(navigator.getByRole('group',{name:'Fördelning: UO i analys'})).toBeVisible();
 });
