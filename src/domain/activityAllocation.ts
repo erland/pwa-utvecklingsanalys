@@ -15,10 +15,11 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  // into a virtual annual total for approval. Never mutate source records or add months
  // on top of an annual record for the same LO.
  const matrix=original.filter(r=>r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId);
- const loSources=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&Boolean(r.scope.loId));
- const loIdsForYear=[...new Set(loSources.map(r=>r.scope.axis==='work'?r.scope.loId:''))];
+ const loSources=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&(Boolean(r.scope.loId)||r.workPart==='uo-overhead'));
+ const overheadKey='uo-overhead:'+rule.uoId;
+ const loIdsForYear=[...new Set(loSources.map(r=>r.scope.axis==='work'?(r.scope.loId??overheadKey):''))];
  const loTotals:AnalysisRecord[]=loIdsForYear.flatMap(loId=>{
-  const items=loSources.filter(r=>r.scope.axis==='work'&&r.scope.loId===loId);
+  const items=loSources.filter(r=>r.scope.axis==='work'&&(r.scope.loId??overheadKey)===loId);
   const annual=items.filter(r=>r.month===undefined);
   const monthly=items.filter(r=>r.month!==undefined);
   if(annual.length&&!(annual.length===1&&annual[0].value===0&&monthly.some(r=>r.value!==0)))return annual;
@@ -27,18 +28,19 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
   return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:monthly.reduce((sum,r)=>sum+r.value,0)}];
  });
  if(matrix.length!==2||!loTotals.length||!matrix.some(r=>r.activity==='development')||!matrix.some(r=>r.activity==='maintenance'))throw new Error('INCOMPLETE_UO_OR_LO');
- const dev=matrix.find(r=>r.activity==='development')!.value,maintenance=matrix.find(r=>r.activity==='maintenance')!.value,sourceTotal=dev+maintenance;
+ const matrixDev=matrix.find(r=>r.activity==='development')!.value,matrixMaint=matrix.find(r=>r.activity==='maintenance')!.value,sourceTotal=matrixDev+matrixMaint;
  const loIds=new Set(loTotals.map(r=>r.scope.axis==='work'?r.scope.loId:''));
  if(loIds.size!==loTotals.length)throw new Error('DUPLICATE_LO_TOTAL');
  const total=loTotals.reduce((n,r)=>n+r.value,0);
- if(sourceTotal<0||total<=0||Math.abs(sourceTotal-total)>Math.max(0.000001,total*0.000001))throw new Error('UO_LO_TOTAL_MISMATCH');
- const existing=data.records.filter(r=>r.metric===rule.metric&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId&&Boolean(r.scope.loId)&&r.granularity==='activity-part');
+ if(sourceTotal<=0||total<=0)throw new Error('UO_LO_TOTAL_MISMATCH');
+ const dev=total*matrixDev/sourceTotal,maintenance=total-dev;
+ const existing=data.records.filter(r=>r.metric===rule.metric&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId&&(Boolean(r.scope.loId)||r.workPart==='uo-overhead')&&r.granularity==='activity-part');
  if(existing.length)throw new Error('EXISTING_LO_ACTIVITY_DATA');
  let allocatedDev=0;
  const items=loTotals.sort((a,b)=>a.id.localeCompare(b.id)).map((r,i,all)=>{
   const development=i===all.length-1?dev-allocatedDev:dev*r.value/total;
   allocatedDev+=development;
-  const loId=r.scope.axis==='work'?r.scope.loId!:'';
+  const loId=r.scope.axis==='work'?(r.scope.loId??overheadKey):'';
   return {loId,total:r.value,development,maintenance:r.value-development,workloadId:r.workloadId};
  });
  // Source proportions apply only when the LO and UO totals reconcile. All provenance is fingerprinted.
@@ -61,7 +63,7 @@ export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocat
  return preview.items.flatMap(item=>['development','maintenance'].map(activity=>({
   id:['allocation',rule.id,item.loId,activity,rule.year].join('|'),metric:rule.metric,year:rule.year,
   value:activity==='development'?item.development:item.maintenance,
-  activity:activity as Activity,scope:{axis:'work' as const,uoId:rule.uoId,loId:item.loId},authority:'derived' as const,approval:'approved' as const,
+  activity:activity as Activity,scope:item.loId.startsWith('uo-overhead:')?{axis:'work' as const,uoId:rule.uoId}:{axis:'work' as const,uoId:rule.uoId,loId:item.loId},...(item.loId.startsWith('uo-overhead:')?{workPart:'uo-overhead' as const}:{}),authority:'derived' as const,approval:'approved' as const,
   granularity:'activity-part' as const,workloadId:item.workloadId
  })));
 }
