@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {analyzeCanonical} from './canonicalQuery';
 import ComparisonResults from './ComparisonResults';
+import {uoActivityRows} from './activityBreakdown';
 import type {CanonicalDataset,Metric,Activity} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
@@ -10,8 +11,9 @@ export default function UoDetailBreakdown({data,state,metrics,activity,year,sele
  const uoId=selectedUoId??localUoId;
  const uos=[...new Set(data.records.filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort();
  let result:ReturnType<typeof analyzeCanonical>|null=null,error='';
+ let splits:ReturnType<typeof uoActivityRows>={};
  if(uoId&&metrics.length){
-  try{result=analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:uoId})}
+  try{result=analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:uoId});splits=uoActivityRows(data,state,metrics,year,uoId)}
   catch(e){error=String(e)}
  }
  return <section aria-label="Detaljer per UO">
@@ -21,7 +23,7 @@ export default function UoDetailBreakdown({data,state,metrics,activity,year,sele
    <option value="">Välj UO</option>{uos.map(id=><option key={id} value={id}>{decodeURIComponent(id.slice(3))}</option>)}
   </select></label>}
   {error&&<p role="alert">{error}</p>}
-  {result&&<><ComparisonResults title="LO och UO Övergripande" totalLabel="Totalt UO" unit={result.unit} rows={result.rows}/>
+  {result&&<><ComparisonResults title="LO och UO Övergripande" totalLabel="Totalt UO" unit={result.unit} rows={result.rows.map(row=>({...row,split:activity==='all'?splits[row.key]:undefined}))}/>
   {result.unknownCount>0&&<p role="status">Aktivitetsfördelningen är ofullständig för {result.unknownCount} underlag. Saknade värden visas inte som noll.</p>}
   </>}
  </section>;

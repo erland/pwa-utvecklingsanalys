@@ -1,15 +1,28 @@
 import {useState} from 'react';
+import type {ActivitySplit} from './activityBreakdown';
 
-export type ComparisonRow={key:string;label:string;value:number|null};
+export type ComparisonRow={key:string;label:string;value:number|null;split?:ActivitySplit};
 export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,openLabel}:{rows:ComparisonRow[];unit:'h'|'SEK';title:string;totalLabel:string;onOpen?:(key:string)=>void;openLabel?:string}){
- const [display,setDisplay]=useState<'table'|'bars'>('table');
+ const [display,setDisplay]=useState<'table'|'bars'|'distribution'>('table');
  const values=rows.map(row=>row.value).filter((v):v is number=>v!==null);
  const total=values.length===rows.length?values.reduce((sum,n)=>sum+n,0):null;
  const max=Math.max(1,...values);
  const format=(n:number|null)=>n===null?'Ej beräkningsbar':n.toLocaleString('sv-SE',{maximumFractionDigits:2})+' '+unit;
  return <section aria-label={title}>
-  <div className="actions"><h3>{title}</h3><label>Presentation<select aria-label={'Presentation för '+title} value={display} onChange={e=>setDisplay(e.target.value as 'table'|'bars')}><option value="table">Tabell</option><option value="bars">Stapeldiagram</option></select></label></div>
-  {display==='table'?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
+  <div className="actions"><h3>{title}</h3><label>Presentation<select aria-label={'Presentation för '+title} value={display} onChange={e=>setDisplay(e.target.value as 'table'|'bars'|'distribution')}><option value="table">Tabell</option><option value="bars">Stapeldiagram</option>{rows.some(row=>row.split)&&<option value="distribution">Utveckling / Förvaltning</option>}</select></label></div>
+  {display==='distribution'?<div className="canonical-trend" role="group" aria-label={'Fördelning: '+title}>
+   <p>Utveckling, förvaltning och ej fördelad aktivitet. Ej fördelat innebär att fördelningen saknas eller inte är godkänd.</p>
+   {rows.map(row=>{const v=row.split;const pct=(n:number)=>v&&v.total>0?100*n/v.total:0;return <div className="canonical-trend-row" key={row.key}>
+    <span>{row.label}</span>
+    {v?<div className="canonical-trend-track" role="img" aria-label={row.label+': utveckling '+format(v.development)+', förvaltning '+format(v.maintenance)+', ej fördelat '+format(v.unallocated)} style={{display:'flex',overflow:'hidden'}}>
+     <div style={{width:pct(v.development)+'%',background:'#26768c',minHeight:16}}/>
+     <div style={{width:pct(v.maintenance)+'%',background:'#c66d26',minHeight:16}}/>
+     <div style={{width:pct(v.unallocated)+'%',background:'#9ca3af',minHeight:16}}/>
+    </div>:<span>Fördelning saknas</span>}
+    <strong>{format(row.value)}</strong>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
+   </div>})}
+   <p>Blå: utveckling · Orange: förvaltning · Grå: ej fördelat</p>
+  </div>:display==='table'?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
    <thead><tr><th>Delområde</th><th>Värde</th><th>Andel</th>{onOpen&&<th>Fördjupning</th>}</tr></thead>
    <tbody>{rows.map(row=><tr key={row.key}><th scope="row">{row.label}</th><td>{format(row.value)}</td><td>{total!==null&&total>0&&row.value!==null?(100*row.value/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td>{onOpen&&<td><button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button></td>}</tr>)}</tbody>
    <tfoot><tr><th scope="row">{totalLabel}</th><td>{format(total)}</td><td>{total!==null&&total>0?'100 %':'–'}</td>{onOpen&&<td/>}</tr></tfoot>
