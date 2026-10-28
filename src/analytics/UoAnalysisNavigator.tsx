@@ -5,6 +5,7 @@ import type {UoGroupModel} from './groupModels';
 import {groupForUo} from './groupModels';
 import {analyzeCanonical} from './canonicalQuery';
 import UoDetailBreakdown from './UoDetailBreakdown';
+import ComparisonResults from './ComparisonResults';
 
 type Entry='groups'|'uos';
 type View={entry:Entry;groupId?:string;uoId?:string};
@@ -21,7 +22,7 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
   try{return analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:id}).total}
   catch{return null}
  };
- const format=(v:number|null)=>v===null?'Ej beräkningsbar':v.toLocaleString('sv-SE',{maximumFractionDigits:2});
+
  const show=(next:View)=>setView(next);
  return <section aria-label="Utforska UO" className="mapping-settings">
   <h3>Utforska organisationen</h3>
@@ -40,11 +41,12 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
    {view.uoId&&<><span aria-hidden="true">›</span><strong>{name(view.uoId)}</strong></>}
   </nav>
   {view.uoId?<UoDetailBreakdown selectedUoId={view.uoId} data={data} state={state} metrics={metrics} activity={activity} year={year}/>:view.entry==='groups'&&!view.groupId&&model?
-   <table className="canonical-table" aria-label="UO-grupper i analys"><thead><tr><th>UO-grupp</th><th>Värde</th><th>Öppna</th></tr></thead><tbody>
-    {groups.map(g=>{const ids=uos.filter(id=>membership(id)===g.id);const values=ids.map(metricValue);const total=values.every(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null;return <tr key={g.id}><th scope="row">{g.label}</th><td>{format(total)}</td><td><button type="button" className="secondary" onClick={()=>show({entry:'groups',groupId:g.id})}>Visa UO</button></td></tr>})}
-   </tbody></table>:
-   <table className="canonical-table" aria-label="UO i analys"><thead><tr><th>UO</th><th>Värde</th><th>Öppna</th></tr></thead><tbody>
-    {displayedUos.map(id=><tr key={id}><th scope="row">{name(id)}</th><td>{format(metricValue(id))}</td><td><button type="button" className="secondary" onClick={()=>show({entry:view.entry,groupId:view.groupId,uoId:id})}>Visa LO</button></td></tr>)}
-   </tbody></table>}
+   <ComparisonResults title="UO-grupper i analys" totalLabel="Totalt grupper" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={groups.map(g=>{
+    const ids=uos.filter(id=>membership(id)===g.id);
+    const values=ids.map(metricValue);
+    return {key:g.id,label:g.label,value:values.every(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null};
+   })} openLabel="Visa UO" onOpen={id=>show({entry:'groups',groupId:id})}/>:
+   <ComparisonResults title="UO i analys" totalLabel="Totalt UO" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={displayedUos.map(id=>({key:id,label:name(id),value:metricValue(id)}))} openLabel="Visa LO" onOpen={id=>show({entry:view.entry,groupId:view.groupId,uoId:id})}/>}
+
  </section>;
 }
