@@ -29,9 +29,19 @@ describe('organization activity distribution',()=>{
   const approved={...state,activityAllocationRules:[rule],activityAllocationDecisions:[decision]};
   const before=JSON.stringify(d),rows=uoActivityRows(d,approved,['it_hours'],2027,'uo:A');
   expect(rows['lo:1']).toEqual({total:60,development:36,maintenance:24,unallocated:0});
-  expect(rows['lo:2']).toEqual({total:40,development:15.2,maintenance:24.8,unallocated:0});
-  expect(rows['uo-overhead:uo:A']).toEqual({total:10,development:3.8,maintenance:6.2,unallocated:0});
-  expect(addActivitySplits(Object.values(rows))).toEqual({total:110,development:55,maintenance:55,unallocated:0});
+  expect(rows['lo:2'].total).toBe(40);
+  expect(rows['lo:2'].development).toBeCloseTo(15.2);
+  expect(rows['lo:2'].maintenance).toBeCloseTo(24.8);
+  expect(rows['lo:2'].unallocated).toBe(0);
+  expect(rows['uo-overhead:uo:A'].total).toBe(10);
+  expect(rows['uo-overhead:uo:A'].development).toBeCloseTo(3.8);
+  expect(rows['uo-overhead:uo:A'].maintenance).toBeCloseTo(6.2);
+  expect(rows['uo-overhead:uo:A'].unallocated).toBe(0);
+  const combined=addActivitySplits(Object.values(rows));
+  expect(combined.total).toBe(110);
+  expect(combined.development).toBeCloseTo(55);
+  expect(combined.maintenance).toBeCloseTo(55);
+  expect(combined.unallocated).toBe(0);
   expect(JSON.stringify(d)).toBe(before);
  });
  it('reverts to undistributed when approval is stale',()=>{
