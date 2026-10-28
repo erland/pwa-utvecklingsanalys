@@ -70,6 +70,12 @@ describe('v2 approved activity allocations',()=>{
   const preview=previewActivityAllocation(data,rule);
   expect(preview.items.find(x=>x.loId==='lo1')?.total).toBe(700);
  });
+ it('uses monthly values if the annual 2027 cell is an empty zero placeholder',()=>{
+  const data=fixture();
+  data.records[2].value=0;
+  data.records.push({...base('E26',700,'unknown','lo1'),month:1});
+  expect(previewActivityAllocation(data,rule).items.find(x=>x.loId==='lo1')?.total).toBe(700);
+ });
  it('requires approval reason and rejects stale or absent decision',()=>{
   const data=fixture(),preview=previewActivityAllocation(data,rule);
   expect(()=>approveActivityAllocation(preview,'  ')).toThrow('APPROVAL_REASON_REQUIRED');
