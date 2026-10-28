@@ -17,8 +17,9 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   }).catch(e=>{if(active)setError(String(e))});
   return ()=>{active=false};
  },[refreshKey]);
- const candidates=useMemo(()=>{
-  if(!data)return [];
+ const {candidates,diagnostics}=useMemo(()=>{
+  if(!data)return {candidates:[],diagnostics:[]};
+  const diagnostics:string[]=[];
   const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ReturnType<typeof approveActivityAllocation>;approved:boolean}>();
   for(const record of data.records){
    if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
@@ -31,13 +32,13 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
     const preview=previewActivityAllocation(data,rule);
     const decision=state?.activityAllocationDecisions?.find(d=>d.ruleId===rule.id);
     found.set(key,{rule,preview,decision,approved:Boolean(decision&&approvedActivityParts(data,rule,decision).length)});
-   }catch{/* No valid UO/LO reconciliation: do not offer an unsafe quick approval. */}
+   }catch(e){diagnostics.push(`${candidate.uoId} · ${candidate.metric} · ${candidate.year}: ${e instanceof Error?e.message:String(e)}`);}
   }
-  return [...found.values()];
+  return {candidates:[...found.values()],diagnostics};
  },[data,state]);
  if(error)return <p role="alert">Kunde inte läsa kompletteringar: {error}</p>;
  if(!data||!state)return null;
- if(!candidates.length)return <div className="panel"><p>Det finns inga LO-fördelningar att justera för importerade budgetunderlag.</p><button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
+ if(!candidates.length)return <div className="panel"><p>{diagnostics.length?'LO-fördelningen kan inte visas eftersom underlaget inte stämmer med aktivitetsmatrisen.':'Det finns inga LO-fördelningar att justera för importerade budgetunderlag.'}</p>{diagnostics.length>0&&<ul>{diagnostics.map((item,i)=><li key={i}>{item}</li>)}</ul>}<button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
  return <section className="panel" aria-label="Komplettera efter import">
   <h2>Fördela utveckling och förvaltning per LO</h2>
   <p>Justera utvecklingsandel per LO direkt här, även för tidigare godkända fördelningar. UO:s och LO:s totaler är låsta. Spara för att uppdatera analysen.</p>
