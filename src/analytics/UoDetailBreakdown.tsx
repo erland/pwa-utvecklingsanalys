@@ -21,7 +21,7 @@ export default function UoDetailBreakdown({data,state,metrics,activity,year,sele
    <option value="">Välj UO</option>{uos.map(id=><option key={id} value={id}>{decodeURIComponent(id.slice(3))}</option>)}
   </select></label>}
   {error&&<p role="alert">{error}</p>}
-  {result&&<><ComparisonResults title="LO och UO Övergripande" totalLabel="Totalt UO" unit={result.unit} rows={result.rows}/>}
+  {result&&<><ComparisonResults title="LO och UO Övergripande" totalLabel="Totalt UO" unit={result.unit} rows={result.rows}/>
   {result.unknownCount>0&&<p role="status">Aktivitetsfördelningen är ofullständig för {result.unknownCount} underlag. Saknade värden visas inte som noll.</p>}
   </>}
  </section>;
