@@ -7,6 +7,7 @@ export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity
 export type CanonicalAnalysisResult={total:number;unit:'h'|'SEK';rows:{key:string;label:string;value:number}[];rowCounts:Record<string,number>;includedRecords:number;unknownCount:number;staleApprovals:number;excludedAlternatives:number;coverage:string};
 const sourceId=(r:AnalysisRecord)=>r.source?.datasetId??r.workloadId.split('|')[0]??'';
 const identity=(r:AnalysisRecord)=>JSON.stringify([sourceId(r),r.scope.axis==='work'?r.scope.uoId:r.scope.departmentId,r.metric,r.year,r.month??null]);
+const isMatrix=(r:AnalysisRecord)=>r.scope.axis==='work'&&!r.scope.loId&&r.granularity==='activity-part'&&(r.workPart==='uo-activity-matrix'||r.authority==='original');
 const approved=(r:AnalysisRecord)=>r.authority==='original'&&r.approval==='reported'||r.authority!=='original'&&r.approval==='approved';
 
 export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:CanonicalAnalysisQuery):CanonicalAnalysisResult{
@@ -26,8 +27,8 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  }
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
  const eligible=[...data.records,...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
- const excludedMatrix=eligible.filter(r=>r.workPart==='uo-activity-matrix').length;
- const filtered=eligible.filter(r=>r.workPart!=='uo-activity-matrix');
+ const excludedMatrix=eligible.filter(isMatrix).length;
+ const filtered=eligible.filter(r=>!isMatrix(r));
  // Separate alternative UO-level activity summary from LO detail, never sum both.
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
  // In UO-detail mode overhead is additive alongside LO, but UO's activity matrix is an alternative summary.
