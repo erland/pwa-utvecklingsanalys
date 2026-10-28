@@ -43,7 +43,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   <h2>Fördela utveckling och förvaltning per LO</h2>
   <p>Justera utvecklingsandel per LO direkt här, även för tidigare godkända fördelningar. UO:s och LO:s totaler är låsta. Spara för att uppdatera analysen.</p>
   {candidates.map(({rule,preview,decision,approved})=><div key={rule.id} className="mapping-settings">
-   <h3>{rule.uoId} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
+   <h3>{decodeURIComponent(rule.uoId.startsWith('uo:')?rule.uoId.slice(3):rule.uoId)} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
    <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
    <LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(decision?.overrides??[])} preview={preview} decision={approved?decision:undefined} quick onApproved={candidates.length===1?onAnalyze:undefined} onApprove={async(overrides,reason)=>{
     const decision=approveActivityAllocation(preview,reason,overrides);
