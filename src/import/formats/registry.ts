@@ -5,10 +5,12 @@ import {processHoursTwoColumnFormat} from './processHoursTwoColumn';
 import {staffHeadcountFormat} from './staffHeadcount';
 import {staffHeadcountTwoColumnFormat} from './staffHeadcountTwoColumn';
 import type {TableResult} from '../tabular';
+import type {AllocationPreview} from '../../domain/activityAllocation';
+import type {LoDevelopmentOverride} from './uoBudgetCompletion';
 
 /** An isolated, code-defined XLSX import format. Each format owns its matching and parsing rules. */
 export type ImportFormat=
- | {kind:'budget';id:string;label:string;matches:(workbook:ExcelJS.Workbook)=>boolean;parse:(bytes:ArrayBuffer)=>Promise<ImportResult>}
+ | {kind:'budget';id:string;label:string;matches:(workbook:ExcelJS.Workbook)=>boolean;parse:(bytes:ArrayBuffer)=>Promise<ImportResult>;completion?:(preview:AllocationPreview,overrides:readonly LoDevelopmentOverride[])=>AllocationPreview}
  | {kind:'table';id:string;label:string;matches:(workbook:ExcelJS.Workbook)=>boolean;parse:(bytes:ArrayBuffer)=>Promise<TableResult>};
 
 /** Add/remove entire format definitions here; never infer an ambiguous format. */
