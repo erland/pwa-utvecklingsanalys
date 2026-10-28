@@ -43,7 +43,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   <p>Excel-formatet har föreslagit en fördelning. Justera bara de LO som behöver ändras. UO:s och LO:s totaler är låsta.</p>
   {candidates.map(({rule,preview})=><div key={rule.id} className="mapping-settings">
    <h3>{rule.uoId} · {rule.metric==='it_hours'?'IT-timmar':'Verksamhetstimmar'} · {rule.year}</h3>
-   <LoAllocationDraft key={preview.fingerprint} preview={preview} quick onApprove={async(overrides,reason)=>{
+   <LoAllocationDraft key={preview.fingerprint} preview={preview} quick onApproved={candidates.length===1?onAnalyze:undefined} onApprove={async(overrides,reason)=>{
     const decision=approveActivityAllocation(preview,reason,overrides);
     const latest=await loadGapState();
     const matching=latest.activityAllocationRules?.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
