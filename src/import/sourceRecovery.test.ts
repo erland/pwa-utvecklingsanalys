@@ -1,6 +1,12 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {emptySemantic} from '../domain/semantic';
 import {emptyCanonical} from '../domain/canonical';
+const journal=vi.hoisted(()=>new Map<string,unknown>());
+vi.mock('idb',()=>({openDB:vi.fn(async()=>({
+ get:async(_store:string,key:string)=>structuredClone(journal.get(key)),
+ put:async(_store:string,value:unknown,key:string)=>{journal.set(key,structuredClone(value))},
+ delete:async(_store:string,key:string)=>{journal.delete(key)}
+}))}));
 import type {AnalysisProject} from '../model';
 
 const state=vi.hoisted(()=>({
@@ -25,6 +31,7 @@ import {deleteImportedSources,recoverSourceMutation,replaceImportedSource} from 
 
 const source={id:'source-1',name:'Budget',planningYear:2027,source:'excel' as const,importedAt:'2026-10-01'};
 beforeEach(()=>{
+ journal.clear();
  state.project={schemaVersion:1,id:'project',name:'Demo',datasets:[source],updatedAt:'2026-10-01'};
  state.semantic=emptySemantic();
  state.semantic.entities.push({id:'uo',kind:'uo',name:'UO',aliases:[]});
