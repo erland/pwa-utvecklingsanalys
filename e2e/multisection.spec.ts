@@ -10,6 +10,9 @@ test('separately approve development and maintenance matrix without adding to de
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'matrix.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});
  await expect(page.getByRole('status').filter({has:page.getByRole('heading',{name:'Importresultat'})})).toContainText('importerad');
+ await expect(page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/})).toBeVisible();
+ await page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
+ await expect(page.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });
