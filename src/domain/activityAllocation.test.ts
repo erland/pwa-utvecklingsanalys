@@ -44,13 +44,37 @@ describe('v2 approved activity allocations',()=>{
   const changed=fixture();changed.records[2].value=680;changed.records[3].value=320;
   expect(approvedActivityParts(changed,rule,decision)).toEqual([]);
  });
- it('rejects unbalanced source totals, existing LO activity values and monthly/annual overlap',()=>{
+ it('rejects unbalanced source totals and existing LO activity values',()=>{
   const data=fixture();data.records[3].value=290;
   expect(()=>previewActivityAllocation(data,rule)).toThrow('UO_LO_TOTAL_MISMATCH');
   const prior=fixture();prior.records.push({...base('F26',500,'development','lo1'),granularity:'activity-part',workloadId:'other'});
   expect(()=>previewActivityAllocation(prior,rule)).toThrow('EXISTING_LO_ACTIVITY_DATA');
-  const monthly=fixture();monthly.records[2].month=1;
-  expect(()=>previewActivityAllocation(monthly,rule)).toThrow('MONTHLY_ALLOCATION_UNSUPPORTED');
+ });
+ it('aggregates month-only LO inputs into annual allocation without mutating originals',()=>{
+  const data=fixture();
+  data.records.splice(2,2,
+   {...base('D26',300,'unknown','lo1'),month:1},
+   {...base('E26',400,'unknown','lo1'),month:2},
+   {...base('D32',100,'unknown','lo2'),month:1},
+   {...base('E32',200,'unknown','lo2'),month:2});
+  const before=JSON.stringify(data);
+  const preview=previewActivityAllocation(data,rule);
+  expect(preview.items.map(x=>[x.total,x.development,x.maintenance])).toEqual([[700,420,280],[300,180,120]]);
+  const decision=approveActivityAllocation(preview,'Årsvärden kontrollerade');
+  expect(approvedActivityParts(data,rule,decision)).toHaveLength(4);
+  expect(JSON.stringify(data)).toBe(before);
+ });
+ it('prefers a yearly LO total instead of adding its monthly rows',()=>{
+  const data=fixture();
+  data.records.push({...base('E26',300,'unknown','lo1'),month:1});
+  const preview=previewActivityAllocation(data,rule);
+  expect(preview.items.find(x=>x.loId==='lo1')?.total).toBe(700);
+ });
+ it('uses monthly values if the annual 2027 cell is an empty zero placeholder',()=>{
+  const data=fixture();
+  data.records[2].value=0;
+  data.records.push({...base('E26',700,'unknown','lo1'),month:1});
+  expect(previewActivityAllocation(data,rule).items.find(x=>x.loId==='lo1')?.total).toBe(700);
  });
  it('requires approval reason and rejects stale or absent decision',()=>{
   const data=fixture(),preview=previewActivityAllocation(data,rule);
