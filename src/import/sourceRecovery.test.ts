@@ -40,6 +40,33 @@ beforeEach(()=>{
  state.failProject=false;
 });
 describe('cross-store source mutation recovery',()=>{
+ it('recovers an interrupted mutation from the durable journal and clears it only after restoration',async()=>{
+  const before={project:structuredClone(state.project),semantic:structuredClone(state.semantic),canonical:structuredClone(state.canonical)};
+  journal.set('pending',structuredClone(before));
+  state.project={...state.project!,datasets:[]};
+  state.semantic={...state.semantic!,observations:[]};
+  state.canonical={...state.canonical!,records:[]};
+  expect(await recoverSourceMutation()).toBe(true);
+  expect(state.project).toEqual(before.project);
+  expect(state.semantic).toEqual(before.semantic);
+  expect(state.canonical).toEqual(before.canonical);
+  expect(journal.has('pending')).toBe(false);
+  expect(await recoverSourceMutation()).toBe(false);
+ });
+ it('retains the journal if recovery itself fails so another attempt can restore data',async()=>{
+  const before={project:structuredClone(state.project),semantic:structuredClone(state.semantic),canonical:structuredClone(state.canonical)};
+  journal.set('pending',structuredClone(before));
+  state.project={...state.project!,datasets:[]};
+  state.semantic={...state.semantic!,observations:[]};
+  state.failProject=true;
+  await expect(recoverSourceMutation()).rejects.toThrow('SIMULATED_PROJECT_WRITE_FAILURE');
+  expect(journal.has('pending')).toBe(true);
+  expect(await recoverSourceMutation()).toBe(true);
+  expect(state.project).toEqual(before.project);
+  expect(state.semantic).toEqual(before.semantic);
+  expect(state.canonical).toEqual(before.canonical);
+  expect(journal.has('pending')).toBe(false);
+ });
  it('rolls back source deletion after project write failure',async()=>{
   const before={project:structuredClone(state.project),semantic:structuredClone(state.semantic),canonical:structuredClone(state.canonical)};
   state.failProject=true;
