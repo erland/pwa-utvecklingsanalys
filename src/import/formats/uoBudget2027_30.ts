@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import type {ImportFormat} from './registry';
+import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
 export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
 export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name));}
@@ -77,5 +78,6 @@ export const uoBudget2027_30:ImportFormat={
  id:'uo-budget-2027-30',
  label:'UO Tot 2027-30',
  matches:matchesUoBudget2027_30,
- parse:bytes=>importUoBudget(bytes)
+ parse:bytes=>importUoBudget(bytes),
+ completion:rebalanceUoBudgetAllocation
 };
