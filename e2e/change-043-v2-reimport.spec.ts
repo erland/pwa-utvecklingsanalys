@@ -30,7 +30,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await allocation.getByLabel('godkännandemotivering', {exact:false}).fill('Testad källavstämning');
- await allocation.getByRole('button',{name:'Godkänn fördelning'}).click();
+ await allocation.getByRole('button',{name:'Godkänn föreslagen fördelning'}).click();
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const updated=page.locator('.canonical-analytics');
@@ -69,7 +69,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  const changedAllocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await expect(changedAllocation.getByText('Kräver nytt godkännande')).toBeVisible();
  await changedAllocation.getByLabel('godkännandemotivering',{exact:false}).fill('Kontrollerad efter källbyte');
- await changedAllocation.getByRole('button',{name:'Godkänn fördelning'}).click();
+ await changedAllocation.getByRole('button',{name:'Godkänn föreslagen fördelning'}).click();
  await expect(changedAllocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await page.locator('.canonical-analytics').getByLabel('aktivitet').selectOption('development');
