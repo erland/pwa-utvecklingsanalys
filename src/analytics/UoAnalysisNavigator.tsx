@@ -6,6 +6,7 @@ import {groupForUo} from './groupModels';
 import {analyzeCanonical} from './canonicalQuery';
 import UoDetailBreakdown from './UoDetailBreakdown';
 import ComparisonResults from './ComparisonResults';
+import {uoActivityRows,addActivitySplits} from './activityBreakdown';
 
 type Entry='groups'|'uos';
 type View={entry:Entry;groupId?:string;uoId?:string};
@@ -18,6 +19,9 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
  const membership=(id:string)=>model?groupForUo(model,id)?.id??'unassigned':'unassigned';
  const groups=model?[...model.groups.map(g=>({id:g.id,label:g.name})),...(uos.some(id=>membership(id)==='unassigned')?[{id:'unassigned',label:'Ej grupperad'}]:[])]:[];
  const displayedUos=view.entry==='groups'&&view.groupId?uos.filter(id=>membership(id)===view.groupId):uos;
+ const activityRows=(id:string)=>{
+  try{return addActivitySplits(Object.values(uoActivityRows(data,state,metrics,year,id)))}catch{return null}
+ };
  const metricValue=(id:string)=>{
   try{return analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:id}).total}
   catch{return null}
@@ -44,9 +48,9 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
    <ComparisonResults title="UO-grupper i analys" totalLabel="Totalt grupper" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={groups.map(g=>{
     const ids=uos.filter(id=>membership(id)===g.id);
     const values=ids.map(metricValue);
-    return {key:g.id,label:g.label,value:values.every(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null};
+    const splits=ids.map(activityRows);return {key:g.id,label:g.label,value:values.every(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null,split:splits.every(v=>v!==null)?addActivitySplits(splits.filter((v):v is NonNullable<typeof v>=>v!==null)):undefined};
    })} openLabel="Visa UO" onOpen={id=>show({entry:'groups',groupId:id})}/>:
-   <ComparisonResults title="UO i analys" totalLabel="Totalt UO" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={displayedUos.map(id=>({key:id,label:name(id),value:metricValue(id)}))} openLabel="Visa LO" onOpen={id=>show({entry:view.entry,groupId:view.groupId,uoId:id})}/>}
+   <ComparisonResults title="UO i analys" totalLabel="Totalt UO" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={displayedUos.map(id=>({key:id,label:name(id),value:metricValue(id),split:activityRows(id)??undefined}))} openLabel="Visa LO" onOpen={id=>show({entry:view.entry,groupId:view.groupId,uoId:id})}/>}
 
  </section>;
 }
