@@ -21,6 +21,24 @@ describe('v2 approved activity allocations',()=>{
   expect(summarizeCanonical(projected,'work',['it_hours'],'all').value).toBe(1000);
   expect(JSON.stringify(data)).toBe(before);
  });
+ it('persists adjusted LO shares in approval and projects exact totals without mutating original imports',()=>{
+  const data=fixture(),before=JSON.stringify(data),proposal=previewActivityAllocation(data,rule);
+  const decision=approveActivityAllocation(proposal,'Omfördelning beslutad',[{loId:'lo1',developmentPercent:50}]);
+  expect(decision.overrides).toEqual([{loId:'lo1',developmentPercent:50}]);
+  const persisted=JSON.parse(JSON.stringify(decision)) as typeof decision;
+  const projected=approvedActivityParts(data,rule,persisted);
+  expect(projected.filter(r=>r.activity==='development').map(r=>r.value)).toEqual([350,250]);
+  expect(projected.reduce((sum,r)=>sum+r.value,0)).toBe(1000);
+  expect(JSON.stringify(data)).toBe(before);
+ });
+ it('invalidates adjusted approval if source values change and rejects impossible overrides',()=>{
+  const data=fixture(),preview=previewActivityAllocation(data,rule);
+  expect(()=>approveActivityAllocation(preview,'Omöjlig',[{loId:'lo1',developmentPercent:100}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
+  const decision=approveActivityAllocation(preview,'Avstämt',[{loId:'lo1',developmentPercent:60}]);
+  const changed=fixture();changed.records[2].value=680;changed.records[3].value=320;
+  expect(approvedActivityParts(changed,rule,decision)).toEqual([]);
+  expect(approvedActivityParts(data,rule,{...decision,overrides:[{loId:'lo1',developmentPercent:101}]})).toEqual([]);
+ });
  it('invalidates approval on reimported source change',()=>{
   const data=fixture(),decision=approveActivityAllocation(previewActivityAllocation(data,rule),'Godkänt');
   const changed=fixture();changed.records[2].value=680;changed.records[3].value=320;

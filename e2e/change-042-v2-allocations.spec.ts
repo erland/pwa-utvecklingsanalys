@@ -30,7 +30,7 @@ test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page}
  await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await allocation.getByLabel('godkännandemotivering', {exact:false}).fill('Testad källavstämning');
- await allocation.getByRole('button',{name:'Godkänn fördelning'}).click();
+ await allocation.getByRole('button',{name:'Godkänn föreslagen fördelning'}).click();
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const updated=page.locator('.canonical-analytics');

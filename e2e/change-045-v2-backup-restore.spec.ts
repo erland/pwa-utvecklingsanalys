@@ -26,7 +26,7 @@ test('CHANGE-045: approved v2 allocation survives real backup and restore in a f
  await allocation.getByRole('button',{name:'Skapa fördelning'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await allocation.getByLabel('godkännandemotivering',{exact:false}).fill('Godkänt inför projektbackup');
- await allocation.getByRole('button',{name:'Godkänn fördelning'}).click();
+ await allocation.getByRole('button',{name:'Godkänn föreslagen fördelning'}).click();
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await first.getByRole('button',{name:'Analys',exact:true}).click();
  const original=first.locator('.canonical-analytics');
