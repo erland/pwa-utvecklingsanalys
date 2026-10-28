@@ -40,7 +40,7 @@ export function validateCanonical(dataset:CanonicalDataset):string[]{
   if(r.authority!=='original'&&r.approval==='reported')errors.push('UNAPPROVED_ORIGIN');
   if(!r.workloadId?.trim())errors.push('WORKLOAD_REQUIRED');
   if(r.workPart!==undefined){
-   if(r.scope.axis!=='work'||r.workPart==='lo'&&(!('loId' in r.scope)||!r.scope.loId)||r.workPart!=='lo'&&'loId' in r.scope&&Boolean(r.scope.loId)||r.workPart==='uo-activity-matrix'&&r.granularity!=='activity-part'||r.workPart==='uo-overhead'&&r.granularity!=='total')errors.push('INVALID_WORK_PART');
+   if(r.scope.axis!=='work'||r.workPart==='lo'&&(!('loId' in r.scope)||!r.scope.loId)||r.workPart!=='lo'&&'loId' in r.scope&&Boolean(r.scope.loId)||r.workPart==='uo-activity-matrix'&&r.granularity!=='activity-part'||r.workPart==='uo-overhead'&&r.granularity!=='total'&&!(r.granularity==='activity-part'&&r.authority==='derived'))errors.push('INVALID_WORK_PART');
   }
   if(r.scope.axis==='work'){if(!r.scope.uoId?.trim())errors.push('UO_REQUIRED')}
   else if(r.scope.axis==='department'){if(!r.scope.departmentId?.trim())errors.push('DEPARTMENT_REQUIRED')}
