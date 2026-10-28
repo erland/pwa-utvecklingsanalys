@@ -17,6 +17,21 @@ const data=()=>({...emptyCanonical(),records:[
  {...row('D20',10,'unknown'),granularity:'total' as const,workPart:'uo-overhead' as const,workloadId:'ds|uo:A|overhead|it_hours|2027|year'}
 ]});
 describe('organization activity distribution',()=>{
+ it('never exposes the UO ratio matrix as a detail row even when no overhead is reported',()=>{
+  const d=data();
+  d.records=d.records.filter(r=>r.workPart!=='uo-overhead').map(r=>r.granularity==='activity-part'?{...r,workPart:'uo-activity-matrix' as const}:r);
+  const rows=uoActivityRows(d,state,['it_hours'],2027,'uo:A');
+  expect(Object.keys(rows).sort()).toEqual(['lo:1','lo:2']);
+  expect(addActivitySplits(Object.values(rows)).total).toBe(100);
+ });
+ it('never counts the UO ratio matrix when it has a different source total',()=>{
+  const d=data();
+  d.records=d.records.map(r=>r.granularity==='activity-part'?{...r,workPart:'uo-activity-matrix' as const,value:r.value*2}:r);
+  const rows=uoActivityRows(d,state,['it_hours'],2027,'uo:A');
+  expect(Object.keys(rows).sort()).toEqual(['lo:1','lo:2','uo-overhead:uo:A']);
+  expect(addActivitySplits(Object.values(rows)).total).toBe(110);
+ });
+
  it('marks all original LO and overhead totals as undistributed before approval',()=>{
   const d=data(),rows=uoActivityRows(d,state,['it_hours'],2027,'uo:A');
   expect(rows['lo:1']).toEqual({total:60,development:0,maintenance:0,unallocated:60});

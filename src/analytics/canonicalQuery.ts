@@ -24,7 +24,10 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   const rows=approvedActivityParts(data,rule,decision);
   if(rows.length)calculated.push(...rows);else staleApprovals++;
  }
- const filtered=[...data.records,...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
+ // The UO matrix is a ratio source only, never an analytic volume or detail row.
+ const eligible=[...data.records,...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
+ const excludedMatrix=eligible.filter(r=>r.workPart==='uo-activity-matrix').length;
+ const filtered=eligible.filter(r=>r.workPart!=='uo-activity-matrix');
  // Separate alternative UO-level activity summary from LO detail, never sum both.
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
  // In UO-detail mode overhead is additive alongside LO, but UO's activity matrix is an alternative summary.
@@ -36,7 +39,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  }
  const results=new Map<string,{label:string;value:number}>();
  const rowCounts:Record<string,number>={};let includedRecords=0;
- let unknownCount=0,excludedAlternatives=0;
+ let unknownCount=0,excludedAlternatives=excludedMatrix;
  for(const values of groups.values()){
   const parts=values.filter(r=>r.granularity==='activity-part');
   const total=values.find(r=>r.granularity==='total');
