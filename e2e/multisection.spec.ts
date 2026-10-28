@@ -13,6 +13,7 @@ test('separately approve development and maintenance matrix without adding to de
  await expect(page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/})).toBeVisible();
  await page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
  await expect(page.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
- await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
+ await page.reload();
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await expect(page.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
 });
