@@ -13,6 +13,7 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,ope
  const completeSplits=splitRows.length===rows.length&&rows.length>0;
  const sumSplit=(key:'development'|'maintenance'|'unallocated')=>splitRows.reduce((sum,row)=>sum+(row.split?.[key]??0),0);
  const developmentSum=sumSplit('development'),maintenanceSum=sumSplit('maintenance'),unallocatedSum=sumSplit('unallocated');
+ const shareOf=(value:number,denominator:number)=>completeSplits&&denominator>0?(100*value/denominator).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–';
 
  const format=(n:number|null)=>n===null?'Ej beräkningsbar':n.toLocaleString('sv-SE',{maximumFractionDigits:2})+' '+unit;
  return <section aria-label={title}>
@@ -29,7 +30,7 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,ope
      <div style={{width:pct(v.maintenance)+'%',background:'#c66d26',minHeight:16}}/>
      <div style={{width:pct(v.unallocated)+'%',background:'#9ca3af',minHeight:16}}/>
     </div>:<span>Fördelning saknas</span>}
-    <div><strong>{format(row.value)}</strong>{v&&<small style={{display:'block'}}>Utveckling {pct(v.development).toLocaleString('sv-SE',{maximumFractionDigits:1})} % · Förvaltning {pct(v.maintenance).toLocaleString('sv-SE',{maximumFractionDigits:1})} %{v.unallocated>0?' · Ej fördelat '+pct(v.unallocated).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':''}</small>}</div>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
+    <div><strong>{format(row.value)}</strong>{v&&<small style={{display:'block'}}>Utveckling {pct(v.development).toLocaleString('sv-SE',{maximumFractionDigits:1})} % · Förvaltning {pct(v.maintenance).toLocaleString('sv-SE',{maximumFractionDigits:1})} %{v.unallocated>0?' · Ej fördelat '+pct(v.unallocated).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':''}</small>}{v&&<small style={{display:'block'}}>Andel av visade delområdens utveckling: {shareOf(v.development,developmentSum)} · förvaltning: {shareOf(v.maintenance,maintenanceSum)}</small>}</div>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
    </div>})}
    <p>Blå: utveckling · Orange: förvaltning · Grå: ej fördelat</p>
   </div>:display==='table'?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
