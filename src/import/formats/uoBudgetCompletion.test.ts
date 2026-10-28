@@ -12,6 +12,7 @@ const preview=():AllocationPreview=>({
 });
 describe('budget-format owned LO completion',()=>{
  it('registers the completion algorithm with the import format',()=>{
+  if(uoBudget2027_30.kind!=='budget')throw new Error('NOT_BUDGET_FORMAT');
   expect(uoBudget2027_30.completion).toBe(rebalance);
  });
  it('balances an edited LO against another without altering UO or LO totals',()=>{
