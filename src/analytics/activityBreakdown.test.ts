@@ -17,6 +17,14 @@ const data=()=>({...emptyCanonical(),records:[
  {...row('D20',10,'unknown'),granularity:'total' as const,workPart:'uo-overhead' as const,workloadId:'ds|uo:A|overhead|it_hours|2027|year'}
 ]});
 describe('organization activity distribution',()=>{
+ it('excludes legacy UO matrix records without workPart from the LO detail',()=>{
+  const d=data();
+  d.records=d.records.filter(r=>r.workPart!=='uo-overhead');
+  const rows=uoActivityRows(d,state,['it_hours'],2027,'uo:A');
+  expect(Object.keys(rows).sort()).toEqual(['lo:1','lo:2']);
+  expect(addActivitySplits(Object.values(rows)).total).toBe(100);
+ });
+
  it('never exposes the UO ratio matrix as a detail row even when no overhead is reported',()=>{
   const d=data();
   d.records=d.records.filter(r=>r.workPart!=='uo-overhead').map(r=>r.granularity==='activity-part'?{...r,workPart:'uo-activity-matrix' as const}:r);
