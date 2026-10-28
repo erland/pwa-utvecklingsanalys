@@ -46,6 +46,8 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys av importerade uppgifter</h2><div className="actions"><button type="button" className="secondary" onClick={onOpenCompletions}>Granska kompletteringar och godkännanden</button></div><p>Välj enhet och innehåll, därefter aktivitet och organisation. LO och avdelningar är alternativa redovisningar som inte adderas till varandra.</p>
  {(error||queryError)&&<p role="alert">{error||queryError}</p>}
+ {years.length>1&&year==='all'&&<p role="status" className="notice">Du visar just nu alla {years.length} år ({years[0]}–{years.at(-1)}). Totalen summerar flera år och är inte en årsbudget. Välj ett år nedan för att jämföra UO och LO inom ett enskilt budgetår.</p>}
+ <p className="notice">Analysen använder årsvärden när både års- och månadsuppgifter finns för samma underlag. Månadsuppgifterna finns kvar i den underliggande datamodellen.</p>
  <div className="mapping-grid">
  <label>Enhet<select aria-label="enhet" value={unit} onChange={e=>{const next=e.target.value as 'hours'|'costs';setUnit(next);setSelected(next==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label>
  <fieldset><legend>Ingår i analysen</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{labels[m]}</label>)}</fieldset>
