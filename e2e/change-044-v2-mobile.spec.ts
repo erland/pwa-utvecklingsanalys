@@ -20,7 +20,8 @@ test('CHANGE-044: narrow portrait viewport keeps v2 analysis usable with charts 
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
- await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toBeVisible();
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling per organisationsdel'})).toHaveCount(0);
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('42 h');
  // Check that the key interactive controls and result are within the visible viewport width.
  for(const locator of [v2.getByLabel('period',{exact:true}),v2.getByRole('checkbox',{name:'IT-timmar'}),v2.locator('.canonical-result-head strong')]){
