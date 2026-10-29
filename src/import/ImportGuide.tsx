@@ -14,6 +14,6 @@ export default function ImportGuide({project,onProject,replaceId,setReplaceId,on
   <p className="lead">Välj en eller flera Excel-filer. Kända format importeras automatiskt utan manuell mappning eller förhandsgranskning. Filerna behandlas lokalt i webbläsaren.</p>
   <DirectImport project={project} onProject={onProject} replaceId={replaceId} onReplaced={()=>setReplaceId(null)} onImported={()=>setCompletedImport(n=>n+1)}/>
   {project&&<BudgetCompletionAfterImport refreshKey={completedImport} onAnalyze={onAnalyze} selectedSourceId={allocationSourceId} onCloseSource={()=>setAllocationSourceId(null)}/>}
-  <SourceManager project={project} onProject={onProject} replaceId={replaceId} setReplaceId={setReplaceId} onEditAllocations={id=>setAllocationSourceId(id)}/>
+  <SourceManager project={project} onProject={p=>{onProject(p);setCompletedImport(n=>n+1);if(allocationSourceId&&!p.datasets.some(d=>d.id===allocationSourceId))setAllocationSourceId(null)}} replaceId={replaceId} setReplaceId={setReplaceId} onEditAllocations={id=>setAllocationSourceId(id)}/>
  </>;
 }
