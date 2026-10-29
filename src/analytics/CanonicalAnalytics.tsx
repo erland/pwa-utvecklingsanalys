@@ -41,7 +41,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  const los=useMemo(()=>[...new Set((data?.records??[]).filter(r=>r.scope.axis==='work'&&Boolean(r.scope.loId)).map(r=>r.scope.axis==='work'?r.scope.loId??'':''))].filter(Boolean).sort(),[data]);
  const toggle=(old:string[],id:string)=>old.includes(id)?old.filter(x=>x!==id):[...old,id];
  const years=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.year))].sort((a,b)=>a-b),[data]);
- const activity:Activity|'all'|'allocated'=unit==='costs'?'all':selectedActivities.length===2?'allocated':selectedActivities[0];
+ const activity:Activity|'all'|'allocated'=unit==='costs'?'all':selectedActivities.length===2?'all':selectedActivities[0];
  const metrics:Metric[]=unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
  let result:ReturnType<typeof analyzeCanonical>|null=null;
