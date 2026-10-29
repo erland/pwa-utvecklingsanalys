@@ -1,5 +1,5 @@
 import {groupForUo,type UoGroupModel} from './groupModels';
-import {approvedActivityParts} from '../domain/activityAllocation';
+import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric,type ReportingAxis} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
@@ -16,20 +16,11 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  const hours=query.metrics.every(m=>m.endsWith('_hours')),costs=query.metrics.every(m=>m.endsWith('_cost'));
  if(!hours&&!costs)throw new Error('MIXED_UNITS');
  if(query.detailUoId&&(query.axis!=='work'||query.groupModel||query.groupBy&&query.groupBy!=='organization'))throw new Error('INVALID_UO_DETAIL_QUERY');
- const rules=state.activityAllocationRules??[],decisions=state.activityAllocationDecisions??[];
- const calculated:AnalysisRecord[]=[];
- let staleApprovals=0;
- for(const rule of rules){
-  const decision=decisions.find(d=>d.ruleId===rule.id);
-  if(!decision)continue;
-  // Approval fingerprints refer to the unmodified import, not its annual-only display projection.
-  const originalRecords=(data as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
-  const approvalData=originalRecords?{...data,records:originalRecords}:data;
-  const rows=approvedActivityParts(approvalData,rule,decision);
-  if(rows.length)calculated.push(...rows);else staleApprovals++;
- }
+ const prepared=prepareAnalysisDataset(data,state);
+ const staleApprovals=prepared.staleApprovals;
+ const calculated=prepared.dataset.records.filter(r=>r.authority==='derived'&&r.granularity==='activity-part');
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
- const eligible=[...data.records,...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
+ const eligible=[...data.records.filter(r=>r.authority!=='derived'||r.granularity!=='activity-part'),...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
  const excludedMatrix=eligible.filter(isMatrix).length;
  const filtered=eligible.filter(r=>!isMatrix(r));
  // Separate alternative UO-level activity summary from LO detail, never sum both.
