@@ -11,10 +11,12 @@ test('chart modes reuse imported data and preserve accessible totals',async({pag
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('Diagramtyp för fördelning').selectOption('pie');
- await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 42 h/})).toBeVisible();
- await v2.getByLabel('Diagramtyp för fördelning').selectOption('table');
- await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
- await v2.getByLabel('Diagramtyp för fördelning').selectOption('bar');
- await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('42 h');
+ const navigator=v2.getByRole('region',{name:'Utforska UO'});
+ await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('bars');
+ await expect(navigator.getByRole('group',{name:'Stapeldiagram: UO i analys'})).toContainText('UO A');
+ await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('distribution');
+ await expect(navigator.getByRole('group',{name:'Fördelning: UO i analys'})).toBeVisible();
+ await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('table');
+ await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('42');
+
 });
