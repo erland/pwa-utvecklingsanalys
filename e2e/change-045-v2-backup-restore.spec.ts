@@ -1,4 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Locator} from '@playwright/test';
+async function selectActivity(view:Locator,value:'development'|'maintenance'|'all'){
+ const dev=view.getByRole('checkbox',{name:'Utveckling',exact:true});
+ const maint=view.getByRole('checkbox',{name:'Förvaltning',exact:true});
+ if(value==='all'){await dev.check();await maint.check()}
+ else if(value==='development'){await dev.check();await maint.uncheck()}
+ else {await maint.check();await dev.uncheck()}
+}
+
 import {readFile} from 'node:fs/promises';
 import ExcelJS from 'exceljs';
 
@@ -31,7 +39,7 @@ test('CHANGE-045: approved v2 allocation survives real backup and restore in a f
  await first.getByRole('button',{name:'Analys',exact:true}).click();
  const original=first.locator('.canonical-analytics');
  await expect(original.locator('.canonical-result-head strong')).toContainText('42 h');
- await original.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(original,'development');
  await expect(original.locator('.canonical-result-head strong')).toContainText('25 h');
  await first.getByRole('button',{name:'Inställningar',exact:true}).click();
  const downloadPromise=first.waitForEvent('download');
@@ -57,9 +65,9 @@ test('CHANGE-045: approved v2 allocation survives real backup and restore in a f
  await second.getByRole('button',{name:'Analys',exact:true}).click();
  const restored=second.locator('.canonical-analytics');
  await expect(restored.locator('.canonical-result-head strong')).toContainText('42 h');
- await restored.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(restored,'development');
  await expect(restored.locator('.canonical-result-head strong')).toContainText('25 h');
- await restored.getByLabel('aktivitet').selectOption('maintenance');
+ await selectActivity(restored,'maintenance');
  await expect(restored.locator('.canonical-result-head strong')).toContainText('17 h');
  await second.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  await expect(second.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..').getByText('Godkänd',{exact:true})).toBeVisible();
