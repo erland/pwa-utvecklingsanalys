@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {emptyCanonical,summarizeCanonical,type AnalysisRecord} from './canonical';
-import {previewActivityAllocation,approveActivityAllocation,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
+import {previewActivityAllocation,approveActivityAllocation,approveSharedActivityAllocation,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
 const rule:ActivityAllocationRule={id:'rule1',datasetId:'ds',uoId:'uo',metric:'it_hours',year:2027,reason:'Fördelning utifrån LO-totaler'};
 const base=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:string):AnalysisRecord=>({
  id,metric:'it_hours',value,year:2027,activity,scope:{axis:'work',uoId:'uo',...(loId?{loId}:{})},
@@ -90,6 +90,16 @@ describe('v2 approved activity allocations',()=>{
   expect(derived.filter(r=>r.workPart==='uo-overhead')).toHaveLength(2);
   expect(derived.filter(r=>r.workPart==='uo-overhead').every(r=>r.scope.axis==='work'&&!r.scope.loId)).toBe(true);
   expect(JSON.stringify(data)).toBe(original);
+ });
+ it('shared per-LO annual percent is independent of the separate UO metric total',()=>{
+  const data=fixture(),preview=previewActivityAllocation(data,rule);
+  const decision=approveSharedActivityAllocation(preview,'Gemensam utvecklingsandel',[
+   {loId:'lo1',developmentPercent:20},{loId:'lo2',developmentPercent:80}
+  ]);
+  const rows=approvedActivityParts(data,rule,decision);
+  expect(rows.filter(r=>r.activity==='development').map(r=>r.value)).toEqual([140,240]);
+  expect(rows.filter(r=>r.activity==='maintenance').map(r=>r.value)).toEqual([560,60]);
+  expect(rows.reduce((n,r)=>n+r.value,0)).toBe(1000);
  });
  it('requires approval reason and rejects stale or absent decision',()=>{
   const data=fixture(),preview=previewActivityAllocation(data,rule);
