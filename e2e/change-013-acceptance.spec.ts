@@ -32,7 +32,8 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'Acceptansmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Digital utveckling');
- await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toContainText('60 h');
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
+ await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('60 h');
  await page.reload();await page.getByRole('button',{name:'Inställningar',exact:true}).click();
  await expect(page.getByLabel('Modellnamn')).toHaveValue('Acceptansmodell');
 });

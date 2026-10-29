@@ -39,5 +39,14 @@ test('DEV-124 organization lines track year matrix and hierarchy selection',asyn
  const navigator=page.getByRole('region',{name:'Utforska UO'});
  await navigator.getByRole('group',{name:'Cirkeldiagram: UO i analys'}).getByRole('button',{name:'Visa LO'}).first().click();
  await expect(lines.getByRole('list',{name:'Diagramförklaring'})).toContainText('LO A');
+ // Year trends belong to multi-year analysis only; the current-year result remains.
+ await page.getByLabel('period',{exact:true}).selectOption('2027');
+ await expect(page.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
+ await expect(lines).toHaveCount(0);
+ await expect(page.locator('.canonical-result-head strong')).toBeVisible();
+ await expect(matrix).toBeVisible();
+ await page.getByLabel('period',{exact:true}).selectOption('all');
+ await expect(page.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toBeVisible();
+ await expect(lines).toBeVisible();
  await expect(matrix).toContainText('LO A');
 });
