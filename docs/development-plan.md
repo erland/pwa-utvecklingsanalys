@@ -26,3 +26,18 @@ DEV-001–DEV-011 ovan är den ursprungliga etableringsplanen och är historik, 
 - DEV-121: Valfri, från början ihopfälld organisationsmatris per år (PR #135, mergad; Verify PWA godkänd på slutlig PR-commit).
 
 Den senaste analysomdesignen är genomförd. **Inget ytterligare utvecklingssteg är beslutat.** Nästa rekommenderade aktivitet är releasebedömning och manuell acceptans i målmiljö, inte automatisk implementering av ännu ett DEV-steg. Följ aktuell implementation, pull requests och CI som källor vid ny planering.
+
+## Föreslagen vidareutveckling: valfria fördelningar (DEV-129–134)
+
+DEV-129 avser specifikation och design, utan kodändringar. Se [DEV-129 – Valfria fördelningstyper](dev-129-optional-allocations.md) för funktionella regler, risker och acceptanskriterier.
+
+| Steg | Leverans | Verifiering |
+| --- | --- | --- |
+| DEV-129 | Målbild och beslut om omfattning, UO/LO-arv och frivillig analysvisning | Granskning mot befintlig allocations- och canonical-kod |
+| DEV-130 | Versionssatt kontrakt, migrering och konfigurationsbackup | Enhetstester, bakåtkompatibel round-trip |
+| DEV-131 | UI för definitioner och expanderbar UO/LO-fördelning | Browser-acceptans med arv och överstyrning |
+| DEV-132 | Kanoniska basposter och härledd fördelningsmotor | Balans, godkännanden och ingen dubbelräkning |
+| DEV-133 | Villkorlig analyssektion med cirkel/tabell och år/org-filter | Integrerad Playwright-acceptans |
+| DEV-134 | Slutlig regressions-, offline-, backup- och tillgänglighetskontroll | Grön CI och manuell målmiljöacceptans |
+
+Följande steg genomförs som separata PR:er efter granskning av DEV-129. Tidigare avsnitt är historisk planeringsstatus.
