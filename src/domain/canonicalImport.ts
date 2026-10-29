@@ -11,7 +11,26 @@ export function canonicalFromBudget(result:ImportResult,datasetId:string,include
  const records:AnalysisRecord[]=[];
  const add=(r:AnalysisRecord)=>records.push(r);
  const from=(sheet:string,cell:string)=>({datasetId,sheet,cell});
+ // Normalize budget detail to one annual observation per UO/LO, measure and year.
+ // For 2027 monthly cells are authoritative; 2028–2030 use annual cells.
+ // Never persist monthly and annual observations for the same budget key.
+ const grouped=new Map<string,typeof result.facts>();
  for(const fact of result.facts){
+  const key=JSON.stringify([fact.area,fact.measure,fact.period.year]);
+  grouped.set(key,[...(grouped.get(key)??[]),fact]);
+ }
+ const annualFacts:typeof result.facts=[];
+ for(const entries of grouped.values()){
+  const monthly=entries.filter(f=>f.period.month!==undefined);
+  const annual=entries.filter(f=>f.period.month===undefined);
+  const chosen=entries[0].period.year===2027&&monthly.length?monthly:annual.length?annual:monthly;
+  if(!chosen.length)continue;
+  if(chosen.length===1&&chosen[0].period.month===undefined){annualFacts.push(chosen[0]);continue}
+  const sum=chosen.reduce((n,f)=>n+f.value,0);
+  const source=chosen[0].source;
+  annualFacts.push({...chosen[0],period:{year:chosen[0].period.year},value:sum,source});
+ }
+ for(const fact of annualFacts){
   if(fact.value<0)throw new Error('NEGATIVE_SOURCE_AMOUNT');
   const work={axis:'work' as const,uoId:'uo:'+slug(result.uo),loId:fact.area.match(/^UO Övergripande$/i)?undefined:'lo:'+slug(result.uo)+':'+slug(fact.area)};
   const group=[datasetId,work.uoId,work.loId??'overhead',fact.measure,fact.period.year,fact.period.month??'year'].join('|');
