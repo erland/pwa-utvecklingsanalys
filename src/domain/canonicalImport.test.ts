@@ -26,6 +26,19 @@ describe('canonical approved import mapping',()=>{
   expect(records.filter(r=>r.workPart==='uo-activity-matrix')).toHaveLength(2);
   expect(validateCanonical({...emptyCanonical(),records})).toEqual([]);
  });
+ it('aggregates 2027 monthly values and uses 2028 annual data without mixed periods',()=>{
+  const row=input.facts[0];
+  const detail={...input,facts:[
+   {...row,value:10,period:{year:2027,month:1},source:{sheet:'Budget',cell:'D26'}},
+   {...row,value:20,period:{year:2027,month:2},source:{sheet:'Budget',cell:'E26'}},
+   {...row,value:0,period:{year:2027},source:{sheet:'Budget',cell:'P26'}},
+   {...row,value:40,period:{year:2028},source:{sheet:'Budget',cell:'Q26'}}
+  ]};
+  const records=canonicalFromBudget(detail,'ds');
+  expect(records).toHaveLength(2);
+  expect(records.map(r=>[r.year,r.value,r.month])).toEqual([[2027,30,undefined],[2028,40,undefined]]);
+  expect(validateCanonical({...emptyCanonical(),records})).toEqual([]);
+ });
  it('reimporting same source replaces instead of adding values',()=>{
   const previous=replaceCanonicalSource(emptyCanonical(),canonicalFromBudget(input,'source1'),'source1');
   const changed={...input,facts:[{...input.facts[0],value:500}]};
