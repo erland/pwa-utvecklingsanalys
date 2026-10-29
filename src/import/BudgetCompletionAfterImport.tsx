@@ -22,7 +22,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
  const {candidates,diagnostics}=useMemo(()=>{
   if(!data)return {candidates:[],diagnostics:[]};
   const diagnostics:string[]=[];
-  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ReturnType<typeof approveActivityAllocation>;approved:boolean}>();
+  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ReturnType<typeof approveSharedActivityAllocation>;approved:boolean}>();
   for(const record of data.records){
    if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
    const candidate={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
