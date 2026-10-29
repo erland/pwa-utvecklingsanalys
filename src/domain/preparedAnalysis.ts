@@ -5,7 +5,8 @@ import type {GapState} from '../gaps/store';
 /** Import/completion boundary. Resolve approved activity parts once before any analysis query.
  * Original imports and approvals are never overwritten.
  */
-export type PreparedAnalysis={dataset:CanonicalDataset;staleApprovals:number;excludedMatrix:number};
+export type PreparedDataset=CanonicalDataset & {preparedAnalysis:{staleApprovals:number;excludedMatrix:number}};
+export type PreparedAnalysis={dataset:PreparedDataset;staleApprovals:number;excludedMatrix:number};
 export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):PreparedAnalysis{
  const approvalSource=(source as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
  const original:CanonicalDataset=approvalSource?{...source,records:approvalSource}:source;
@@ -21,5 +22,5 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
  // The UO summary matrix is never volume. Older source records can omit workPart.
  const isMatrix=(r:AnalysisRecord)=>r.scope.axis==='work'&&!r.scope.loId&&r.granularity==='activity-part'&&(r.workPart==='uo-activity-matrix'||r.authority==='original');
  const excludedMatrix=source.records.filter(isMatrix).length;
- return {dataset:{schemaVersion:2,records:[...source.records.filter(r=>!isMatrix(r)),...calculated]},staleApprovals,excludedMatrix};
+ return {dataset:{schemaVersion:2,records:[...source.records.filter(r=>!isMatrix(r)),...calculated],preparedAnalysis:{staleApprovals,excludedMatrix}},staleApprovals,excludedMatrix};
 }
