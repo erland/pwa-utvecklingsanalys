@@ -1,4 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Locator} from '@playwright/test';
+async function selectActivity(view:Locator,value:'development'|'maintenance'|'all'){
+ const dev=view.getByRole('checkbox',{name:'Utveckling',exact:true});
+ const maint=view.getByRole('checkbox',{name:'Förvaltning',exact:true});
+ if(value==='all'){await dev.check();await maint.check()}
+ else if(value==='development'){await dev.check();await maint.uncheck()}
+ else {await maint.check();await dev.uncheck()}
+}
+
 import ExcelJS from 'exceljs';
 
 test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page})=>{
@@ -21,7 +29,7 @@ test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page}
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(v2,'development');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('0 h');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
@@ -34,16 +42,16 @@ test('CHANGE-042: approve and revoke v2 allocation through real UI',async({page}
  await expect(allocation.getByText('Godkänd',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const updated=page.locator('.canonical-analytics');
- await updated.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(updated,'development');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('25 h');
- await updated.getByLabel('aktivitet').selectOption('maintenance');
+ await selectActivity(updated,'maintenance');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('17 h');
- await updated.getByLabel('aktivitet').selectOption('all');
+ await selectActivity(updated,'all');
  await expect(updated.locator('.canonical-result-head strong')).toContainText('42 h');
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  await allocation.getByRole('button',{name:'Återkalla godkännande'}).click();
  await expect(allocation.getByText('Inväntar godkännande')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await page.locator('.canonical-analytics').getByLabel('aktivitet').selectOption('development');
+ await selectActivity(page.locator('.canonical-analytics'),'development');
  await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('0 h');
 });
