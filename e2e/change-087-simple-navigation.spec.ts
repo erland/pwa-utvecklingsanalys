@@ -10,4 +10,7 @@ test('normal navigation exposes only the supported import-to-analysis workflow',
  await expect(page.getByRole('heading',{name:'Importera Excelunderlag'})).toBeVisible();
  await expect(nav.getByRole('button',{name:'Analys'})).toBeDisabled();
  await expect(page.getByRole('heading',{name:'Importera Excelunderlag'})).toBeVisible();
+ await nav.getByRole('button',{name:'Inställningar'}).click();
+ await expect(page.getByRole('heading',{name:'UO-grupper'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Ny gruppmodell'})).toBeVisible();
 });
