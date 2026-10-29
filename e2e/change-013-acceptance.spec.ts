@@ -28,6 +28,7 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
 
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'Acceptansmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Digital utveckling');
