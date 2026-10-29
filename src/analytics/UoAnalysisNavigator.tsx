@@ -12,7 +12,7 @@ import {uoActivityRows,addActivitySplits} from './activityBreakdown';
 type Entry='groups'|'uos';
 type View={entry:Entry;groupId?:string;uoId?:string};
 const name=(id:string)=>decodeURIComponent(id.startsWith('uo:')?id.slice(3):id);
-export default function UoAnalysisNavigator({data,state,models,metrics,activity,year,selection,onSelectionChange,selectedModelId,onModelChange}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all';year?:number;selection?:OrganizationSelection;onSelectionChange?:(next:OrganizationSelection)=>void;selectedModelId?:string;onModelChange?:(id:string)=>void}){
+export default function UoAnalysisNavigator({data,state,models,metrics,activity,year,selection,onSelectionChange,selectedModelId,onModelChange}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all'|'allocated';year?:number;selection?:OrganizationSelection;onSelectionChange?:(next:OrganizationSelection)=>void;selectedModelId?:string;onModelChange?:(id:string)=>void}){
  const [localView,setView]=useState<View>({entry:'uos'});
  const view:View=selection?{entry:selection.level==='groups'||selection.level==='group'?'groups':selection.groupId?'groups':'uos',groupId:selection.groupId,uoId:selection.uoId}:localView;
  const [modelId,setModelId]=useState('');

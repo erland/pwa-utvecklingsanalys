@@ -16,7 +16,7 @@ import {CHART_COLORS,pieEligibility,pieSlices} from './charts';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refreshKey:number;onOpenCompletions:()=>void}){
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
- const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[activity,setActivity]=useState<Activity|'all'>('all'),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
+ const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[selectedActivities,setSelectedActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
  // Annual reporting uses published annual records; monthly source rows remain preserved for future analyses.
  const annualData=useMemo(()=>{
@@ -41,6 +41,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  const los=useMemo(()=>[...new Set((data?.records??[]).filter(r=>r.scope.axis==='work'&&Boolean(r.scope.loId)).map(r=>r.scope.axis==='work'?r.scope.loId??'':''))].filter(Boolean).sort(),[data]);
  const toggle=(old:string[],id:string)=>old.includes(id)?old.filter(x=>x!==id):[...old,id];
  const years=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.year))].sort((a,b)=>a-b),[data]);
+ const activity:Activity|'all'|'allocated'=unit==='costs'?'all':selectedActivities.length===2?'all':selectedActivities[0];
  const metrics:Metric[]=unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
  let result:ReturnType<typeof analyzeCanonical>|null=null;
@@ -56,8 +57,10 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  <p className="notice">Analysen använder årsvärden när både års- och månadsuppgifter finns för samma underlag. Månadsuppgifterna finns kvar i den underliggande datamodellen.</p>
  <div className="mapping-grid">
  <label>Enhet<select aria-label="enhet" value={unit} onChange={e=>{const next=e.target.value as 'hours'|'costs';setUnit(next);setSelected(next==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label>
- <details open={typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1'}><summary>Välj mått – {choices.length} av {metrics.length} valda</summary><fieldset><legend>Ingår i analysen</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{labels[m]}</label>)}</fieldset></details>
- <label>Aktivitet<select aria-label="aktivitet" value={activity} onChange={e=>setActivity(e.target.value as Activity|'all')}><option value="all">Alla aktiviteter</option><option value="development">Utveckling</option><option value="maintenance">Förvaltning</option><option value="unknown">Okänd aktivitetsfördelning</option></select></label>
+ {unit==='hours'?<div className="mapping-grid" aria-label="Tim- och aktivitetsfilter">
+ <fieldset><legend>Timmar</legend>{(['it_hours','business_hours'] as const).map(m=><label className="check" key={m}><input type="checkbox" aria-label={labels[m]} checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.length>1?old.filter(x=>x!==m):old)}/>{labels[m]}</label>)}</fieldset>
+ <fieldset><legend>Aktivitet</legend>{(['development','maintenance'] as const).map(a=><label className="check" key={a}><input type="checkbox" aria-label={a==='development'?'Utveckling':'Förvaltning'} checked={selectedActivities.includes(a)} onChange={e=>setSelectedActivities(old=>e.target.checked?[...old,a]:old.length>1?old.filter(x=>x!==a):old)}/>{a==='development'?'Utveckling':'Förvaltning'}</label>)}</fieldset>
+ </div>:<details><summary>Välj kostnadsmått – {choices.length} valda</summary><fieldset><legend>Kostnadsmått</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.length>1?old.filter(x=>x!==m):old)}/>{labels[m]}</label>)}</fieldset></details>}
  <div className="panel" aria-label="Välj analysår"><p><strong>1. Välj budgetår</strong> – använd ett enskilt år för att jämföra UO och LO. Alla år summerar hela perioden.</p><label>År<select aria-label="period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div>
  <details open className="analysis-advanced-options"><summary>Fler analysval – organisation och gruppering</summary><div className="mapping-grid"><label>Redovisning<select aria-label="organisation" value={axis} onChange={e=>setAxis(e.target.value as ReportingAxis)}><option value="work">UO och LO</option><option value="department">Avdelningar</option></select></label>
  {axis==='work'&&<label>Gruppera UO<select aria-label="UO-gruppmodell" value={groupModelId} onChange={e=>setGroupModelId(e.target.value)}><option value="">Ingen gruppmodell (UO/LO)</option>{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>}

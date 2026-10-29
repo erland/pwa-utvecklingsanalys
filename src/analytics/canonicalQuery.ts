@@ -3,7 +3,7 @@ import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric,type ReportingAxis} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
-export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string;detailPartId?:string;organizationLevel?:'uo'|'part'};
+export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all'|'allocated';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string;detailPartId?:string;organizationLevel?:'uo'|'part'};
 export type CanonicalAnalysisResult={total:number;unit:'h'|'SEK';rows:{key:string;label:string;value:number}[];rowCounts:Record<string,number>;includedRecords:number;unknownCount:number;staleApprovals:number;excludedAlternatives:number;coverage:string};
 const sourceId=(r:AnalysisRecord)=>r.source?.datasetId??r.workloadId.split('|')[0]??'';
 const identity=(r:AnalysisRecord)=>JSON.stringify([sourceId(r),r.scope.axis==='work'?r.scope.uoId:r.scope.departmentId,r.metric,r.year,r.month??null]);
@@ -53,13 +53,14 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   const maintenance=parts.find(r=>r.activity==='maintenance');
   const complete=Boolean(development&&maintenance);
   let value:number|undefined;
-  if(query.activity==='all')value=total?.value??(complete?development!.value+maintenance!.value:undefined);
+  if(query.activity==='allocated')value=complete?development!.value+maintenance!.value:undefined;
+  else if(query.activity==='all')value=total?.value??(complete?development!.value+maintenance!.value:undefined);
   else if(query.activity==='unknown')value=total&&!complete?total.value:undefined;
   else value=complete?parts.find(r=>r.activity===query.activity)?.value:undefined;
   if(query.activity!=='all'&&!complete&&(total||parts.length))unknownCount++;
   else if(query.activity==='all'&&total&&!complete)unknownCount++;
   if(value===undefined)continue;
-  const contributing=total&&query.activity==='all'||total&&query.activity==='unknown'&&!complete?1:query.activity==='all'&&complete?parts.filter(r=>r.activity==='development'||r.activity==='maintenance').length:parts.filter(r=>r.activity===query.activity).length;
+  const contributing=total&&query.activity==='all'||total&&query.activity==='unknown'&&!complete?1:(query.activity==='all'||query.activity==='allocated')&&complete?parts.filter(r=>r.activity==='development'||r.activity==='maintenance').length:parts.filter(r=>r.activity===query.activity).length;
   const scope=representative.scope;
   const membership=scope.axis==='work'&&query.groupModel?groupForUo(query.groupModel,scope.uoId):undefined;
   const detailOverhead=Boolean(query.detailUoId&&scope.axis==='work'&&!scope.loId&&representative.workPart==='uo-overhead');

@@ -1,4 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Locator} from '@playwright/test';
+async function selectActivity(view:Locator,value:'development'|'maintenance'|'all'){
+ const dev=view.getByRole('checkbox',{name:'Utveckling',exact:true});
+ const maint=view.getByRole('checkbox',{name:'Förvaltning',exact:true});
+ if(value==='all'){await dev.check();await maint.check()}
+ else if(value==='development'){await dev.check();await maint.uncheck()}
+ else {await maint.check();await dev.uncheck()}
+}
+
 import ExcelJS from 'exceljs';
 test('direct import persists after reload and is available for analysis',async({page})=>{
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
@@ -45,7 +53,7 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(v2,'development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await v2.getByLabel('enhet').selectOption('costs');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');

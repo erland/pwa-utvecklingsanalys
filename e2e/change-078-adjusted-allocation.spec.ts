@@ -1,4 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Locator} from '@playwright/test';
+async function selectActivity(view:Locator,value:'development'|'maintenance'|'all'){
+ const dev=view.getByRole('checkbox',{name:'Utveckling',exact:true});
+ const maint=view.getByRole('checkbox',{name:'Förvaltning',exact:true});
+ if(value==='all'){await dev.check();await maint.check()}
+ else if(value==='development'){await dev.check();await maint.uncheck()}
+ else {await maint.check();await dev.uncheck()}
+}
+
 import ExcelJS from 'exceljs';
 
 test('approved edited LO shares rebalance the UO and survive reload without changing imported totals',async({page})=>{
@@ -41,10 +49,10 @@ test('approved edited LO shares rebalance the UO and survive reload without chan
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('100 h');
- await analysis.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(analysis,'development');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('50 h');
- await analysis.getByLabel('aktivitet').selectOption('maintenance');
+ await selectActivity(analysis,'maintenance');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('50 h');
- await analysis.getByLabel('aktivitet').selectOption('all');
+ await selectActivity(analysis,'all');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('100 h');
 });
