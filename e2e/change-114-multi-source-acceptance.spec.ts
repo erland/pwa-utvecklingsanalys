@@ -28,6 +28,7 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  const total=view.locator('.canonical-result-head strong');
  const matrix=view.getByRole('table',{name:'Organisation per år'});
  const navigator=view.getByRole('region',{name:'Utforska UO'});
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(total).toHaveText('320 h');
  await expect(matrix).toHaveCount(1);
  await expect(matrix).toContainText('UO A');
@@ -73,5 +74,6 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await page.reload();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toHaveText('320 h');
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(page.getByRole('table',{name:'Organisation per år'})).toHaveCount(1);
 });
