@@ -7,6 +7,8 @@ export default function OrganizationYearLines({matrix}:{matrix:GroupYearMatrix|n
  if(!matrix||!matrix.years.length||!matrix.rows.length)return null;
  const {years,rows,unit}=matrix;
  const width=560,height=240,left=56,right=16,top=20,bottom=40;
+ // A repeating dash pattern supplements color for series identification.
+ const patterns=['','9 4','3 4','12 4 3 4'] as const;
  const x=(index:number)=>left+(years.length===1?(width-left-right)/2:index*(width-left-right)/(years.length-1));
  const values=rows.flatMap(row=>row.values).filter((v):v is number=>v!==null&&Number.isFinite(v));
  const max=Math.max(1,...values);
@@ -33,11 +35,11 @@ export default function OrganizationYearLines({matrix}:{matrix:GroupYearMatrix|n
    {rows.map((row,index)=>{
     const color=CHART_COLORS[index%CHART_COLORS.length];
     return <g key={row.key}>
-     <path d={segments(row.values)} fill="none" stroke={color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+     <path d={segments(row.values)} fill="none" stroke={color} strokeWidth="2.5" strokeDasharray={patterns[index%patterns.length]} strokeLinejoin="round" strokeLinecap="round" aria-label={row.label}/>
      {row.values.map((value,i)=>value===null?null:<circle key={years[i]} cx={x(i)} cy={y(value)} r="3.5" fill={color}><title>{row.label}, {years[i]}: {format(value)} {unit}</title></circle>)}
     </g>
    })}
   </svg>
-  <ul className="pie-legend" aria-label="Diagramförklaring">{rows.map((row,index)=><li key={row.key}><span className="pie-swatch" aria-hidden="true" style={{backgroundColor:CHART_COLORS[index%CHART_COLORS.length]}}/>{row.label}</li>)}</ul>
+  <ul className="pie-legend" aria-label="Diagramförklaring">{rows.map((row,index)=><li key={row.key}><svg width="36" height="14" viewBox="0 0 36 14" aria-hidden="true" style={{flex:"0 0 36px"}}><line x1="1" x2="35" y1="7" y2="7" stroke={CHART_COLORS[index%CHART_COLORS.length]} strokeWidth="3" strokeDasharray={patterns[index%patterns.length]}/></svg>{row.label}</li>)}</ul>
  </section>;
 }

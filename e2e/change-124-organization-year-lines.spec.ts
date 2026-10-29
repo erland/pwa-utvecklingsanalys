@@ -25,6 +25,13 @@ test('DEV-124 organization lines track year matrix and hierarchy selection',asyn
  await expect(lines.getByRole('img',{name:'Linjediagram för utveckling per organisationsdel'})).toBeVisible();
  await expect(lines.getByRole('list',{name:'Diagramförklaring'})).toContainText('UO A');
  await expect(lines.getByRole('list',{name:'Diagramförklaring'})).toContainText('UO B');
+ // Series remain distinguishable without relying on color alone; legend matches line patterns.
+ const seriesPaths=lines.locator('svg[role="img"] path');
+ await expect(seriesPaths).toHaveCount(2);
+ await expect(seriesPaths.nth(0)).toHaveAttribute('stroke-dasharray','');
+ await expect(seriesPaths.nth(1)).toHaveAttribute('stroke-dasharray','9 4');
+ const legendSamples=lines.getByRole('list',{name:'Diagramförklaring'}).locator('svg line');
+ await expect(legendSamples.nth(1)).toHaveAttribute('stroke-dasharray','9 4');
  await page.locator('details.organization-year-details > summary').click();
  const matrix=page.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toContainText('UO A');
