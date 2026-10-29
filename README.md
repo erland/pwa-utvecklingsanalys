@@ -36,6 +36,8 @@ npm run test:browser
 
 Browser- och single-file-verifieringen förutsätter att Playwright Chromium är installerat. CI installerar detta automatiskt.
 
+Årsvis utveckling visas som ett sammanhållet linjediagram med en tabell över timmar/kostnader och förändring mot föregående år. Mått och aktiviteter styr vilka värden som ingår. Den detaljerade matrisen **Organisation per år** finns som en valfri, från början ihopfälld fördjupning. Analysens redovisningsval och filter visas direkt, utan rubrikerna ”Fler analysval” och ”Fler filter”.
+
 ## Distribution och release
 
 Workflowfilen `.github/workflows/release.yml` startar när en GitHub Release publiceras. Det kör hela verifieringen, publicerar PWA till GitHub Pages och bifogar en självständig `utvecklingsanalys-standalone.html` som releasefil. Den kan öppnas lokalt, men webbläsaren kan begränsa lagring och nätverksanrop från `file://`. Kontrollera funktionerna i målmiljön innan användning av verkliga data.
