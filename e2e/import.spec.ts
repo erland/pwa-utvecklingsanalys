@@ -22,7 +22,9 @@ test('direct import persists after reload and is available for analysis',async({
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
  await page.getByLabel('period',{exact:true}).selectOption('2027');
- await expect(page.getByRole('table',{name:'analysresultat'})).toContainText('LO 1');
+ await expect(page.getByRole('table',{name:'analysresultat'})).toContainText('UO A');
+ await page.getByRole('button',{name:'Visa LO'}).click();
+ await expect(page.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('LO 1');
 });
 
 test('v2 analysis controls keep units separate and filter by year and activity',async({page})=>{
