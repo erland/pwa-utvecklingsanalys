@@ -3,7 +3,7 @@ import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric,type ReportingAxis} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
-export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string};
+export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string;detailPartId?:string};
 export type CanonicalAnalysisResult={total:number;unit:'h'|'SEK';rows:{key:string;label:string;value:number}[];rowCounts:Record<string,number>;includedRecords:number;unknownCount:number;staleApprovals:number;excludedAlternatives:number;coverage:string};
 const sourceId=(r:AnalysisRecord)=>r.source?.datasetId??r.workloadId.split('|')[0]??'';
 const identity=(r:AnalysisRecord)=>JSON.stringify([sourceId(r),r.scope.axis==='work'?r.scope.uoId:r.scope.departmentId,r.metric,r.year,r.month??null]);
@@ -15,6 +15,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  if(!query.metrics.length||query.metrics.some(m=>!['it_hours','business_hours','consultant_cost','other_cost'].includes(m)))throw new Error('INVALID_METRICS');
  const hours=query.metrics.every(m=>m.endsWith('_hours')),costs=query.metrics.every(m=>m.endsWith('_cost'));
  if(!hours&&!costs)throw new Error('MIXED_UNITS');
+ if(query.detailPartId&&!query.detailUoId)throw new Error('INVALID_DETAIL_PART_QUERY');
  if(query.detailUoId&&(query.axis!=='work'||query.groupModel||query.groupBy&&query.groupBy!=='organization'))throw new Error('INVALID_UO_DETAIL_QUERY');
  // The import/completion boundary produces a ready-to-query dataset.
  // The legacy overload remains for older callers and tests during migration.
@@ -25,7 +26,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
  const eligible=queryRecords.filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
  const excludedMatrix=alreadyPrepared?alreadyPrepared.excludedMatrix:data.records.filter(r=>isMatrix(r)&&r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&(!query.uoIds?.length||r.scope.axis!=='work'||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.axis==='work'&&r.scope.uoId===query.detailUoId)&&!query.loIds?.length).length;
- const filtered=eligible.filter(r=>!isMatrix(r));
+ const filtered=eligible.filter(r=>!isMatrix(r)&&(!query.detailPartId||(r.scope.axis==='work'&&(r.scope.loId===query.detailPartId||!r.scope.loId&&r.workPart==='uo-overhead'&&query.detailPartId==='uo-overhead:'+r.scope.uoId))));
  // Separate alternative UO-level activity summary from LO detail, never sum both.
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
  // In UO-detail mode overhead is additive alongside LO, but UO's activity matrix is an alternative summary.
