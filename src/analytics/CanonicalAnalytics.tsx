@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import UoAnalysisNavigator from './UoAnalysisNavigator';
+import {defaultOrganizationSelection,organizationScope,type OrganizationSelection} from './organizationContext';
 import {readConfiguration} from '../config/store';
 import type {UoGroupModel} from './groupModels';
 import {loadCanonical} from '../domain/canonicalStore';
@@ -26,6 +27,8 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
   return {...data,allocationSourceRecords:data.records,records:data.records.filter(r=>r.month===undefined||!annualKeys.has(JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])))};
  },[data]);
  const preparedData=useMemo(()=>annualData?prepareAnalysisDataset(annualData,state).dataset:null,[annualData,state]);
+ const [organization,setOrganization]=useState<OrganizationSelection>(defaultOrganizationSelection);
+ const [navModelId,setNavModelId]=useState('');
  const [models,setModels]=useState<UoGroupModel[]>([]),[groupModelId,setGroupModelId]=useState('');
  useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active)setModels(c?.sections.groups??[])}).catch(()=>{if(active)setModels([])});return()=>{active=false}},[refreshKey]);
  const [resultGrouping,setResultGrouping]=useState<'organization'|'source'|'year'>('organization');
@@ -44,7 +47,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  let trend:ReturnType<typeof canonicalTrend>=[];
  let groupYears:ReturnType<typeof canonicalGroupYears>|null=null;
  let queryError='';
- try{if(preparedData&&choices.length){const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:selectedUos,loIds:selectedLos,groupModel:axis==='work'&&resultGrouping==='organization'&&groupModelId?models.find(m=>m.id===groupModelId):undefined,groupBy:resultGrouping,...(axis==='work'&&resultGrouping==='organization'&&!groupModelId&&selectedUos.length===1?{detailUoId:selectedUos[0]}:{})};result=analyzeCanonical(preparedData,state,query);trend=canonicalTrend(preparedData,state,query);groupYears=canonicalGroupYears(preparedData,state,query)}}catch(e){queryError=String(e)}
+ try{if(preparedData&&choices.length){const scope=organizationScope(preparedData,organization,models.find(m=>m.id===navModelId)??models[0]);const query={axis,metrics:choices,activity,year:year==='all'?undefined:Number(year),datasetIds:selectedSources,uoIds:axis==='work'?scope.uoIds:selectedUos,loIds:axis==='work'?[]:selectedLos,groupModel:axis==='work'&&resultGrouping==='organization'&&groupModelId?models.find(m=>m.id===groupModelId):undefined,groupBy:resultGrouping,...(axis==='work'&&resultGrouping==='organization'&&scope.detailUoId?{detailUoId:scope.detailUoId}:{})};result=analyzeCanonical(preparedData,state,query);trend=canonicalTrend(preparedData,state,query);groupYears=canonicalGroupYears(preparedData,state,query)}}catch(e){queryError=String(e)}
  const labels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
  const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  return <section className="panel canonical-analytics"><h2>Analys av importerade uppgifter</h2><div className="actions"><button type="button" className="secondary" onClick={onOpenCompletions}>Granska kompletteringar och godkännanden</button></div><p>Börja med ett budgetår och utforska sedan UO-grupper, UO och LO. Övriga val kan justeras efter behov.</p>
@@ -72,7 +75,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} godkännanden behöver omprövas efter ändrat källunderlag.</p>}
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
- {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)}/>}
+ {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} selection={organization} onSelectionChange={setOrganization} selectedModelId={navModelId} onModelChange={setNavModelId}/>}
  <section aria-label="Fördjupade analysrapporter"><div className="actions"><button type="button" className="secondary" aria-expanded={showReports} onClick={()=>setShowReports(value=>!value)}>{showReports?'Dölj fördjupade rapporter':'Visa fördjupade rapporter – årstrender, jämförelser och tabeller'}</button></div>
  {showReports&&<>
  <section aria-label="Trenddiagram"><h3>Årsvis utveckling</h3><p>Varje stapel visar ett separat års- och måtturval. Ofullständig aktivitetstäckning markeras och saknade mätvärden visas inte som noll.</p><label>Visa årsserie<select aria-label="tidsdiagramtyp" value={trendDisplay} onChange={e=>setTrendDisplay(e.target.value as 'bars'|'lines')}><option value="bars">Årsstaplar</option><option value="lines">Trendlinjer</option></select></label>
