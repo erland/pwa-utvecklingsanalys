@@ -9,7 +9,7 @@ export default function GroupsView({onSaved,embedded=false}:{onSaved:()=>void;em
  const [units,setUnits]=useState<Entity[]>([]),[models,setModels]=useState<UoGroupModel[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  useEffect(()=>{let active=true;Promise.all([loadSemantic(),loadAllocations()]).then(async([semantic,allocations])=>{
   await initializeConfiguration(allocations,{});
-  const config=await readConfiguration();if(active){setUnits(semantic.entities.filter(e=>e.kind==='uo'));setModels(config?.sections.groups??[])}
+  const config=await readConfiguration();if(active){setUnits(semantic.entities.filter(e=>e.kind==='uo'));setModels(config?.sections.groups??[]);setSelected(config?.activeGroupModelId??'')}
  }).catch(()=>{if(active)setError('Kunde inte läsa gruppmodeller och UO.')});return()=>{active=false}},[]);
  const model=models.find(m=>m.id===selected)??models[0];
  const modify=(fn:(x:UoGroupModel[])=>UoGroupModel[])=>{setModels(ms=>fn(ms));setNotice('');setError('')};
@@ -19,12 +19,12 @@ export default function GroupsView({onSaved,embedded=false}:{onSaved:()=>void;em
   validateGroupModels(models);
   const config=await readConfiguration();if(!config)throw new Error('Konfigurationen är inte initierad');
   const history=await revisions();
-  await commitConfiguration({...config,sections:{...config.sections,groups:models}},'Update UO group models',history.at(-1)?.id);
+  await commitConfiguration({...config,activeGroupModelId:model?.id,sections:{...config.sections,groups:models}},'Update UO group models',history.at(-1)?.id);
   onSaved();setNotice('Gruppmodeller sparade i versionshistoriken och ingår i projektbackup.');
  }catch(e){setError('Kunde inte spara gruppmodeller: '+String(e))}finally{setBusy(false)}};
- return <>{embedded?<h2>UO-grupper</h2>:<><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1></>}<p className="lead">Skapa alternativa gruppmodeller av importerade UO. Originalvärden ändras aldrig. Spara innan du går till analysen.</p>
+ return <>{embedded?<h2>UO-grupper</h2>:<><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1></>}<p className="lead">Skapa alternativa gruppmodeller av importerade UO. Originalvärden ändras aldrig. Välj aktiv gruppindelning och spara innan du går till analysen.</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
- <section className="panel"><h2>Gruppmodeller</h2><label htmlFor="group-model-edit">Aktiv modell</label><select id="group-model-edit" value={model?.id??''} onChange={e=>setSelected(e.target.value)}>{!model&&<option value="">Ingen modell</option>}{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
+ <section className="panel"><h2>Gruppmodeller</h2><label htmlFor="group-model-edit">Aktiv gruppindelning</label><select id="group-model-edit" value={model?.id??''} onChange={e=>setSelected(e.target.value)}>{!model&&<option value="">Ingen modell</option>}{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
  <div className="actions"><button className="secondary" onClick={addModel}>Ny gruppmodell</button>{model&&<button className="secondary" onClick={()=>{modify(ms=>ms.filter(m=>m.id!==model.id));setSelected('')}}>Ta bort modell</button>}</div>
  {model&&<><label htmlFor="group-model-name">Modellnamn</label><input id="group-model-name" value={model.name} onChange={e=>updateModel(m=>({...m,name:e.target.value}))}/>
  <h2>Grupper</h2><button className="secondary" onClick={()=>updateModel(m=>({...m,groups:[...m.groups,{id:crypto.randomUUID(),name:'Ny grupp',uoIds:[]}]}))}>Lägg till grupp</button>
