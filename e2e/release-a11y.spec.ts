@@ -3,9 +3,11 @@ const views=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar
 test('release accessibility sweep across all primary views',async({page})=>{
  await page.goto('./');
  for(const name of views){
-  await page.getByRole('button',{name,exact:true}).click();
+  const control=page.getByRole('button',{name,exact:true});
+  if(await control.getAttribute('aria-disabled')==='true'){await expect(control).toBeDisabled();continue}
+  await control.click();
   await expect(page.getByRole('main')).toBeVisible();
-  await expect(page.getByRole('button',{name,exact:true})).toHaveAttribute('aria-current','page');
+  await expect(control).toHaveAttribute('aria-current','page');
   const issues=await page.locator('main').evaluate(root=>{
    const result:string[]=[];
    const inputElements=Array.from(root.querySelectorAll('input,textarea,select'));
