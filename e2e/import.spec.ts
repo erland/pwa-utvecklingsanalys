@@ -25,7 +25,7 @@ test('direct import persists after reload and is available for analysis',async({
  await expect(page.getByRole('heading',{name:'Importerade källor'})).toBeVisible();
  await expect(page.getByRole('table').first()).toContainText('UO A');
  await page.getByRole('button',{name:'Översikt',exact:true}).click();
- await expect(page.getByText('Importerade filer').locator('..')).toContainText('1');
+ await expect(page.getByText('Importerade källor').locator('..')).toContainText('1');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
