@@ -22,7 +22,10 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  for(const rule of rules){
   const decision=decisions.find(d=>d.ruleId===rule.id);
   if(!decision)continue;
-  const rows=approvedActivityParts(data,rule,decision);
+  // Approval fingerprints refer to the unmodified import, not its annual-only display projection.
+  const originalRecords=(data as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
+  const approvalData=originalRecords?{...data,records:originalRecords}:data;
+  const rows=approvedActivityParts(approvalData,rule,decision);
   if(rows.length)calculated.push(...rows);else staleApprovals++;
  }
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
