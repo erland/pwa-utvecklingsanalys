@@ -23,14 +23,14 @@ describe('DEV-109 organizational context',()=>{
  const base={axis:'work' as const,metrics:['it_hours' as const],activity:'all' as const,year:2027};
  it('shows only UO aggregated totals when comparing multiple UOs',()=>{
   const scope=organizationScope(data,{level:'all-uos'});
-  const result=analyzeCanonical(data,state,{...base,uoIds:scope.uoIds});
+  const result=analyzeCanonical(data,state,{...base,uoIds:scope.uoIds,organizationLevel:'uo'});
   expect(result.rows.map(r=>r.key).sort()).toEqual(['uo:A','uo:B']);
   expect(result.total).toBe(150);
  });
  it('shows only chosen UO LOs plus correctly labeled overhead, with matching total',()=>{
   const scope=organizationScope(data,{level:'uo',uoId:'uo:A'});
   const result=analyzeCanonical(data,state,{...base,uoIds:scope.uoIds,detailUoId:scope.detailUoId});
-  expect(result.rows.map(r=>r.label).sort()).toEqual(['one','two','UO Övergripande']);
+  expect(result.rows.map(r=>r.label).sort()).toEqual(['UO Övergripande','one','two']);
   expect(result.total).toBe(100);
   const years=canonicalGroupYears(data,state,{...base,year:undefined,detailUoId:scope.detailUoId});
   expect(years.rows.some(r=>r.label==='three')).toBe(false);
