@@ -7,7 +7,7 @@ import type {CanonicalDataset,Metric,Activity} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
 /** Treat UO overhead as a display sibling of LOs, never as an actual LO identity. */
-export default function UoDetailBreakdown({data,state,metrics,activity,year,selectedUoId,selectedPartId,onPartSelect}:{data:CanonicalDataset;state:GapState;metrics:Metric[];activity:Activity|'all';year?:number;selectedUoId?:string;selectedPartId?:string;onPartSelect?:(partId?:string)=>void}){
+export default function UoDetailBreakdown({data,state,metrics,activity,year,selectedUoId,selectedPartId,onPartSelect}:{data:CanonicalDataset;state:GapState;metrics:Metric[];activity:Activity|'all'|'allocated';year?:number;selectedUoId?:string;selectedPartId?:string;onPartSelect?:(partId?:string)=>void}){
  const [localUoId,setLocalUoId]=useState('');
  const uoId=selectedUoId??localUoId;
  const uos=[...new Set(data.records.filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort();
