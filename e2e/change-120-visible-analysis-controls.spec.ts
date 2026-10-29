@@ -20,8 +20,8 @@ test('DEV-120 analysis controls are directly visible without extra disclosure pa
  await expect(page.getByRole('region',{name:'Redovisning och gruppering'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'organisation'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'resultatgruppering'})).toBeVisible();
- await expect(page.getByRole('region',{name:'Avgränsa underlag'})).toBeVisible();
- await expect(page.getByRole('group',{name:'Datakällor'})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Avgränsa underlag'})).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'Utforska UO'})).toBeVisible();
  await expect(page.getByText('Fler analysval – organisation och gruppering')).toHaveCount(0);
  await expect(page.getByText('Fler filter – datakälla, UO och LO')).toHaveCount(0);
 });
