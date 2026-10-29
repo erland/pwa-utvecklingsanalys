@@ -36,7 +36,7 @@ npm run test:browser
 
 Browser- och single-file-verifieringen förutsätter att Playwright Chromium är installerat. CI installerar detta automatiskt.
 
-Årsvis utveckling visas som ett sammanhållet linjediagram med en tabell över timmar/kostnader och förändring mot föregående år. Mått och aktiviteter styr vilka värden som ingår. Den detaljerade matrisen **Organisation per år** finns som en valfri, från början ihopfälld fördjupning. Analysens redovisningsval och filter visas direkt, utan rubrikerna ”Fler analysval” och ”Fler filter”.
+Årsvis utveckling visas som ett sammanhållet linjediagram med en tabell över timmar/kostnader och förändring mot föregående år, följt av flerlinjediagrammet **Utveckling per organisationsdel** som följer vald organisationsnivå. Jämförelser mellan organisationsdelar visas som cirkeldiagram som standard, med tabell som reserv när cirkeldiagram inte är lämpligt. Mått och aktiviteter styr vilka värden som ingår. Den detaljerade matrisen **Organisation per år** finns som en valfri, från början ihopfälld fördjupning. Analysens redovisningsval och filter visas direkt, utan rubrikerna ”Fler analysval” och ”Fler filter”.
 
 ## Distribution och release
 
@@ -53,4 +53,4 @@ För releasekandidat **v0.2.0**:
 
 ## Dokumentation
 
-Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Acceptanskriterier för den integrerade analysvyn finns i `docs/dev-114-analysis-acceptance.md`. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
+Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Aktuell samlad acceptanschecklista för analysvyn finns i `docs/dev-126-analysis-acceptance.md`; äldre kriterier från DEV-114 är historik. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.

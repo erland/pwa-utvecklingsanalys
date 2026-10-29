@@ -1,4 +1,6 @@
-# DEV-114 – Integrerad acceptans av analysvyn
+# DEV-114 – Historisk integrerad acceptans av analysvyn
+
+> **Historiskt underlag:** Detta dokument gäller DEV-114 före UX-ändringarna DEV-122–125. Datakälle-, UO- och LO-checkboxarna har sedan dess tagits bort. För aktuell acceptans, se [DEV-126](dev-126-analysis-acceptance.md).
 
 ## Omfattning
 
