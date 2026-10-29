@@ -37,6 +37,8 @@ test('DEV-116 analysis remains locked until a real import, and locks again when 
 
 test('DEV-116 an imported source without canonical observations does not unlock analysis',async({page})=>{
  await page.goto('./');
+ // Wait for initial project loading and IndexedDB schema creation before writing the fixture.
+ await expect(page.getByLabel('Projektstatus')).toBeVisible();
  const analysis=page.getByRole('navigation',{name:'Huvudmeny'}).getByRole('button',{name:'Analys',exact:true});
  await expect(analysis).toBeDisabled();
  await page.evaluate(async()=>{
