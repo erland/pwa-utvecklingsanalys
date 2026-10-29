@@ -5,7 +5,7 @@ import {loadAllocations} from '../allocations/store';
 import {groupOverlap,validateGroupModels,type UoGroupModel} from './groupModels';
 import type {Entity} from '../domain/semantic';
 
-export default function GroupsView({onSaved}:{onSaved:()=>void}){
+export default function GroupsView({onSaved,embedded=false}:{onSaved:()=>void;embedded?:boolean}){
  const [units,setUnits]=useState<Entity[]>([]),[models,setModels]=useState<UoGroupModel[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  useEffect(()=>{let active=true;Promise.all([loadSemantic(),loadAllocations()]).then(async([semantic,allocations])=>{
   await initializeConfiguration(allocations,{});
@@ -22,7 +22,7 @@ export default function GroupsView({onSaved}:{onSaved:()=>void}){
   await commitConfiguration({...config,sections:{...config.sections,groups:models}},'Update UO group models',history.at(-1)?.id);
   onSaved();setNotice('Gruppmodeller sparade i versionshistoriken och ingår i projektbackup.');
  }catch(e){setError('Kunde inte spara gruppmodeller: '+String(e))}finally{setBusy(false)}};
- return <><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1><p className="lead">Skapa alternativa gruppmodeller av importerade UO. Originalvärden ändras aldrig. Spara innan du går till analysen.</p>
+ return <>{embedded?<h2>UO-grupper</h2>:<><div className="eyebrow">GRUPPERINGAR</div><h1>Gruppera utvecklingsområden</h1></>}<p className="lead">Skapa alternativa gruppmodeller av importerade UO. Originalvärden ändras aldrig. Spara innan du går till analysen.</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
  <section className="panel"><h2>Gruppmodeller</h2><label htmlFor="group-model-edit">Aktiv modell</label><select id="group-model-edit" value={model?.id??''} onChange={e=>setSelected(e.target.value)}>{!model&&<option value="">Ingen modell</option>}{models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select>
  <div className="actions"><button className="secondary" onClick={addModel}>Ny gruppmodell</button>{model&&<button className="secondary" onClick={()=>{modify(ms=>ms.filter(m=>m.id!==model.id));setSelected('')}}>Ta bort modell</button>}</div>
