@@ -24,7 +24,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  const queryRecords=alreadyPrepared?data.records:prepared!.dataset.records;
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
  const eligible=queryRecords.filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
- const excludedMatrix=alreadyPrepared?alreadyPrepared.excludedMatrix: data.records.filter(r=>isMatrix(r)&&eligible.includes(r)).length;
+ const excludedMatrix=alreadyPrepared?alreadyPrepared.excludedMatrix:data.records.filter(r=>isMatrix(r)&&r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&(!query.uoIds?.length||r.scope.axis!=='work'||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.axis==='work'&&r.scope.uoId===query.detailUoId)&&!query.loIds?.length).length;
  const filtered=eligible.filter(r=>!isMatrix(r));
  // Separate alternative UO-level activity summary from LO detail, never sum both.
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
