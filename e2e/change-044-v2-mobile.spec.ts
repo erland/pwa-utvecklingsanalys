@@ -16,6 +16,7 @@ test('CHANGE-044: narrow portrait viewport keeps v2 analysis usable with charts 
  await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.getByRole('heading',{name:'Analys av importerade uppgifter'})).toBeVisible();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
