@@ -8,7 +8,6 @@ test('normal navigation exposes only the supported import-to-analysis workflow',
  for(const label of ['Konfiguration','Relationer','Planering','Grupper','Fördelningar','Kompletteringar'])await expect(nav.getByRole('button',{name:label,exact:true})).toHaveCount(0);
  await nav.getByRole('button',{name:'Import'}).click();
  await expect(page.getByRole('heading',{name:'Importera Excelunderlag'})).toBeVisible();
- await nav.getByRole('button',{name:'Analys'}).click();
- await page.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
+ await expect(nav.getByRole('button',{name:'Analys'})).toBeDisabled();
  await expect(page.getByRole('heading',{name:'Importera Excelunderlag'})).toBeVisible();
 });
