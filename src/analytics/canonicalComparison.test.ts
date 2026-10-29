@@ -22,5 +22,7 @@ describe('canonical year comparison',()=>{
   expect(compareTrend(canonicalTrend(data,state,{...base,organizationLevel:'uo'})).map(x=>x.difference)).toEqual([40]);
   expect(compareTrend(canonicalTrend(data,state,{...base,detailUoId:'uo:A',detailPartId:'lo:A:1'})).map(x=>x.difference)).toEqual([20]);
   expect(compareTrend(canonicalTrend(data,state,{...base,detailUoId:'uo:A',detailPartId:'lo:A:2'})).map(x=>x.difference)).toEqual([20]);
+  const missing={...data,records:data.records.filter(r=>!(r.scope.axis==='work'&&r.scope.loId==='lo:A:2'&&r.year===2028))};
+  expect(compareTrend(canonicalTrend(missing,state,{...base,detailUoId:'uo:A',detailPartId:'lo:A:2'}))).toEqual([]);
  });
 });
