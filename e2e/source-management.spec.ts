@@ -21,8 +21,7 @@ test('replace a source directly, delete it and retain configuration',async({page
  await page.getByLabel('Bekräftelsetext').fill('TA BORT');
  await page.getByRole('button',{name:'Bekräfta borttagning'}).click();
  await expect(page.getByText('Inga godkända källor.')).toBeVisible();
- await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.getByText('Inga data i analysmodellen. Importera ett Excelunderlag.')).toBeVisible();
+ await expect(page.getByRole('button',{name:'Analys',exact:true})).toBeDisabled();
 });
 test('clear all sources with explicit confirmation',async({page})=>{
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
