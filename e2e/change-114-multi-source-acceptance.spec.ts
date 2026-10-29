@@ -38,6 +38,7 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(view.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
 
  // Source filtering must apply to the navigator and annual reports, not just the headline.
+ await view.getByText('Fler filter – datakälla, UO och LO').click();
  const sources=view.getByRole('group',{name:'Datakällor'});
  await expect(sources.getByRole('checkbox')).toHaveCount(2);
  await sources.getByRole('checkbox').first().check();
