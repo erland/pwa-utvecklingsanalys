@@ -10,6 +10,7 @@ import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
 import {canonicalTrend} from './canonicalTrend';
 import {canonicalGroupYears} from './canonicalGroupYears';
 import AnnualTrendReport from './AnnualTrendReport';
+import OrganizationYearLines from './OrganizationYearLines';
 import {canonicalCsv} from './canonicalCsv';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refreshKey:number;onOpenCompletions:()=>void}){
@@ -65,6 +66,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
  {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} selection={organization} onSelectionChange={setOrganization} selectedModelId={navModelId} onModelChange={setNavModelId}/>}
  <AnnualTrendReport trend={trend} metrics={choices}/>
+ <OrganizationYearLines matrix={groupYears}/>
  <details className="organization-year-details" aria-label="Organisation per år för valt organisationsurval"><summary>Visa detaljerad organisation per år</summary><p>Fördjupad jämförelse mellan organisationer och år. Den övergripande utvecklingen och årsvisa förändringar visas redan i diagrammet och tabellen ovan. Här visas samtliga år även om ett särskilt budgetår har valts. Streck betyder saknat värde, inte noll.</p>{groupYears&&groupYears.years.length>0?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Organisation per år"><thead><tr><th>Organisation</th>{groupYears.years.map(y=><th key={y}>{y}</th>)}<th>Totalt</th></tr></thead><tbody>{groupYears.rows.map(row=><tr key={row.key}><th scope="row">{row.label}</th>{row.values.map((value,i)=><td key={groupYears!.years[i]}>{value===null?'–':format(value)+' '+groupYears!.unit}</td>)}<td>{format(row.total)} {groupYears!.unit}</td></tr>)}</tbody><tfoot><tr><th scope="row">Totalt</th>{groupYears.yearTotals.map((value,i)=><td key={groupYears!.years[i]}>{format(value)} {groupYears!.unit}</td>)}<td>{format(groupYears.total)} {groupYears.unit}</td></tr></tfoot></table></div>:<p>Inga årsvärden för aktuellt urval.</p>}</details>
  </>:null}
  </section>;
