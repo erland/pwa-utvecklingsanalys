@@ -21,7 +21,8 @@ test('DEV-113 shows one organization-by-year table following UO and LO drilldown
  await page.locator('#direct-import-files').setInputFiles({name:'dev113.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByRole('status').filter({hasText:'dev113.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.getByRole('region',{name:'Organisation per år för valt organisationsurval'})).toBeVisible();
+ await expect(page.locator('details.organization-year-details > summary')).toBeVisible();
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(page.getByRole('table',{name:'Organisation per år'})).toHaveCount(1);
  await expect(page.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
  const navigator=page.getByRole('region',{name:'Utforska UO'});

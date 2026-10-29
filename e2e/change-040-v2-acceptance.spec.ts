@@ -35,6 +35,7 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
 
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
+ await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'V2-testmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Operativa UO');
