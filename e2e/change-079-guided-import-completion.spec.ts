@@ -27,6 +27,9 @@ test('import directly offers LO completion and opens analysis after one approval
  await completion.getByLabel(/^Utvecklingsandel /).first().fill('60');
  await expect(completion.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('50');
  await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
+ await expect(completion.getByRole('group',{name:'Godkända fördelningar'})).toHaveCount(1);
+ await expect(completion.getByLabel(/^Utvecklingsandel /)).toHaveCount(0);
+ await completion.getByText('Godkända fördelningar (1)',{exact:false}).click();
  await expect(completion.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
