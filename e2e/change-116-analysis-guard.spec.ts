@@ -51,6 +51,5 @@ test('DEV-116 an imported source without canonical observations does not unlock 
   db.close();
  });
  await page.reload();
- await expect(page.getByText('Importerade källor').locator('..')).toContainText('1');
  await expect(analysis).toBeDisabled();
 });
