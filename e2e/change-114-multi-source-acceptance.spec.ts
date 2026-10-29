@@ -19,12 +19,16 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  const a=await sourceFile('dev114-a.xlsx','UO A',40,60);
  const b=await sourceFile('dev114-b.xlsx','UO B',100,120);
  await page.locator('#direct-import-files').setInputFiles([a,b]);
- await expect(page.getByRole('status').filter({hasText:'importerad'})).toBeVisible();
+ const importResult=page.getByRole('status').filter({hasText:'Importresultat'});
+ await expect(importResult).toContainText('dev114-a.xlsx');
+ await expect(importResult).toContainText('dev114-b.xlsx');
+ await expect(importResult).not.toContainText('Inte importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const view=page.locator('.canonical-analytics');
  const total=view.locator('.canonical-result-head strong');
  const matrix=view.getByRole('table',{name:'Organisation per år'});
  const navigator=view.getByRole('region',{name:'Utforska UO'});
+ console.log('DEV114 ANALYSIS DIAGNOSTIC:',await view.innerText());
  await expect(total).toHaveText('320 h');
  await expect(matrix).toHaveCount(1);
  await expect(matrix).toContainText('UO A');
