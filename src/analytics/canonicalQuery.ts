@@ -16,12 +16,15 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  const hours=query.metrics.every(m=>m.endsWith('_hours')),costs=query.metrics.every(m=>m.endsWith('_cost'));
  if(!hours&&!costs)throw new Error('MIXED_UNITS');
  if(query.detailUoId&&(query.axis!=='work'||query.groupModel||query.groupBy&&query.groupBy!=='organization'))throw new Error('INVALID_UO_DETAIL_QUERY');
- const prepared=prepareAnalysisDataset(data,state);
- const staleApprovals=prepared.staleApprovals;
- const calculated=prepared.dataset.records.filter(r=>r.authority==='derived'&&r.granularity==='activity-part');
+ // The import/completion boundary produces a ready-to-query dataset.
+ // The legacy overload remains for older callers and tests during migration.
+ const alreadyPrepared=(data as CanonicalDataset & {preparedAnalysis?:{staleApprovals:number;excludedMatrix:number}}).preparedAnalysis;
+ const prepared=alreadyPrepared?null:prepareAnalysisDataset(data,state);
+ const staleApprovals=alreadyPrepared?.staleApprovals??prepared!.staleApprovals;
+ const queryRecords=alreadyPrepared?data.records:prepared!.dataset.records;
  // The UO matrix is a ratio source only, never an analytic volume or detail row.
- const eligible=[...data.records.filter(r=>r.authority!=='derived'||r.granularity!=='activity-part'),...calculated].filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
- const excludedMatrix=eligible.filter(isMatrix).length;
+ const eligible=queryRecords.filter(r=>r.scope.axis===query.axis&&query.metrics.includes(r.metric)&&(query.year===undefined||r.year===query.year)&&(!query.datasetIds?.length||query.datasetIds.includes(sourceId(r)))&&approved(r)&&(query.axis!=='work'||r.scope.axis!=='work'||(!query.uoIds?.length||query.uoIds.includes(r.scope.uoId))&&(!query.detailUoId||r.scope.uoId===query.detailUoId)&&(!query.loIds?.length?true:Boolean(r.scope.loId&&query.loIds.includes(r.scope.loId)))));
+ const excludedMatrix=alreadyPrepared?alreadyPrepared.excludedMatrix: data.records.filter(r=>isMatrix(r)&&eligible.includes(r)).length;
  const filtered=eligible.filter(r=>!isMatrix(r));
  // Separate alternative UO-level activity summary from LO detail, never sum both.
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
