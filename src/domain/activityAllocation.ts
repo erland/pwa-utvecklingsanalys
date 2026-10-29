@@ -3,7 +3,7 @@ import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDatase
 
 /** Decisions are kept separately from immutable imported observations. */
 export type ActivityAllocationRule={id:string;datasetId:string;uoId:string;metric:Metric;year:number;reason:string};
-export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string;overrides?:LoDevelopmentOverride[]};
+export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string;overrides?:LoDevelopmentOverride[];sharedPercentages?:boolean};
 export type AllocationPreview={ruleId:string;fingerprint:string;uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
 
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
@@ -47,6 +47,30 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loSources])]);
  return {ruleId:rule.id,fingerprint,uo:{development:dev,maintenance},items};
 }
+/** Apply one explicit development percentage per LO, independently of the source metric.
+ * The UO matrix supplies the initial share; edited shares are authoritative per LO.
+ */
+export function applySharedPercentages(preview:AllocationPreview,overrides:readonly LoDevelopmentOverride[]):AllocationPreview{
+ const edits=new Map<string,number>();
+ for(const edit of overrides){
+  if(edits.has(edit.loId)||!preview.items.some(i=>i.loId===edit.loId))throw new Error('UNKNOWN_OR_DUPLICATE_LO');
+  if(!Number.isFinite(edit.developmentPercent)||edit.developmentPercent<0||edit.developmentPercent>100)throw new Error('INVALID_DEVELOPMENT_PERCENT');
+  edits.set(edit.loId,edit.developmentPercent);
+ }
+ const items=preview.items.map(item=>{
+  const percent=edits.get(item.loId)??(item.total>0?100*item.development/item.total:0);
+  const development=item.total*percent/100;
+  return {...item,development,maintenance:item.total-development};
+ });
+ const development=items.reduce((sum,item)=>sum+item.development,0);
+ const total=items.reduce((sum,item)=>sum+item.total,0);
+ return {...preview,items,uo:{development,maintenance:total-development}};
+}
+export function approveSharedActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]):ActivityAllocationDecision{
+ if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
+ applySharedPercentages(preview,overrides);
+ return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim(),sharedPercentages:true,overrides:overrides.map(o=>({...o}))};
+}
 export function approveActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]=[]):ActivityAllocationDecision{
  if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
  // Validate the complete balancing before storing any user-supplied percentages.
@@ -59,7 +83,7 @@ export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocat
  let preview:AllocationPreview;
  try{preview=previewActivityAllocation(data,rule)}catch{return []}
  if(preview.fingerprint!==decision.fingerprint)return [];
- try{preview=rebalanceUoBudgetAllocation(preview,decision.overrides??[])}catch{return []}
+ try{preview=decision.sharedPercentages?applySharedPercentages(preview,decision.overrides??[]):rebalanceUoBudgetAllocation(preview,decision.overrides??[])}catch{return []}
  return preview.items.flatMap(item=>['development','maintenance'].map(activity=>({
   id:['allocation',rule.id,item.loId,activity,rule.year].join('|'),metric:rule.metric,year:rule.year,
   value:activity==='development'?item.development:item.maintenance,
