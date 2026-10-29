@@ -22,7 +22,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
   // Prefer annual records for an identical source, scope, metric and year.
   // Preserve month-only legacy imports until their annual replacement exists.
   const annualKeys=new Set(data.records.filter(r=>r.month===undefined).map(r=>JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])));
-  return {...data,records:data.records.filter(r=>r.month===undefined||!annualKeys.has(JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])))};
+  return {...data,allocationSourceRecords:data.records,records:data.records.filter(r=>r.month===undefined||!annualKeys.has(JSON.stringify([r.source?.datasetId??r.workloadId.split('|')[0],r.scope,r.metric,r.year])))};
  },[data]);
  const [models,setModels]=useState<UoGroupModel[]>([]),[groupModelId,setGroupModelId]=useState('');
  useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active)setModels(c?.sections.groups??[])}).catch(()=>{if(active)setModels([])});return()=>{active=false}},[refreshKey]);
