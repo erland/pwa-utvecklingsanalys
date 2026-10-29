@@ -12,6 +12,8 @@ test('separately approve development and maintenance matrix without adding to de
  await expect(page.getByRole('status').filter({has:page.getByRole('heading',{name:'Importresultat'})})).toContainText('importerad');
  await expect(page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/})).toBeVisible();
  await page.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
+ await expect(page.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await page.getByText('Godkända fördelningar (1)',{exact:false}).click();
  await expect(page.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
  await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
