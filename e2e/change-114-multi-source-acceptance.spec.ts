@@ -34,8 +34,9 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(matrix).toContainText('UO A');
  await expect(matrix).toContainText('UO B');
  await expect(matrix.locator('tfoot')).toContainText('320 h');
- await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO A');
- await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO B');
+ const uoPie=navigator.getByRole('group',{name:'Cirkeldiagram: UO i analys'});
+ await expect(uoPie).toContainText('UO A');
+ await expect(uoPie).toContainText('UO B');
  await expect(view.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
 
  // All imported sources contribute by default. Hierarchy navigation is the only UO/LO scoping.
@@ -43,7 +44,7 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(view.getByRole('group',{name:'Datakällor'})).toHaveCount(0);
  await expect(view.getByRole('group',{name:'UO',exact:true})).toHaveCount(0);
  await expect(view.getByRole('group',{name:'LO',exact:true})).toHaveCount(0);
- await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).first().click();
+ await uoPie.getByRole('button',{name:'Visa LO'}).first().click();
  const selectedTotal=await total.textContent();
  expect(['100 h','220 h']).toContain(selectedTotal?.trim());
  await expect(matrix.locator('tfoot')).toContainText(selectedTotal!.trim());
