@@ -16,7 +16,8 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await page.locator('#direct-import-files').setInputFiles({name:'acceptance.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByRole('status')).toContainText('importerad');
 
- await page.getByRole('button',{name:'Grupper'}).click();
+ await page.getByRole('button',{name:'Inställningar'}).click();
+ await expect(page.getByRole('heading',{name:'UO-grupper'})).toBeVisible();
  await page.getByRole('button',{name:'Ny gruppmodell'}).click();
  await page.getByLabel('Modellnamn').fill('Acceptansmodell');
  await page.getByRole('button',{name:'Lägg till grupp'}).click();
@@ -31,6 +32,6 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'Acceptansmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Digital utveckling');
  await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toContainText('60 h');
- await page.reload();await page.getByRole('button',{name:'Grupper',exact:true}).click();
+ await page.reload();await page.getByRole('button',{name:'Inställningar',exact:true}).click();
  await expect(page.getByLabel('Modellnamn')).toHaveValue('Acceptansmodell');
 });
