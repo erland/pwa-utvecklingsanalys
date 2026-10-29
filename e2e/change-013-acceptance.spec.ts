@@ -23,6 +23,7 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await page.getByRole('button',{name:'Lägg till grupp'}).click();
  await page.getByLabel('Gruppnamn').fill('Digital utveckling');
  await page.getByLabel('UO A').check();
+ await page.getByLabel('Aktiv gruppindelning').selectOption({label:'Acceptansmodell'});
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
 
@@ -30,7 +31,6 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  const v2=page.locator('.canonical-analytics');
  await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await v2.getByLabel('UO-gruppmodell').selectOption({label:'Acceptansmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Digital utveckling');
  await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('60 h');

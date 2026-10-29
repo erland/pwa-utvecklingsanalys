@@ -7,6 +7,7 @@ export type PackageSection='allocations'|'mappings'|'groups';
 export interface ConfigPackage {
  format:'utvecklingsanalys-config';version:1;exportedAt:string;mode:'definitions-only'|'full-configuration';
  sections:{allocations?:Allocations;mappings?:Record<string,Mapping>;groups?:UoGroupModel[]};
+ activeGroupModelId?:string;
 }
 export type Conflict={section:PackageSection;key:string;reason:string};
 export function parsePackage(input:unknown):ConfigPackage{
@@ -27,6 +28,7 @@ export function parsePackage(input:unknown):ConfigPackage{
   }
  }
  if(p.sections.groups)validateGroupModels(p.sections.groups);
+ if(p.activeGroupModelId!==undefined&&(typeof p.activeGroupModelId!=='string'||!p.sections.groups?.some(m=>m.id===p.activeGroupModelId)))throw new Error('INVALID_ACTIVE_GROUP_MODEL');
  if(Object.keys(p.sections).some(k=>!['allocations','mappings','groups'].includes(k)))throw new Error('UNSUPPORTED_SECTION');
  return p;
 }
@@ -66,7 +68,8 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
  }
  const groups=[...(current.sections.groups??[]).filter(g=>!(incoming.sections.groups??[]).some(x=>x.id===g.id||x.name.toLocaleLowerCase('sv-SE')===g.name.toLocaleLowerCase('sv-SE'))),...(incoming.sections.groups??[])];
  const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups);
- return next;
+ const activeGroupModelId=incoming.activeGroupModelId??current.activeGroupModelId;
+ return activeGroupModelId&&groups.some(m=>m.id===activeGroupModelId)?parsePackage({...next,activeGroupModelId}):next;
 }
 
 /** Copies rules as a proposal for a new year, never replacing explicit target-year rules. */

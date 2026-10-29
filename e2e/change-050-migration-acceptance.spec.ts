@@ -21,13 +21,13 @@ test('CHANGE-050: v2 migration gate checks group-year totals and source records'
  await page.getByRole('button',{name:'Lägg till grupp'}).click();
  await page.getByLabel('Gruppnamn').fill('Operativa UO');
  await page.getByLabel('UO A').check();
+ await page.getByLabel('Aktiv gruppindelning').selectOption({label:'Migreringskontroll'});
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await v2.getByLabel('UO-gruppmodell').selectOption({label:'Migreringskontroll'});
  const matrix=v2.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toContainText('Operativa UO');
  await expect(matrix).toContainText('2027');
