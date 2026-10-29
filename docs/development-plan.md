@@ -16,4 +16,13 @@ Varje steg utförs och verifieras separat. Planeringspaketet föregår DEV-001.
 | DEV-010 | Konfigurationspaket: selektiv export/import, definitions-only, förslag för nytt år, versionshistorik, diff/konfliktlösning och atomära transaktioner | AC-008–011, round-trip, konfliktrollback och migrations-/säkerhetstester | 004,008,009 |
 | DEV-011 | Robust projektexport/import, CSV/XLSX, mobil/tillgänglighet och release readiness | återimport med identiskt resultat, browser offline, WCAG-kontroller och CI | 010 |
 
-Nästa rekommenderade steg: **DEV-001**. Stoppa efter ett verifierat steg enligt System Builder-arbetsflödet.
+## Aktuell förvaltning av planen (2026-10-29)
+
+DEV-001–DEV-011 ovan är den ursprungliga etableringsplanen och är historik, inte återstående arbetsuppgifter. Efterföljande ändringssteg har genomförts via separata pull requests. Den senaste avslutade serien är:
+
+- DEV-118: Administrera UO-grupper under Inställningar (PR #132, mergad).
+- DEV-119: Gemensam årsvis trend, linjediagram och förändringstabell (PR #133, mergad).
+- DEV-120: Direkt synliga analysval och filter (PR #134, mergad).
+- DEV-121: Valfri, från början ihopfälld organisationsmatris per år (PR #135, mergad; Verify PWA godkänd på slutlig PR-commit).
+
+Den senaste analysomdesignen är genomförd. **Inget ytterligare utvecklingssteg är beslutat.** Nästa rekommenderade aktivitet är releasebedömning och manuell acceptans i målmiljö, inte automatisk implementering av ännu ett DEV-steg. Följ aktuell implementation, pull requests och CI som källor vid ny planering.
