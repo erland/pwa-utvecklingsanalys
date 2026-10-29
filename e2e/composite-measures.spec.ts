@@ -11,8 +11,7 @@ test('combined hours appear in analysis with explicit constituents and annual vi
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toContainText('42 h');
  await v2.getByLabel('enhet').selectOption('costs');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
 });

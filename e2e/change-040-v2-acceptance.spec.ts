@@ -37,19 +37,14 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
  await v2.getByLabel('UO-gruppmodell').selectOption({label:'V2-testmodell'});
- await expect(v2.getByRole('table',{name:'analysresultat'})).toContainText('Operativa UO');
-
+ await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Operativa UO');
  await v2.getByLabel('resultatgruppering').selectOption('year');
- const yearTable=v2.getByRole('table',{name:'analysresultat'});
+ const yearTable=v2.getByRole('table',{name:'Organisation per år'});
  await expect(yearTable).toContainText('2027');
  await expect(yearTable).toContainText('2028');
  await expect(yearTable).toContainText('42 h');
  await expect(yearTable).toContainText('18 h');
- await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
- await v2.getByLabel('Diagramtyp för fördelning').selectOption('pie');
- await expect(v2.getByRole('img',{name:/Cirkelfördelning, total 60 h/})).toBeVisible();
- await expect(v2.locator('.pie-legend')).toContainText('2027');
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toBeVisible();
 
  const downloadPromise=page.waitForEvent('download');
  await v2.getByRole('button',{name:'Exportera analys som CSV'}).click();

@@ -11,8 +11,7 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
  await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
- await v2.getByLabel('tidsdiagramtyp').selectOption('lines');
- await expect(v2.getByRole('img',{name:'Trendlinjer för mått'})).toBeVisible();
+ await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toContainText('60 h');
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toBeVisible();
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
