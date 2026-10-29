@@ -6,7 +6,7 @@ async function sourceFile(name:string,uo:string,first:number,second:number){
  sheet.getCell('B1').value='UO: '+uo;
  sheet.getCell('D11').value=2027;
  sheet.getCell('E11').value=2028;
- sheet.getCell('B25').value='Gemensam';
+ sheet.getCell('B25').value='LO 1';
  sheet.getCell('C26').value='IT timmar (h)';
  sheet.getCell('D26').value=first;
  sheet.getCell('E26').value=second;
@@ -28,7 +28,6 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  const total=view.locator('.canonical-result-head strong');
  const matrix=view.getByRole('table',{name:'Organisation per år'});
  const navigator=view.getByRole('region',{name:'Utforska UO'});
- console.log('DEV114 ANALYSIS DIAGNOSTIC:',await view.innerText());
  await expect(total).toHaveText('320 h');
  await expect(matrix).toHaveCount(1);
  await expect(matrix).toContainText('UO A');
@@ -57,10 +56,10 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(matrix.locator('tbody')).not.toContainText('UO B');
  await expect(navigator.getByRole('table',{name:'UO i analys'})).not.toContainText('UO B');
  await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).click();
- await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('Gemensam');
- await expect(matrix).toContainText('Gemensam');
+ await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('LO 1');
+ await expect(matrix).toContainText('LO 1');
  await expect(matrix.locator('tfoot')).toContainText('100 h');
- await view.getByRole('group',{name:'LO'}).getByRole('checkbox',{name:'Gemensam'}).check();
+ await view.getByRole('group',{name:'LO'}).getByRole('checkbox',{name:'LO 1'}).check();
  await expect(total).toHaveText('100 h');
 
  // Incomplete activity allocations must not be misclassified as maintenance.
