@@ -49,4 +49,4 @@ För releasekandidat **v0.2.0**:
 
 ## Dokumentation
 
-Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
+Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Acceptanskriterier för den integrerade analysvyn finns i `docs/dev-114-analysis-acceptance.md`. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
