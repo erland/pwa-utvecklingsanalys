@@ -38,38 +38,24 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('UO B');
  await expect(view.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
 
- // Source filtering must apply to the navigator and annual reports, not just the headline.
- await expect(view.getByRole('region',{name:'Avgränsa underlag'})).toBeVisible();
- const sources=view.getByRole('group',{name:'Datakällor'});
- await expect(sources.getByRole('checkbox')).toHaveCount(2);
- await sources.getByRole('checkbox').first().check();
+ // All imported sources contribute by default. Hierarchy navigation is the only UO/LO scoping.
+ await expect(view.getByRole('region',{name:'Avgränsa underlag'})).toHaveCount(0);
+ await expect(view.getByRole('group',{name:'Datakällor'})).toHaveCount(0);
+ await expect(view.getByRole('group',{name:'UO',exact:true})).toHaveCount(0);
+ await expect(view.getByRole('group',{name:'LO',exact:true})).toHaveCount(0);
+ await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).first().click();
  const selectedTotal=await total.textContent();
  expect(['100 h','220 h']).toContain(selectedTotal?.trim());
  await expect(matrix.locator('tfoot')).toContainText(selectedTotal!.trim());
- await expect(navigator.getByRole('table',{name:'UO i analys'}).locator('tbody tr')).toHaveCount(1);
- await sources.getByRole('button',{name:'Alla källor'}).click();
- await expect(total).toHaveText('320 h');
-
- // Work filters must affect all three views, including the navigator's drilldown.
- const uoFilters=view.getByRole('group',{name:'UO'});
- await uoFilters.getByRole('checkbox',{name:'UO A'}).check();
- await expect(total).toHaveText('100 h');
- await expect(matrix.locator('tfoot')).toContainText('100 h');
- await expect(matrix.locator('tbody')).not.toContainText('UO B');
- await expect(navigator.getByRole('table',{name:'UO i analys'})).not.toContainText('UO B');
- await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).click();
  await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toContainText('LO 1');
  await expect(matrix).toContainText('LO 1');
- await expect(matrix.locator('tfoot')).toContainText('100 h');
- await view.getByRole('group',{name:'LO'}).getByRole('checkbox',{name:'LO 1'}).check();
- await expect(total).toHaveText('100 h');
 
  // Incomplete activity allocations must not be misclassified as maintenance.
  await view.getByRole('checkbox',{name:'Förvaltning',exact:true}).uncheck();
  await expect(total).toHaveText('0 h');
  await expect(view.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
  await view.getByRole('checkbox',{name:'Förvaltning',exact:true}).check();
- await expect(total).toHaveText('100 h');
+ await expect(total).toHaveText(selectedTotal!.trim());
 
  await page.reload();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
