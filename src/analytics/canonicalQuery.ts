@@ -3,7 +3,7 @@ import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric,type ReportingAxis} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
-export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string;detailPartId?:string};
+export type CanonicalAnalysisQuery={axis:ReportingAxis;metrics:Metric[];activity:Activity|'all';year?:number;datasetIds?:string[];uoIds?:string[];loIds?:string[];groupModel?:UoGroupModel;groupBy?:'organization'|'source'|'year';detailUoId?:string;detailPartId?:string;organizationLevel?:'uo'|'part'};
 export type CanonicalAnalysisResult={total:number;unit:'h'|'SEK';rows:{key:string;label:string;value:number}[];rowCounts:Record<string,number>;includedRecords:number;unknownCount:number;staleApprovals:number;excludedAlternatives:number;coverage:string};
 const sourceId=(r:AnalysisRecord)=>r.source?.datasetId??r.workloadId.split('|')[0]??'';
 const identity=(r:AnalysisRecord)=>JSON.stringify([sourceId(r),r.scope.axis==='work'?r.scope.uoId:r.scope.departmentId,r.metric,r.year,r.month??null]);
@@ -63,7 +63,7 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   const scope=representative.scope;
   const membership=scope.axis==='work'&&query.groupModel?groupForUo(query.groupModel,scope.uoId):undefined;
   const detailOverhead=Boolean(query.detailUoId&&scope.axis==='work'&&!scope.loId&&representative.workPart==='uo-overhead');
-  const key=query.detailUoId&&scope.axis==='work'?(detailOverhead?'uo-overhead:'+scope.uoId:scope.loId??scope.uoId):query.groupBy==='year'?String(representative.year):query.groupBy==='source'?sourceId(representative):scope.axis==='work'&&query.groupModel?(membership?.id??'unassigned'):(scope.axis==='work'?(scope.loId??scope.uoId):scope.departmentId);
+  const key=query.detailUoId&&scope.axis==='work'?(detailOverhead?'uo-overhead:'+scope.uoId:scope.loId??scope.uoId):query.groupBy==='year'?String(representative.year):query.groupBy==='source'?sourceId(representative):scope.axis==='work'&&query.groupModel?(membership?.id??'unassigned'):(scope.axis==='work'?(query.organizationLevel==='uo'?scope.uoId:scope.loId??scope.uoId):scope.departmentId);
   const label=detailOverhead?'UO Övergripande':query.groupBy==='source'||query.groupBy==='year'?key:scope.axis==='work'&&query.groupModel?(membership?.name??'Ej grupperad'):decodeURIComponent(key.split(':').at(-1)??key);
   const current=results.get(key);
   results.set(key,{label,value:(current?.value??0)+value});
