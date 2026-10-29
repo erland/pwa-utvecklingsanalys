@@ -30,6 +30,7 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  await page.getByRole('button',{name:'Lägg till grupp'}).click();
  await page.getByLabel('Gruppnamn').fill('Operativa UO');
  await page.getByLabel('UO A').check();
+ await page.getByLabel('Aktiv gruppindelning').selectOption({label:'V2-testmodell'});
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
 
@@ -37,7 +38,6 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  const v2=page.locator('.canonical-analytics');
  await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
- await v2.getByLabel('UO-gruppmodell').selectOption({label:'V2-testmodell'});
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toContainText('Operativa UO');
  await v2.getByLabel('resultatgruppering').selectOption('year');
  const yearTable=v2.getByRole('table',{name:'Organisation per år'});
