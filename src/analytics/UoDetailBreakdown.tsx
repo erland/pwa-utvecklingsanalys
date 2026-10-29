@@ -2,11 +2,12 @@ import {useState} from 'react';
 import {analyzeCanonical} from './canonicalQuery';
 import ComparisonResults from './ComparisonResults';
 import {uoActivityRows} from './activityBreakdown';
+import {visiblePartRows} from './organizationContext';
 import type {CanonicalDataset,Metric,Activity} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 
 /** Treat UO overhead as a display sibling of LOs, never as an actual LO identity. */
-export default function UoDetailBreakdown({data,state,metrics,activity,year,selectedUoId}:{data:CanonicalDataset;state:GapState;metrics:Metric[];activity:Activity|'all';year?:number;selectedUoId?:string}){
+export default function UoDetailBreakdown({data,state,metrics,activity,year,selectedUoId,selectedPartId,onPartSelect}:{data:CanonicalDataset;state:GapState;metrics:Metric[];activity:Activity|'all';year?:number;selectedUoId?:string;selectedPartId?:string;onPartSelect?:(partId?:string)=>void}){
  const [localUoId,setLocalUoId]=useState('');
  const uoId=selectedUoId??localUoId;
  const uos=[...new Set(data.records.filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort();
@@ -23,7 +24,7 @@ export default function UoDetailBreakdown({data,state,metrics,activity,year,sele
    <option value="">Välj UO</option>{uos.map(id=><option key={id} value={id}>{decodeURIComponent(id.slice(3))}</option>)}
   </select></label>}
   {error&&<p role="alert">{error}</p>}
-  {result&&<><ComparisonResults title="LO och UO Övergripande" totalLabel="Totalt UO" unit={result.unit} rows={result.rows.map(row=>({...row,split:activity==='all'?splits[row.key]:undefined}))}/>
+  {result&&<>{selectedPartId&&<button type="button" className="secondary" onClick={()=>onPartSelect?.(undefined)}>Visa alla LO och UO Övergripande</button>}<ComparisonResults title={selectedPartId?'Vald delpost':'LO och UO Övergripande'} totalLabel={selectedPartId?'Totalt vald delpost':'Totalt UO'} unit={result.unit} rows={visiblePartRows(result.rows.map(row=>({...row,split:activity==='all'?splits[row.key]:undefined})),{level:selectedPartId?'part':'uo',uoId,partId:selectedPartId})} onOpen={selectedPartId?undefined:onPartSelect} openLabel="Visa delpost"/>
   {result.unknownCount>0&&<p role="status">Aktivitetsfördelningen är ofullständig för {result.unknownCount} underlag. Saknade värden visas inte som noll.</p>}
   </>}
  </section>;
