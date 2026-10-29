@@ -13,6 +13,8 @@ React + TypeScript + Vite-baserad PWA för att samla in, komplettera och analyse
 
 Den äldre analysvyn har avvecklats. Historiska semantiska data och backupformat finns kvar för kompatibilitet; använd informationsmodell v2 för analyser.
 
+Analysvyn är tillgänglig först när minst en importerad källa har analysobservationer i den kanoniska modellen. Källmetadata eller enbart äldre semantiska observationer räcker inte. Om sista analysunderlaget tas bort spärras analysen igen.
+
 ## Kom igång
 
 ```sh
