@@ -8,7 +8,7 @@ React + TypeScript + Vite-baserad PWA för att samla in, komplettera och analyse
 - Kanonisk informationsmodell v2 som **enda analysvy**, med filter för mått och perioder samt hierarkisk navigering mellan UO-grupper, UO och LO. Alla importerade källor ingår som standard, med redovisning per avdelning.
 - Analys av utveckling och förvaltning, källspårbarhet, årstrender, organisation × år, diagram och CSV-export.
 - Informationsluckor, kompletteringar, fördelningsregler och godkännande/återkallelse med omprövning när källunderlaget ändras.
-- Administration av UO-gruppmodeller under Inställningar, val av gruppmodell i Analys samt projektbackup och återställning. Den äldre separata gruppvyn finns kvar för kompatibilitet.
+- Administration och val av aktiv UO-gruppmodell under Inställningar; Analys använder samma modell automatiskt samt projektbackup och återställning. Den äldre separata gruppvyn finns kvar för kompatibilitet.
 - Responsivt gränssnitt och PWA med stöd för användning utan nätverk efter installation/cachelagring.
 
 Den äldre analysvyn har avvecklats. Historiska semantiska data och backupformat finns kvar för kompatibilitet; använd informationsmodell v2 för analyser.
