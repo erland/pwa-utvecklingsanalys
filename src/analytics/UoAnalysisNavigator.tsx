@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import type {OrganizationSelection} from './organizationContext';
 import type {CanonicalDataset,Metric,Activity} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import type {UoGroupModel} from './groupModels';
@@ -11,8 +12,9 @@ import {uoActivityRows,addActivitySplits} from './activityBreakdown';
 type Entry='groups'|'uos';
 type View={entry:Entry;groupId?:string;uoId?:string};
 const name=(id:string)=>decodeURIComponent(id.startsWith('uo:')?id.slice(3):id);
-export default function UoAnalysisNavigator({data,state,models,metrics,activity,year}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all';year?:number}){
- const [view,setView]=useState<View>({entry:'uos'});
+export default function UoAnalysisNavigator({data,state,models,metrics,activity,year,selection,onSelectionChange}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all';year?:number;selection?:OrganizationSelection;onSelectionChange?:(next:OrganizationSelection)=>void}){
+ const [localView,setView]=useState<View>({entry:'uos'});
+ const view:View=selection?{entry:selection.level==='groups'||selection.level==='group'?'groups':selection.groupId?'groups':'uos',groupId:selection.groupId,uoId:selection.uoId}:localView;
  const [modelId,setModelId]=useState('');
  const model=models.find(x=>x.id===modelId)??models[0];
  const uos=[...new Set(data.records.filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort((a,b)=>name(a).localeCompare(name(b),'sv'));
@@ -27,7 +29,9 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
   catch{return null}
  };
 
- const show=(next:View)=>setView(next);
+ const show=(next:View)=>{setView(next);
+  if(onSelectionChange)onSelectionChange(next.uoId?{level:'uo',uoId:next.uoId,groupId:next.groupId}:next.groupId?{level:'group',groupId:next.groupId}:next.entry==='groups'?{level:'groups'}:{level:'all-uos'});
+ };
  return <section aria-label="Utforska UO" className="mapping-settings">
   <h3>Utforska organisationen</h3>
   <p>Välj UO-grupper eller Alla UO. Samma val av timmar, kostnader, aktivitet och år följer med ned till LO och UO Övergripande.</p>
