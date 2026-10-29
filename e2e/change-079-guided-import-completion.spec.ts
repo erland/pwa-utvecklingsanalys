@@ -1,4 +1,12 @@
-import {test,expect} from '@playwright/test';
+import {test,expect,type Locator} from '@playwright/test';
+async function selectActivity(view:Locator,value:'development'|'maintenance'|'all'){
+ const dev=view.getByRole('checkbox',{name:'Utveckling',exact:true});
+ const maint=view.getByRole('checkbox',{name:'Förvaltning',exact:true});
+ if(value==='all'){await dev.check();await maint.check()}
+ else if(value==='development'){await dev.check();await maint.uncheck()}
+ else {await maint.check();await dev.uncheck()}
+}
+
 import ExcelJS from 'exceljs';
 
 test('import directly offers LO completion and opens analysis after one approval',async({page})=>{
@@ -24,6 +32,6 @@ test('import directly offers LO completion and opens analysis after one approval
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  const analysis=page.locator('.canonical-analytics');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('100 h');
- await analysis.getByLabel('aktivitet').selectOption('development');
+ await selectActivity(analysis,'development');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('56 h');
 });
