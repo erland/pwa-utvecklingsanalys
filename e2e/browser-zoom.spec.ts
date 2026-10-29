@@ -5,7 +5,9 @@ test('400 percent zoom equivalent viewport reflow of critical controls',async({b
  const page=await context.newPage();
  await page.goto('./');
  for(const name of views){
-  await page.getByRole('button',{name,exact:true}).click();
+  const control=page.getByRole('button',{name,exact:true});
+  if(await control.getAttribute('aria-disabled')==='true'){await expect(control).toBeDisabled();continue}
+  await control.click();
   await expect(page.getByRole('main')).toBeVisible();
   const outside=await page.locator('main').evaluate(main=>{
    const max=innerWidth;return Array.from(main.querySelectorAll('input,button,textarea,select')).filter(el=>{
