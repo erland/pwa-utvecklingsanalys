@@ -84,4 +84,4 @@ main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0
 @media(max-width:620px){.canonical-trend-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.canonical-trend-track{grid-column:1/-1;grid-row:2}.canonical-trend-row strong{justify-self:end}}
 
 /* DEV-116: locked analysis stays visibly unavailable on desktop and mobile. */
-.nav-link:disabled,.nav-link:disabled:hover{opacity:.48;background:transparent;color:#d1e0e9;cursor:not-allowed}
+.nav-link[aria-disabled="true"],.nav-link[aria-disabled="true"]:hover{background:transparent;color:#b7d2d9;cursor:not-allowed;text-decoration:underline dotted;text-underline-offset:4px}
