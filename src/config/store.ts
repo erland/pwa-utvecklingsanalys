@@ -22,7 +22,7 @@ export async function commitConfiguration(next:ConfigPackage,reason:string,expec
  const revisions=await tx.objectStore('history').getAll() as ConfigRevision[];
  const last=revisions.sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id)).at(-1)?.id;
  if(expectedRevision!==undefined&&expectedRevision!==last){tx.abort();throw new Error('REVISION_CONFLICT')}
- if(current&&JSON.stringify(current.sections)===JSON.stringify(verified.sections)){await tx.done;return last??''}
+ if(current&&JSON.stringify(current.sections)===JSON.stringify(verified.sections)&&current.activeGroupModelId===verified.activeGroupModelId){await tx.done;return last??''}
  const id=crypto.randomUUID();const revision:ConfigRevision={id,createdAt:new Date().toISOString(),reason,data:verified};
  await tx.objectStore('current').put(verified,'active');await tx.objectStore('history').put(revision);await tx.done;return id;
 }
