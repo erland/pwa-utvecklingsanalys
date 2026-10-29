@@ -48,7 +48,7 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
    {view.groupId&&<><span aria-hidden="true">›</span><button type="button" className="secondary" onClick={()=>show({entry:'groups',groupId:view.groupId})}>{groups.find(g=>g.id===view.groupId)?.label??'Grupp'}</button></>}
    {view.uoId&&<><span aria-hidden="true">›</span><strong>{name(view.uoId)}</strong></>}
   </nav>
-  {view.uoId?<UoDetailBreakdown selectedUoId={view.uoId} data={data} state={state} metrics={metrics} activity={activity} year={year}/>:view.entry==='groups'&&!view.groupId&&model?
+  {view.uoId?<UoDetailBreakdown selectedUoId={view.uoId} selectedPartId={selection?.level==='part'?selection.partId:undefined} onPartSelect={partId=>{if(onSelectionChange)onSelectionChange(partId?{level:'part',uoId:view.uoId,groupId:view.groupId,partId}:{level:'uo',uoId:view.uoId,groupId:view.groupId})}} data={data} state={state} metrics={metrics} activity={activity} year={year}/>:view.entry==='groups'&&!view.groupId&&model?
    <ComparisonResults title="UO-grupper i analys" totalLabel="Totalt grupper" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={groups.map(g=>{
     const ids=uos.filter(id=>membership(id)===g.id);
     const values=ids.map(metricValue);
