@@ -1,0 +1,30 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('DEV-113 shows one organization-by-year table following UO and LO drilldown',async({page})=>{
+ const workbook=new ExcelJS.Workbook();
+ const sheet=workbook.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';
+ sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';
+ sheet.getCell('C26').value='IT timmar (h)';
+ sheet.getCell('D26').value=42;
+ sheet.getCell('E26').value=53;
+ sheet.getCell('D4').value='Utv. 27';
+ sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';
+ sheet.getCell('D5').value=0.025;
+ sheet.getCell('E5').value=0.017;
+ const buffer=Buffer.from(await workbook.xlsx.writeBuffer());
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'dev113.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
+ await expect(page.getByRole('status').filter({hasText:'dev113.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Organisation per år för valt organisationsurval'})).toBeVisible();
+ await expect(page.getByRole('table',{name:'Organisation per år'})).toHaveCount(1);
+ await expect(page.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
+ const navigator=page.getByRole('region',{name:'Utforska UO'});
+ await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).click();
+ await expect(page.getByRole('table',{name:'Organisation per år'})).toContainText('LO 1');
+});
