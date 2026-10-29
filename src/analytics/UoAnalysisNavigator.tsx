@@ -12,11 +12,11 @@ import {uoActivityRows,addActivitySplits} from './activityBreakdown';
 type Entry='groups'|'uos';
 type View={entry:Entry;groupId?:string;uoId?:string};
 const name=(id:string)=>decodeURIComponent(id.startsWith('uo:')?id.slice(3):id);
-export default function UoAnalysisNavigator({data,state,models,metrics,activity,year,selection,onSelectionChange}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all';year?:number;selection?:OrganizationSelection;onSelectionChange?:(next:OrganizationSelection)=>void}){
+export default function UoAnalysisNavigator({data,state,models,metrics,activity,year,selection,onSelectionChange,selectedModelId,onModelChange}:{data:CanonicalDataset;state:GapState;models:UoGroupModel[];metrics:Metric[];activity:Activity|'all';year?:number;selection?:OrganizationSelection;onSelectionChange?:(next:OrganizationSelection)=>void;selectedModelId?:string;onModelChange?:(id:string)=>void}){
  const [localView,setView]=useState<View>({entry:'uos'});
  const view:View=selection?{entry:selection.level==='groups'||selection.level==='group'?'groups':selection.groupId?'groups':'uos',groupId:selection.groupId,uoId:selection.uoId}:localView;
  const [modelId,setModelId]=useState('');
- const model=models.find(x=>x.id===modelId)??models[0];
+ const model=models.find(x=>x.id===(selectedModelId??modelId))??models[0];
  const uos=[...new Set(data.records.filter(r=>r.scope.axis==='work').map(r=>r.scope.axis==='work'?r.scope.uoId:''))].filter(Boolean).sort((a,b)=>name(a).localeCompare(name(b),'sv'));
  const membership=(id:string)=>model?groupForUo(model,id)?.id??'unassigned':'unassigned';
  const groups=model?[...model.groups.map(g=>({id:g.id,label:g.name})),...(uos.some(id=>membership(id)==='unassigned')?[{id:'unassigned',label:'Ej grupperad'}]:[])]:[];
@@ -39,7 +39,7 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
    <button type="button" className="secondary" aria-pressed={view.entry==='groups'} onClick={()=>show({entry:'groups'})}>UO-grupper</button>
    <button type="button" className="secondary" aria-pressed={view.entry==='uos'} onClick={()=>show({entry:'uos'})}>Alla UO</button>
   </div>
-  {view.entry==='groups'&&<label>Gruppindelning<select aria-label="Gruppindelning för analys" value={model?.id??''} onChange={e=>{setModelId(e.target.value);show({entry:'groups'})}}>
+  {view.entry==='groups'&&<label>Gruppindelning<select aria-label="Gruppindelning för analys" value={model?.id??''} onChange={e=>{setModelId(e.target.value);onModelChange?.(e.target.value);show({entry:'groups'})}}>
    {models.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
   </select></label>}
   {view.entry==='groups'&&!model&&<p>Skapa en UO-gruppmodell under Grupper för att jämföra grupper. Du kan redan nu använda Alla UO.</p>}
