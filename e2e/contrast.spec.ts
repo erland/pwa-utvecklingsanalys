@@ -3,7 +3,8 @@ const views=['Översikt','Import','Analys','Grupper','Relationer','Fördelningar
 test('WCAG contrast scan of primary view text and controls',async({page})=>{
  await page.goto('./');
  for(const name of views){
-  await page.getByRole('button',{name,exact:true}).click();
+  const control=page.getByRole('button',{name,exact:true});
+  if(await control.getAttribute('aria-disabled')!=='true')await control.click();
   const violations=await page.evaluate(()=>{
    const parse=(color:string)=>{const m=color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);return m?[Number(m[1]),Number(m[2]),Number(m[3])]:null};
    const luminance=(rgb:number[])=>{const channels=rgb.map(c=>{const x=c/255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4});return .2126*channels[0]+.7152*channels[1]+.0722*channels[2]};

@@ -5,7 +5,8 @@ test('400 percent text size: essential controls remain inside responsive content
  await page.goto('./');
  await page.evaluate(()=>{document.documentElement.style.fontSize='64px'});
  for(const name of views){
-  await page.getByRole('button',{name,exact:true}).click();
+  const control=page.getByRole('button',{name,exact:true});
+  if(await control.getAttribute('aria-disabled')!=='true')await control.click();
   await expect(page.getByRole('main')).toBeVisible();
   const clipped=await page.locator('main').evaluate(main=>{
    const max=document.documentElement.clientWidth;const issues:string[]=[];

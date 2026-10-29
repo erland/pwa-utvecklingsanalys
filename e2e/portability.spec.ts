@@ -19,8 +19,7 @@ test('restore historical semantic backup in a fresh profile without resurrecting
   await new Promise<void>((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});p.close();
  });
  await first.reload();
- await first.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(first.locator('.analysis-layout')).toHaveCount(0);
+ await expect(first.getByRole('button',{name:'Analys',exact:true})).toBeDisabled();
  await first.getByRole('button',{name:'Inställningar'}).click();
  await expect(first.getByRole('button',{name:'Ladda ner projektbackup'})).toBeEnabled();
  const requested=first.waitForEvent('download');
@@ -39,8 +38,7 @@ test('restore historical semantic backup in a fresh profile without resurrecting
  await second.getByRole('button',{name:'Bekräfta återställning'}).click();
  await expect(second.getByRole('status')).toContainText('Projekt återställt');
  await second.reload();
- await second.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(second.locator('.analysis-layout')).toHaveCount(0);
+ await expect(second.getByRole('button',{name:'Analys',exact:true})).toBeDisabled();
  await second.getByRole('button',{name:'Inställningar'}).click();
  const check=second.waitForEvent('download');
  await second.getByRole('button',{name:'Ladda ner projektbackup'}).click();
