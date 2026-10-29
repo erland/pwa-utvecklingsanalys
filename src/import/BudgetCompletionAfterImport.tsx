@@ -6,7 +6,7 @@ import type {CanonicalDataset} from '../domain/canonical';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 
 /** Import-format completion appears automatically; no manual rule creation is needed. */
-export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refreshKey:number;onAnalyze:()=>void}){
+export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,selectedSourceId,onCloseSource}:{refreshKey:number;onAnalyze:()=>void;selectedSourceId:string|null;onCloseSource:()=>void}){
  const [data,setData]=useState<CanonicalDataset|null>(null);
  const [state,setState]=useState<GapState|null>(null);
  const [error,setError]=useState('');
@@ -86,6 +86,21 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   }catch(e){setBulkMessage(`Kunde inte godkänna alla fördelningar: ${e instanceof Error?e.message:String(e)}`)}
   finally{setBulkBusy(false)}
  };
+ const renderGroup=(group:typeof yearGroups[number],showEditor:boolean)=>{
+  const {key,entries,preview,approved}=group;
+  const label=decodeURIComponent(entries[0].rule.uoId.startsWith('uo:')?entries[0].rule.uoId.slice(3):entries[0].rule.uoId)+' · '+entries[0].rule.year;
+  const editor=<LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(entries[0].decision?.overrides??[])} preview={preview} decision={approved?entries[0].decision:undefined} sharedMode quick onApprove={async(overrides,reason)=>{
+   const latest=await loadGapState();
+   const next=await saveShared(entries,overrides,reason,latest);
+   await saveGapState(next);
+   setState(next);
+  }}/>;
+  return <div key={key} className="mapping-settings" data-allocation-source={entries[0].rule.datasetId}>
+   <h3>{label} · Gemensam utvecklingsandel för IT- och verksamhetstimmar</h3>
+   <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
+   {showEditor?editor:<details><summary>Ändra fördelning för {label}</summary>{editor}</details>}
+  </div>;
+ };
  if(error)return <p role="alert">Kunde inte läsa kompletteringar: {error}</p>;
  if(!data||!state)return null;
  if(!candidates.length)return <div className="panel"><p>{diagnostics.length?'LO-fördelningen kan inte visas eftersom underlaget inte stämmer med aktivitetsmatrisen.':'Det finns inga LO-fördelningar att justera för importerade budgetunderlag.'}</p>{diagnostics.length>0&&<ul>{diagnostics.map((item,i)=><li key={i}>{item}</li>)}</ul>}<button className="primary" onClick={onAnalyze}>Gå till analys</button></div>;
@@ -95,16 +110,13 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze}:{refr
   {pending.length>0&&<button className="primary" disabled={bulkBusy} onClick={()=>void approveAll()}>{bulkBusy?'Godkänner…':`Godkänn alla föreslagna fördelningar (${pending.length})`}</button>}
   {pending.length>0&&<p>Massgodkännande använder de automatiskt föreslagna procentandelarna. Osparade ändringar i reglagen ingår inte; spara sådana i respektive tabell först.</p>}
   {bulkMessage&&<p role="status">{bulkMessage}</p>}
-  {yearGroups.map(({key,entries,preview,approved})=><div key={key} className="mapping-settings">
-   <h3>{decodeURIComponent(entries[0].rule.uoId.startsWith('uo:')?entries[0].rule.uoId.slice(3):entries[0].rule.uoId)} · {entries[0].rule.year} · Gemensam utvecklingsandel för IT- och verksamhetstimmar</h3>
-   <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
-   <LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(entries[0].decision?.overrides??[])} preview={preview} decision={approved?entries[0].decision:undefined} sharedMode quick onApprove={async(overrides,reason)=>{
-    const latest=await loadGapState();
-    const next=await saveShared(entries,overrides,reason,latest);
-    await saveGapState(next);
-    setState(next);
-   }}/>
-  </div>)}
+  {selectedSourceId&&<div className="notice" role="status"><strong>Fördelningar för vald källa</strong> – visa och justera även godkända beslut. <button className="secondary" onClick={onCloseSource}>Visa alla källor</button></div>}
+  {pending.filter(g=>!selectedSourceId||g.entries[0].rule.datasetId===selectedSourceId).map(g=>renderGroup(g,true))}
+  {!selectedSourceId&&yearGroups.some(g=>g.approved)&&<details aria-label="Godkända fördelningar" style={{marginTop:16}}><summary style={{cursor:'pointer',fontWeight:650}}>Godkända fördelningar ({yearGroups.filter(g=>g.approved).length}) – visa och ändra</summary>
+   {yearGroups.filter(g=>g.approved).map(g=>renderGroup(g,false))}
+  </details>}
+  {selectedSourceId&&yearGroups.filter(g=>g.approved&&g.entries[0].rule.datasetId===selectedSourceId).map(g=>renderGroup(g,true))}
+  {selectedSourceId&&!yearGroups.some(g=>g.entries[0].rule.datasetId===selectedSourceId)&&<p>Den valda källan har inga fördelningar att ändra.</p>}
   <p>Ej godkända fördelningar ingår inte som fastställd uppdelning i analysen. Du kan återkomma till Import och justera tidigare beslut.</p>
   <button className="secondary" onClick={onAnalyze}>Gå till analys</button>
  </section>;
