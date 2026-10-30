@@ -7,6 +7,7 @@ import GroupsView from './analytics/GroupsView';
 import ConfigurationView from './config/ConfigurationView';
 import PlanningView from './planning/PlanningView';
 import AllocationsView from './allocations/AllocationsView';
+import OptionalAllocationsView from './allocations/OptionalAllocationsView';
 import RelationsView from './domain/RelationsView';
 import AnalyticsView from './analytics/AnalyticsView';
 import ImportGuide from './import/ImportGuide';
@@ -62,6 +63,6 @@ export default function App(){
  {view==='planning'&&<PlanningView/>}
  {view==='configuration'&&<ConfigurationView/>}
  {view==='groups'&&<GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)}/>}
- {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p><PortabilityView/><ResetWorkspace/></section><section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)} embedded/></section></>}
+ {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><section className="panel"><h2>Projektnamn</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p><PortabilityView/><ResetWorkspace/></section><section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)} embedded/></section><section style={{marginTop:24}}><OptionalAllocationsView/></section></>}
  </main><footer>Utvecklingsanalys · Lokal analysarbetsyta</footer></div></div>
 }
