@@ -30,7 +30,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  const uoSlider=editor.getByRole('slider',{name:'UO Test UO – Fördelningsreglage'});
  await uoSlider.focus();await uoSlider.press('End');
  await expect(uoSlider).toHaveValue('100');
- await expect(rules.getByRole('status')).toContainText('Fördelningen sparades');
+ await expect(rules.getByRole('status').filter({hasText:'Fördelningen sparades'})).toBeVisible();
  await expect(editor.getByRole('button',{name:'Spara fördelning för Test UO'})).toHaveCount(0);
  await editor.getByRole('button',{name:/Test UO.*Visa LO/}).click();
  const loSlider=editor.getByRole('slider',{name:'LO A – Fördelningsreglage'});
