@@ -8,6 +8,7 @@ test('replace a source directly, delete it and retain configuration',async({page
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Ersätt'}).click();
  await upload(page,70);
  await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
@@ -17,6 +18,7 @@ test('replace a source directly, delete it and retain configuration',async({page
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('70 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Ta bort',exact:true}).click();
  await page.getByLabel('Bekräftelsetext').fill('TA BORT');
  await page.getByRole('button',{name:'Bekräfta borttagning'}).click();
@@ -26,6 +28,7 @@ test('replace a source directly, delete it and retain configuration',async({page
 test('clear all sources with explicit confirmation',async({page})=>{
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await upload(page,12);await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Töm importerade data'}).click();
  await expect(page.getByRole('button',{name:'Bekräfta borttagning'})).toBeDisabled();
  await page.getByLabel('Bekräftelsetext').fill('TA BORT');

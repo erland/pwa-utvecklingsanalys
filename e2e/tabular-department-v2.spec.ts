@@ -37,6 +37,7 @@ test('headcount is imported to semantic catalog and removed with its source',asy
  const observations=await semantic();
  expect(observations).toHaveLength(2);
  expect(observations.map(x=>x.value).sort((a,b)=>a-b)).toEqual([400,600]);
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Töm importerade data'}).click();
  await page.getByLabel('Bekräftelsetext').fill('TA BORT');
  await page.getByRole('button',{name:'Bekräfta borttagning'}).click();

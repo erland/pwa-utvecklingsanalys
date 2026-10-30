@@ -7,5 +7,6 @@ test('unknown sheet is rejected without manual mapping',async({page})=>{
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'ändrad.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByRole('status').filter({hasText:'ändrad.xlsx'})).toContainText('Okänt Excel-format');
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await expect(page.getByText('Inga godkända källor.')).toBeVisible();
 });
