@@ -15,10 +15,8 @@ export default function OptionalAllocationAnalysis({data,state,config,metrics,ac
  let error='';
  try{
   for(const dimension of config.dimensions){
-   const result=analyzeOptionalAllocation(data,state,config,dimension.id,{year,metrics,activity,uoIds:scope.uoIds.length?scope.uoIds:['uo:__none__'],...(organization.level==='part'&&organization.partId&&!organization.partId.startsWith('uo-overhead:')?{loIds:[organization.partId]}:{})});
+   const result=analyzeOptionalAllocation(data,state,config,dimension.id,{year,metrics,activity,uoIds:scope.uoIds.length?scope.uoIds:['uo:__none__'],...(organization.level==='part'&&organization.partId?{partId:organization.partId}:{})});
    if(!result.visible)continue;
-   // The current calculation API has no dedicated overhead-only filter; never show a misleading part-level pie.
-   if(organization.level==='part')continue;
    visible.push({id:dimension.id,name:dimension.name,categories:dimension.categories.map(category=>({name:category.name,value:result.amounts[category.id]??0})),total:result.total,unallocated:result.unallocated,unit:result.unit,coverage:result.coverage,unknownCount:result.unknownCount});
   }
  }catch(e){error=String(e)}
