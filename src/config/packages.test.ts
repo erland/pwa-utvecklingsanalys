@@ -1,6 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {buildPackage,parsePackage,conflicts,mergedPackage,proposeYear} from './packages';
 import type {Allocations} from '../allocations/model';
+import type {OptionalAllocations} from '../allocations/optionalModel';
 const alloc=(name='Arbetstyp'):Allocations=>({schemaVersion:1,dimensions:[{id:'d1',name,basis:'manual',categories:[{id:'a',name:'A'}]}],rules:[{dimensionId:'d1',entityId:'u1',year:2027,percentages:{a:60},origin:'uo-proposal'}]});
 const mapping={sheet:'Budget',uoCell:'B1',headerRow:11,areaColumn:2,labelColumn:3,startRow:19};
 describe('configuration package',()=>{
@@ -27,4 +28,20 @@ describe('configuration package',()=>{
   expect(replacement.sections.allocations?.rules).toHaveLength(1);
   expect(replacement.sections.mappings?.Main.sheet).toBe('New');
  });
+ it('detects optional allocation conflicts by name and preserves rules in a definitions-only merge',()=>{
+  const dimensions:OptionalAllocations['dimensions']=[{id:'effekt',name:'Effekt',categories:[{id:'direct',name:'Direkt'},{id:'indirect',name:'Förutsättningar'}],appliesTo:{metrics:['it_hours'],activities:'all'}}];
+  const original:OptionalAllocations={schemaVersion:2,dimensions,rules:[{dimensionId:'effekt',year:2027,scope:{kind:'lo',uoId:'uo1',loId:'lo1'},percentages:{direct:75}}]};
+  const current=buildPackage(alloc(),undefined,'full-configuration',undefined,original);
+  const duplicate:OptionalAllocations={schemaVersion:2,dimensions:[{...dimensions[0],id:'other-id',categories:[...dimensions[0].categories]}],rules:[]};
+  const incoming=buildPackage(undefined,undefined,'definitions-only',undefined,duplicate);
+  expect(conflicts(current,incoming).some(c=>c.section==='optionalAllocations')).toBe(true);
+  expect(()=>mergedPackage(current,incoming,'reject')).toThrow('CONFLICTS_REQUIRE_RESOLUTION');
+  // A definition-only import cannot silently orphan existing rules after changing a dimension ID.
+  expect(()=>mergedPackage(current,incoming,'replace')).toThrow('UNKNOWN_DIMENSION');
+  const sameId=buildPackage(undefined,undefined,'definitions-only',undefined,original);
+  const safe=mergedPackage(current,sameId,'replace');
+  expect(safe.sections.optionalAllocations?.rules).toEqual(original.rules);
+  expect(parsePackage(JSON.parse(JSON.stringify(safe)))).toEqual(safe);
+ });
+
 });

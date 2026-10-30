@@ -4,6 +4,8 @@ import {emptyCanonical} from '../domain/canonical';
 import {emptyAllocations} from '../allocations/model';
 import {emptyPlanning} from '../planning/model';
 import {backupToJson,validateBackup,exportFactsCsv} from './format';
+import {buildPackage} from '../config/packages';
+import type {OptionalAllocations} from '../allocations/optionalModel';
 it('roundtrips a source-aware project',()=>{
  const semantic=emptySemantic();
  semantic.entities.push({id:'uo',kind:'uo',name:'UO A',aliases:[]});
@@ -16,6 +18,15 @@ it('roundtrips a source-aware project',()=>{
  const canonical={...emptyCanonical(),records:[{id:'v2-cell',metric:'it_hours' as const,value:42,year:2027,activity:'unknown' as const,scope:{axis:'work' as const,uoId:'uo'},authority:'original' as const,approval:'reported' as const,workloadId:'workload',granularity:'total' as const,source:{datasetId:'d',sheet:'Data',cell:'C2'}}]};
  const v3={...extended,version:3 as const,canonical};
  expect(validateBackup(JSON.parse(backupToJson(v3)))).toEqual(v3);
+
+ const optional:OptionalAllocations={schemaVersion:2,dimensions:[{id:'impact',name:'Effekt',categories:[{id:'direct',name:'Direkt effekt'},{id:'indirect',name:'Förutsättningar'}],appliesTo:{metrics:['it_hours'],activities:'all'}}],rules:[{dimensionId:'impact',year:2027,scope:{kind:'uo',uoId:'uo'},percentages:{direct:70,indirect:20}}]};
+ const configuration=buildPackage(emptyAllocations(),undefined,'full-configuration',undefined,optional);
+ const withOptional={...v3,configuration,configurationHistory:[{id:'revision-1',reason:'Saved impact allocation',createdAt:'2026-10-30',data:configuration}]};
+ const restored=validateBackup(JSON.parse(backupToJson(withOptional)));
+ expect(restored.configuration?.sections.optionalAllocations).toEqual(optional);
+ expect(restored.configurationHistory?.[0].data.sections.optionalAllocations).toEqual(optional);
+ expect(()=>validateBackup({...withOptional,configuration:{...configuration,sections:{...configuration.sections,optionalAllocations:{...optional,rules:[{...optional.rules[0],percentages:{direct:110}}]}}}})).toThrow('INVALID_PERCENT');
+
  const allocations={...v3,gapState:{requirements:[],resolutions:[],activityAllocationRules:[{id:'v2rule',datasetId:'d',uoId:'uo',metric:'it_hours' as const,year:2027,reason:'LO proportions'}],activityAllocationDecisions:[{ruleId:'v2rule',fingerprint:'source-fingerprint',approvedAt:'2026-10-23',reason:'Reviewed'}]}};
  expect(validateBackup(JSON.parse(backupToJson(allocations)))).toEqual(allocations);
  expect(()=>validateBackup({...allocations,gapState:{...allocations.gapState,activityAllocationDecisions:[{...allocations.gapState.activityAllocationDecisions[0],reason:''}]}})).toThrow('INVALID_ACTIVITY_ALLOCATION_DECISION');
