@@ -65,7 +65,7 @@ export default function OptionalAllocationsView(){
  const findRule=(scope:OptionalAllocationScope)=>data.rules.find(r=>r.dimensionId===dimension?.id&&r.year===year&&optionalAllocationKey(r)===optionalAllocationKey({dimensionId:dimension!.id,year,scope,percentages:{}}));
  const saveRule=async(rule:OptionalAllocationRule)=>{const key=optionalAllocationKey(rule);await persist({...data,rules:[...data.rules.filter(r=>optionalAllocationKey(r)!==key),rule]})};
  const removeRule=async(rule:OptionalAllocationRule)=>await persist({...data,rules:data.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(rule))});
- const renderRule=(scope:OptionalAllocationScope,base?:OptionalAllocationRule)=>dimension&&<PercentEditor key={JSON.stringify([dimension.id,year,scope,revision])} dimension={dimension} year={year} scope={scope} own={findRule(scope)} base={base} onSave={saveRule} onRemove={removeRule}/>;
+ const renderRule=(scope:OptionalAllocationScope,base?:OptionalAllocationRule)=>dimension&&<PercentEditor key={JSON.stringify([dimension.id,year,scope,revision,findRule(scope)?.percentages,base?.percentages])} dimension={dimension} year={year} scope={scope} own={findRule(scope)} base={base} onSave={saveRule} onRemove={removeRule}/>;
  return <section aria-label="Valfria fördelningstyper" className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>Valfria fördelningar</h2><p>Skapa egna fördelningstyper för timmar eller kostnader. Reglerna ändrar inte importerade värden. Börja med ett UO-förslag och expandera ett UO för att överstyra en LO.</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
  <fieldset style={{minWidth:0}}><legend>Ny fördelningstyp</legend>
