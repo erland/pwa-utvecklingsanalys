@@ -1,5 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import UoAnalysisNavigator from './UoAnalysisNavigator';
+import OptionalAllocationAnalysis from '../allocations/OptionalAllocationAnalysis';
+import {readOptionalAllocations,type OptionalAllocations} from '../allocations/optionalModel';
 import {defaultOrganizationSelection,organizationScope,type OrganizationSelection} from './organizationContext';
 import {readConfiguration} from '../config/store';
 import type {UoGroupModel} from './groupModels';
@@ -28,7 +30,8 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  const preparedData=useMemo(()=>annualData?prepareAnalysisDataset(annualData,state).dataset:null,[annualData,state]);
  const [organization,setOrganization]=useState<OrganizationSelection>(defaultOrganizationSelection);
  const [models,setModels]=useState<UoGroupModel[]>([]),[activeGroupModelId,setActiveGroupModelId]=useState('');
- useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active){setModels(c?.sections.groups??[]);setActiveGroupModelId(c?.activeGroupModelId??'')}}).catch(()=>{if(active){setModels([]);setActiveGroupModelId('')}});return()=>{active=false}},[refreshKey]);
+ const [optionalAllocations,setOptionalAllocations]=useState<OptionalAllocations|null>(null);
+ useEffect(()=>{let active=true;readConfiguration().then(c=>{if(active){setModels(c?.sections.groups??[]);setActiveGroupModelId(c?.activeGroupModelId??'');setOptionalAllocations(readOptionalAllocations(c?.sections.optionalAllocations))}}).catch(()=>{if(active){setModels([]);setActiveGroupModelId('');setOptionalAllocations(null)}});return()=>{active=false}},[refreshKey]);
  const [resultGrouping,setResultGrouping]=useState<'organization'|'source'|'year'>('organization');
  const years=useMemo(()=>[...new Set((data?.records??[]).map(r=>r.year))].sort((a,b)=>a-b),[data]);
  const activity:Activity|'all'|'allocated'=unit==='costs'?'all':selectedActivities.length===2?'all':selectedActivities[0];
@@ -63,6 +66,7 @@ export default function CanonicalAnalytics({refreshKey,onOpenCompletions}:{refre
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} godkännanden behöver omprövas efter ändrat källunderlag.</p>}
  {result.excludedAlternatives>0&&<p className="notice">{result.excludedAlternatives} alternativa UO-observationer har uteslutits för att undvika dubbelräkning.</p>}
  {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} selection={organization} onSelectionChange={setOrganization} selectedModelId={activeGroupModelId}/>}
+ {axis==='work'&&preparedData&&optionalAllocations&&optionalAllocations.dimensions.length>0&&<OptionalAllocationAnalysis data={preparedData} state={state} config={optionalAllocations} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} organization={organization} groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]}/>}
  {year==='all'&&years.length>1&&<><AnnualTrendReport trend={trend} metrics={choices}/>
  <OrganizationYearLines matrix={groupYears}/></>}
  <details className="organization-year-details" aria-label="Organisation per år för valt organisationsurval"><summary>Visa detaljerad organisation per år</summary><p>Fördjupad jämförelse mellan organisationer och år. Vid flerårsval visas också utvecklingsdiagram och årsvisa förändringar ovan. Här visas samtliga år även om ett särskilt budgetår har valts. Streck betyder saknat värde, inte noll.</p>{groupYears&&groupYears.years.length>0?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Organisation per år"><thead><tr><th>Organisation</th>{groupYears.years.map(y=><th key={y}>{y}</th>)}<th>Totalt</th></tr></thead><tbody>{groupYears.rows.map(row=><tr key={row.key}><th scope="row">{row.label}</th>{row.values.map((value,i)=><td key={groupYears!.years[i]}>{value===null?'–':format(value)+' '+groupYears!.unit}</td>)}<td>{format(row.total)} {groupYears!.unit}</td></tr>)}</tbody><tfoot><tr><th scope="row">Totalt</th>{groupYears.yearTotals.map((value,i)=><td key={groupYears!.years[i]}>{format(value)} {groupYears!.unit}</td>)}<td>{format(groupYears.total)} {groupYears.unit}</td></tr></tfoot></table></div>:<p>Inga årsvärden för aktuellt urval.</p>}</details>
