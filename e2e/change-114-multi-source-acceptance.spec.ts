@@ -30,6 +30,7 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  const navigator=view.getByRole('region',{name:'Utforska UO'});
  await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(total).toHaveText('320 h');
+ await expect(view.getByText(/alternativa UO-observationer har uteslutits/)).toHaveCount(0);
  await expect(matrix).toHaveCount(1);
  await expect(matrix).toContainText('UO A');
  await expect(matrix).toContainText('UO B');
