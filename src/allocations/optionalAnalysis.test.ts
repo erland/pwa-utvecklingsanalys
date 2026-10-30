@@ -26,6 +26,16 @@ describe('DEV-132 optional allocation calculations',()=>{
   const lo=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,loIds:['a']});
   expect(lo.total).toBe(100);expect(lo.amounts.direct).toBe(90);
  });
+ it('respects selected metric and hides dimensions without overlapping metrics',()=>{
+  const chosen=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,metrics:['it_hours']});
+  expect(chosen.total).toBe(350);
+  const ignored=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,metrics:['business_hours']});
+  expect(ignored).toMatchObject({total:0,allocated:0,visible:false});
+ });
+ it('does not show development-only dimensions when maintenance is selected',()=>{
+  const onlyDevelopment:OptionalAllocations={...config,dimensions:[{...config.dimensions[0],appliesTo:{metrics:['it_hours'],activities:['development']}}]};
+  expect(analyzeOptionalAllocation(data,gaps,onlyDevelopment,'d',{activity:'maintenance'}).visible).toBe(false);
+ });
  it('does not show dimensions without applicable allocation rules',()=>{
   const empty={...config,rules:[]};
   const result=analyzeOptionalAllocation(data,gaps,empty,'d');
