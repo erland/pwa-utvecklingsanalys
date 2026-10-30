@@ -13,10 +13,16 @@ export type OptionalAllocationResult={
 const ruleFor=(data:OptionalAllocations,dimensionId:string,year:number,scope:OptionalAllocationScope):OptionalAllocationRule|undefined=>
  data.rules.find(r=>r.dimensionId===dimensionId&&r.year===year&&r.scope.kind===scope.kind&&r.scope.uoId===scope.uoId&&(scope.kind!=='lo'||r.scope.kind==='lo'&&r.scope.loId===scope.loId));
 
+/** Year-specific rules override shared rules; a year-specific UO proposal overrides a shared LO proposal. */
 export function effectiveOptionalRule(data:OptionalAllocations,dimensionId:string,year:number,scope:OptionalAllocationScope){
- const direct=ruleFor(data,dimensionId,year,scope);
- const inherited=scope.kind==='uo'?undefined:ruleFor(data,dimensionId,year,{kind:'uo',uoId:scope.uoId});
- return {rule:direct??inherited,origin:direct?'own' as const:inherited?'inherited' as const:'none' as const};
+ const parent:OptionalAllocationScope={kind:'uo',uoId:scope.uoId};
+ const annual=ruleFor(data,dimensionId,year,scope);
+ const annualUo=scope.kind==='uo'?undefined:ruleFor(data,dimensionId,year,parent);
+ const shared=ruleFor(data,dimensionId,0,scope);
+ const sharedUo=scope.kind==='uo'?undefined:ruleFor(data,dimensionId,0,parent);
+ const direct=annual??shared;
+ const rule=annual??annualUo??shared??sharedUo;
+ return {rule,origin:rule===direct?'own' as const:rule?'inherited' as const:'none' as const};
 }
 
 /** Uses the canonical query's approved and deduplicated LO/overhead detail rows as disjoint volumes. */
