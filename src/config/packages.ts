@@ -79,7 +79,6 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
   dimensions:[...(optionalCurrent?.dimensions??[]).filter(d=>!optionalIncoming.dimensions.some(x=>x.id===d.id)),...optionalIncoming.dimensions],
   rules:incoming.mode==='definitions-only'?(optionalCurrent?.rules??[]):[
    ...(optionalCurrent?.rules??[]).filter(r=>!optionalIncoming.rules.some(x=>JSON.stringify([x.dimensionId,x.year,x.scope])===JSON.stringify([r.dimensionId,r.year,r.scope]))),...optionalIncoming.rules]
-  ]
  }:optionalCurrent;
  const groups=[...(current.sections.groups??[]).filter(g=>!(incoming.sections.groups??[]).some(x=>x.id===g.id||x.name.toLocaleLowerCase('sv-SE')===g.name.toLocaleLowerCase('sv-SE'))),...(incoming.sections.groups??[])];
  const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups,optionalAllocations);
