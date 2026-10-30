@@ -10,6 +10,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'optional-allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
  await expect(page.getByRole('status')).toContainText('importerad');
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Valfria fördelningar i analysen'})).toHaveCount(0);
  await page.getByRole('button',{name:'Inställningar'}).click();
  const view=page.getByRole('region',{name:'Valfria fördelningstyper'});
  await expect(view).toBeVisible();
@@ -30,6 +32,19 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(view.getByLabel('LO A – Förutsättningsskapande')).toHaveValue('80');
  await expect(view.getByText('Egen regel',{exact:true})).toHaveCount(2);
  await page.getByRole('button',{name:'Analys',exact:true}).click();
+ const allocation=page.getByRole('region',{name:'Valfria fördelningar i analysen'});
+ await expect(allocation).toBeVisible();
+ await expect(allocation.getByRole('table',{name:'Fördelning Effekt'})).toBeVisible();
+ await expect(allocation.getByRole('rowheader',{name:'Förutsättningsskapande'})).toBeVisible();
+ await expect(allocation.getByRole('rowheader',{name:'Direkt effekt'})).toBeVisible();
+ await allocation.getByLabel('Presentera fördelning').selectOption('table');
+ await expect(allocation.getByRole('img')).toHaveCount(0);
+ await allocation.getByLabel('Presentera fördelning').selectOption('pie');
+ await expect(allocation.getByRole('img')).toHaveCount(1);
+ await page.getByRole('combobox',{name:'enhet'}).selectOption('costs');
+ await expect(page.getByRole('region',{name:'Valfria fördelningar i analysen'})).toHaveCount(0);
+ await page.getByRole('combobox',{name:'enhet'}).selectOption('hours');
+ await expect(allocation).toBeVisible();
  await page.getByRole('button',{name:'Inställningar'}).click();
  const reopened=page.getByRole('region',{name:'Valfria fördelningstyper'});
  await reopened.getByRole('button',{name:/Test UO.*Visa LO/}).click();
