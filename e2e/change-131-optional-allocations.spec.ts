@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('DEV-131 optional allocation is configured in Settings with LO override',async({page})=>{
+ const workbook=new ExcelJS.Workbook(),sheet=workbook.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: Test UO';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO A';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=50;
+ sheet.getCell('B29').value='LO B';sheet.getCell('C30').value='IT timmar (h)';sheet.getCell('D30').value=30;
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'optional-allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
+ await expect(page.getByRole('status')).toContainText('importerad');
+ await page.getByRole('button',{name:'Inställningar'}).click();
+ const view=page.getByRole('region',{name:'Valfria fördelningstyper'});
+ await expect(view).toBeVisible();
+ await view.getByLabel('Namn på fördelningstyp').fill('Effekt');
+ await view.getByLabel('Fördelningskategorier').fill('Förutsättningsskapande; Direkt effekt');
+ await view.getByRole('button',{name:'Skapa fördelningstyp'}).click();
+ await expect(view.getByLabel('Aktuell fördelningstyp')).toHaveValue(/.+/);
+ await view.getByRole('button',{name:/Test UO.*Visa LO/}).click();
+ const uo=view.getByLabel('UO-förslag – Förutsättningsskapande');
+ await uo.fill('60');
+ await view.getByLabel('UO-förslag – Direkt effekt').fill('40');
+ await view.getByRole('button',{name:'Spara UO-förslag'}).click();
+ await view.getByLabel('LO A – Förutsättningsskapande').fill('80');
+ await view.getByLabel('LO A – Direkt effekt').fill('20');
+ await view.getByRole('button',{name:'Spara LO A'}).click();
+ await expect(view.getByText('Egen regel')).toBeVisible();
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ await page.getByRole('button',{name:'Inställningar'}).click();
+ await expect(page.getByRole('region',{name:'Valfria fördelningstyper'}).getByRole('button',{name:'Ta bort egen regel'})).toHaveCount(2);
+});
