@@ -53,7 +53,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await allocation.getByLabel('Presentera fördelning').selectOption('pie');
  await expect(allocation.getByRole('img')).toHaveCount(1);
  await page.getByRole('combobox',{name:'enhet'}).selectOption('costs');
- await expect(allocation.getByLabel('Analysera fördelningstyp').locator('option',{hasText:'Effekt'})).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toHaveCount(0);
  await page.getByRole('combobox',{name:'enhet'}).selectOption('hours');
  await expect(allocation).toBeVisible();
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
