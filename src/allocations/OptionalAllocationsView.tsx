@@ -39,8 +39,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy]=await Promise.all([loadCanonical(),loadAllocations()]);
-  await initializeConfiguration(legacy,{});
-  const config=await readConfiguration();
+  const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
   if(!live)return;
   setData(readOptionalAllocations(config?.sections.optionalAllocations));
   const map=new Map<string,Unit>(),dateSet=new Set<number>();
@@ -53,7 +52,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   }
   setUnits([...map.values()].sort((a,b)=>label(a.id).localeCompare(label(b.id),'sv')).map(x=>({...x,los:x.los.sort((a,b)=>label(a).localeCompare(label(b),'sv'))})));
   setYears([...dateSet].sort());if(dateSet.size)setYear(Math.min(...dateSet));
- })().catch(e=>{if(live)setError(String(e))});return()=>{live=false}},[]);
+ })().catch(e=>{if(live)setError(String(e))});return()=>{live=false}},[mode]);
  const persist=async(next:OptionalAllocations)=>{parseOptionalAllocations(next);const config=await readConfiguration();if(!config)throw new Error('Konfiguration saknas');const history=await revisions();await commitConfiguration({...config,sections:{...config.sections,optionalAllocations:next}},'Update optional allocations',history.at(-1)?.id);setData(next);setRevision(v=>v+1);setNotice('Fördelningen sparades i projektets konfiguration och versionshistorik.')};
  const create=async()=>{setError('');setNotice('');try{
   const values=categories.split(';').map(v=>v.trim()).filter(Boolean);
