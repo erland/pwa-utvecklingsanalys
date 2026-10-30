@@ -1,12 +1,13 @@
+import {parseOptionalAllocations,type OptionalAllocations} from '../allocations/optionalModel';
 import {validateGroupModels,type UoGroupModel} from '../analytics/groupModels';
 import type {Allocations} from '../allocations/model';
 import {validateAllocation} from '../allocations/model';
 import type {Mapping} from '../import/uoBudget';
 
-export type PackageSection='allocations'|'mappings'|'groups';
+export type PackageSection='allocations'|'optionalAllocations'|'mappings'|'groups';
 export interface ConfigPackage {
  format:'utvecklingsanalys-config';version:1;exportedAt:string;mode:'definitions-only'|'full-configuration';
- sections:{allocations?:Allocations;mappings?:Record<string,Mapping>;groups?:UoGroupModel[]};
+ sections:{allocations?:Allocations;mappings?:Record<string,Mapping>;groups?:UoGroupModel[];optionalAllocations?:OptionalAllocations};
  activeGroupModelId?:string;
 }
 export type Conflict={section:PackageSection;key:string;reason:string};
@@ -28,15 +29,17 @@ export function parsePackage(input:unknown):ConfigPackage{
   }
  }
  if(p.sections.groups)validateGroupModels(p.sections.groups);
+ if(p.sections.optionalAllocations){parseOptionalAllocations(p.sections.optionalAllocations);if(p.mode==='definitions-only'&&p.sections.optionalAllocations.rules.length)throw new Error('DEFINITIONS_PACKAGE_HAS_RULES')}
  if(p.activeGroupModelId!==undefined&&(typeof p.activeGroupModelId!=='string'||!p.sections.groups?.some(m=>m.id===p.activeGroupModelId)))throw new Error('INVALID_ACTIVE_GROUP_MODEL');
- if(Object.keys(p.sections).some(k=>!['allocations','mappings','groups'].includes(k)))throw new Error('UNSUPPORTED_SECTION');
+ if(Object.keys(p.sections).some(k=>!['allocations','optionalAllocations','mappings','groups'].includes(k)))throw new Error('UNSUPPORTED_SECTION');
  return p;
 }
-export function buildPackage(allocations:Allocations|undefined,mappings:Record<string,Mapping>|undefined,mode:ConfigPackage['mode'],groups?:UoGroupModel[]):ConfigPackage{
+export function buildPackage(allocations:Allocations|undefined,mappings:Record<string,Mapping>|undefined,mode:ConfigPackage['mode'],groups?:UoGroupModel[],optionalAllocations?:OptionalAllocations):ConfigPackage{
  return parsePackage({format:'utvecklingsanalys-config',version:1,exportedAt:new Date().toISOString(),mode,sections:{
   ...(allocations?{allocations:mode==='definitions-only'?{...allocations,rules:[]}:allocations}:{}),
   ...(mappings?{mappings}:{}),
   ...(groups?{groups}:{}),
+  ...(optionalAllocations?{optionalAllocations:mode==='definitions-only'?{...optionalAllocations,rules:[]}:optionalAllocations}:{}),
  }});
 }
 export function conflicts(current:ConfigPackage, incoming:ConfigPackage):Conflict[]{
@@ -66,8 +69,19 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
   ];
   allocations={schemaVersion:1,dimensions,rules};
  }
+ const optionalCurrent=current.sections.optionalAllocations,optionalIncoming=incoming.sections.optionalAllocations;
+ if(optionalCurrent&&optionalIncoming){
+  const existing=new Map(optionalCurrent.dimensions.map(d=>[d.id,d]));
+  for(const dimension of optionalIncoming.dimensions){const old=existing.get(dimension.id);if(old&&JSON.stringify(old)!==JSON.stringify(dimension)&&policy==='reject')throw new Error('CONFLICTS_REQUIRE_RESOLUTION')}
+ }
+ const optionalAllocations=optionalIncoming?{
+  schemaVersion:2 as const,
+  dimensions:[...(optionalCurrent?.dimensions??[]).filter(d=>!optionalIncoming.dimensions.some(x=>x.id===d.id)),...optionalIncoming.dimensions],
+  rules:incoming.mode==='definitions-only'?(optionalCurrent?.rules??[]):[
+   ...(optionalCurrent?.rules??[]).filter(r=>!optionalIncoming.rules.some(x=>JSON.stringify([x.dimensionId,x.year,x.scope])===JSON.stringify([r.dimensionId,r.year,r.scope]))),...optionalIncoming.rules]
+ }:optionalCurrent;
  const groups=[...(current.sections.groups??[]).filter(g=>!(incoming.sections.groups??[]).some(x=>x.id===g.id||x.name.toLocaleLowerCase('sv-SE')===g.name.toLocaleLowerCase('sv-SE'))),...(incoming.sections.groups??[])];
- const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups);
+ const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups,optionalAllocations);
  const activeGroupModelId=incoming.activeGroupModelId??current.activeGroupModelId;
  return activeGroupModelId&&groups.some(m=>m.id===activeGroupModelId)?parsePackage({...next,activeGroupModelId}):next;
 }
