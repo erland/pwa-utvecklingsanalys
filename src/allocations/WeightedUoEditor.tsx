@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import type {CanonicalDataset} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {analyzeCanonical} from '../analytics/canonicalQuery';
@@ -9,6 +9,8 @@ const name=(id:string)=>decodeURIComponent(id.split(':').at(-1)??id);
 const format=(value:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(value);
 export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,onSave}:{data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;year:number;uoId:string;onSave:(next:OptionalAllocations)=>Promise<void>}){
  const [expanded,setExpanded]=useState(false),[pending,setPending]=useState<Map<string,Record<string,number>>|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const pendingRef=useRef<Map<string,Record<string,number>>|null>(null);
+ const savingRef=useRef(false);
  const first=dimension.categories[0].id,second=dimension.categories[1].id;
  const detail=useMemo(()=>{
   const years=year===0?[...new Set(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId).map(r=>r.year))]:[year];
@@ -25,21 +27,35 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  const base=useMemo(()=>new Map(parts.map(p=>[partKey(p.scope),percentagesFor(config,dimension.id,year,p.scope,[first,second])])),[config,dimension,year,first,second,detail]);
  const values=pending??base;
  const rollup=weightedSummary(parts,values,[first,second]);
- const setUo=(target:number)=>setPending(shiftBinaryUo(parts,values,first,second,target));
- const setPart=(part:WeightedPart,target:number)=>setPending(new Map(values).set(partKey(part.scope),{[first]:target,[second]:100-target}));
- const save=async()=>{setBusy(true);setError('');try{await onSave(putPartRules(config,dimension.id,year,parts,values));setPending(null)}catch(e){setError(String(e))}finally{setBusy(false)}};
+ const change=(next:Map<string,Record<string,number>>)=>{pendingRef.current=next;setPending(next);setError('')};
+ const setUo=(target:number)=>change(shiftBinaryUo(parts,pendingRef.current??base,first,second,target));
+ const setPart=(part:WeightedPart,target:number)=>change(new Map(pendingRef.current??base).set(partKey(part.scope),{[first]:target,[second]:100-target}));
+ const save=async()=>{
+  const snapshot=pendingRef.current;
+  if(!snapshot||savingRef.current)return;
+  savingRef.current=true;setBusy(true);setError('');
+  try{
+   await onSave(putPartRules(config,dimension.id,year,parts,snapshot));
+   pendingRef.current=null;setPending(null);
+  }catch(e){setError('Kunde inte spara fördelningen: '+String(e))}
+  finally{savingRef.current=false;setBusy(false)}
+ };
+ // Pointer release commits one snapshot; keyboard updates commit on key release.
+ const finishKey=(key:string)=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(key))void save()};
+
  return <section className="panel" aria-label={'Timviktad fördelning '+name(uoId)} style={{minWidth:0,marginTop:12}}>
   <button type="button" className="secondary" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'▾':'▸'} {name(uoId)} – {expanded?'Dölj LO':'Visa LO'}</button>
   {year===0&&<p>Grundfördelning för samtliga år. Årsvisa undantag behålls.</p>}
   <p><strong>{format(rollup.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</strong> · {format(rollup.allocatedHours[first])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[0].name} ({format(rollup.percentages[first])} %) · {format(rollup.allocatedHours[second])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[1].name} ({format(rollup.percentages[second])} %)</p>
-  <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="0.1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0} onChange={e=>setUo(Number(e.target.value))} style={{display:'block',width:'100%'}}/></label>
+  <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="0.1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0||busy} onChange={e=>setUo(Number(e.target.value))} onPointerUp={()=>void save()} onKeyUp={e=>finishKey(e.key)} onBlur={()=>void save()} style={{display:'block',width:'100%'}}/></label>
   {expanded&&<div style={{paddingLeft:12}}>{parts.map(p=><div key={partKey(p.scope)} className="panel" style={{marginTop:8}}>
    <label>{p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId)} – {format(p.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}
-    <input type="range" min="0" max="100" step="0.1" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – Fördelningsreglage'} value={values.get(partKey(p.scope))?.[first]??0} onChange={e=>setPart(p,Number(e.target.value))} style={{display:'block',width:'100%'}}/>
+    <input type="range" min="0" max="100" step="0.1" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – Fördelningsreglage'} value={values.get(partKey(p.scope))?.[first]??0} disabled={busy} onChange={e=>setPart(p,Number(e.target.value))} onPointerUp={()=>void save()} onKeyUp={e=>finishKey(e.key)} onBlur={()=>void save()} style={{display:'block',width:'100%'}}/>
    </label><p>{format(p.hours*(values.get(partKey(p.scope))?.[first]??0)/100)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[0].name} ({format(values.get(partKey(p.scope))?.[first]??0)} %) · {format(p.hours*(values.get(partKey(p.scope))?.[second]??0)/100)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[1].name} ({format(values.get(partKey(p.scope))?.[second]??0)} %)</p>
   </div>)}</div>}
   {detail.unknownCount>0&&<p role="status">Ofullständig aktivitetstäckning: {detail.coverage}</p>}
   {error&&<p role="alert">{error}</p>}
-  {pending&&<div className="actions"><button type="button" className="primary" disabled={busy} onClick={()=>void save()}>Spara fördelning för {name(uoId)}</button><button type="button" className="secondary" disabled={busy} onClick={()=>setPending(null)}>Ångra</button></div>}
+  {busy&&<p role="status">Sparar fördelningen…</p>}
+  {error&&pending&&<button type="button" className="secondary" disabled={busy} onClick={()=>void save()}>Försök spara igen</button>}
  </section>;
 }

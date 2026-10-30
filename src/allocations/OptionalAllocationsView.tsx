@@ -88,7 +88,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:units.map(u=>{
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
   const open=expanded.includes(u.id);
-  if(dimension?.categories.length===2&&canonicalData)return <WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id,revision])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>;
+  if(dimension?.categories.length===2&&canonicalData)return <WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>;
   return <div key={u.id} className="panel" style={{marginTop:12}}><button type="button" className="secondary" aria-expanded={open} onClick={()=>setExpanded(prev=>open?prev.filter(id=>id!==u.id):[...prev,u.id])}>{open?'▾':'▸'} {label(u.id)} – {open?'Dölj detaljer':'Visa LO'}</button>
   {renderRule(scope)}
   {open&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}
