@@ -12,11 +12,8 @@ test('chart modes reuse imported data and preserve accessible totals',async({pag
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  const navigator=v2.getByRole('region',{name:'Utforska UO'});
- await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('bars');
- await expect(navigator.getByRole('group',{name:'Stapeldiagram: UO i analys'})).toContainText('UO A');
- await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('distribution');
- await expect(navigator.getByRole('group',{name:'Fördelning: UO i analys'})).toBeVisible();
- await navigator.getByRole('combobox',{name:'Presentation för UO i analys'}).selectOption('table');
+ await expect(navigator.getByRole('combobox',{name:'Presentation för UO i analys'})).toHaveCount(0);
  await expect(navigator.getByRole('table',{name:'UO i analys'})).toContainText('42');
+ await expect(navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'UO A'})).toBeVisible();
 
 });
