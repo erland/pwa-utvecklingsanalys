@@ -32,7 +32,6 @@ test('DEV-124 organization lines track year matrix and hierarchy selection',asyn
  await expect(seriesPaths.nth(1)).toHaveAttribute('stroke-dasharray','9 4');
  const legendSamples=lines.getByRole('list',{name:'Diagramförklaring'}).locator('svg line');
  await expect(legendSamples.nth(1)).toHaveAttribute('stroke-dasharray','9 4');
- await page.locator('details.organization-year-details > summary').click();
  const matrix=page.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toContainText('UO A');
  await expect(matrix).toContainText('UO B');
