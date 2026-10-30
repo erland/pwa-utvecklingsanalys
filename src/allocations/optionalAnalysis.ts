@@ -36,7 +36,7 @@ export function analyzeOptionalAllocation(dataset:CanonicalDataset,gaps:GapState
  const amounts=Object.fromEntries(dimension.categories.map(c=>[c.id,0])) as Record<string,number>;
  let total=0,unallocated=0,unknownCount=0,staleApprovals=0,excludedAlternatives=0,visible=false;
  for(const year of (compatible?years:[]))for(const uoId of uos){
-  const detail=analyzeCanonical(dataset,gaps,{axis:'work',metrics,activity,year,detailUoId:uoId,datasetIds:filter.datasetIds,loIds:filter.partId?[filter.partId.startsWith('uo-overhead:')?'__no_matching_lo__':filter.partId]:filter.loIds});
+  const detail=analyzeCanonical(dataset,gaps,{axis:'work',metrics,activity,year,detailUoId:uoId,datasetIds:filter.datasetIds,loIds:filter.partId&&!filter.partId.startsWith('uo-overhead:')?[filter.partId]:filter.loIds});
   unknownCount+=detail.unknownCount;
   // Approval/matrix metadata is global for a prepared projection, not additive per UO/year.
   staleApprovals=Math.max(staleApprovals,detail.staleApprovals);
