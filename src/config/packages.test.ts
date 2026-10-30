@@ -36,10 +36,8 @@ describe('configuration package',()=>{
   const incoming=buildPackage(undefined,undefined,'definitions-only',undefined,duplicate);
   expect(conflicts(current,incoming).some(c=>c.section==='optionalAllocations')).toBe(true);
   expect(()=>mergedPackage(current,incoming,'reject')).toThrow('CONFLICTS_REQUIRE_RESOLUTION');
-  const renamed=mergedPackage(current,incoming,'replace');
-  expect(renamed.sections.optionalAllocations?.dimensions).toHaveLength(1);
   // A definition-only import cannot silently orphan existing rules after changing a dimension ID.
-  expect(()=>parsePackage(renamed)).toThrow('UNKNOWN_DIMENSION');
+  expect(()=>mergedPackage(current,incoming,'replace')).toThrow('UNKNOWN_DIMENSION');
   const sameId=buildPackage(undefined,undefined,'definitions-only',undefined,original);
   const safe=mergedPackage(current,sameId,'replace');
   expect(safe.sections.optionalAllocations?.rules).toEqual(original.rules);
