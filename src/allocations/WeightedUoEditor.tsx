@@ -20,12 +20,12 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  const save=async()=>{setBusy(true);setError('');try{await onSave(putPartRules(config,dimension.id,year,parts,values));setPending(null)}catch(e){setError(String(e))}finally{setBusy(false)}};
  return <section className="panel" aria-label={'Timviktad fördelning '+name(uoId)} style={{minWidth:0,marginTop:12}}>
   <button type="button" className="secondary" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'▾':'▸'} {name(uoId)} – {expanded?'Dölj LO':'Visa LO'}</button>
-  <p><strong>{format(rollup.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</strong> · {format(rollup.percentages[first])} % {dimension.categories[0].name} · {format(rollup.percentages[second])} % {dimension.categories[1].name}</p>
+  <p><strong>{format(rollup.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</strong> · {format(rollup.allocatedHours[first])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[0].name} ({format(rollup.percentages[first])} %) · {format(rollup.allocatedHours[second])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[1].name} ({format(rollup.percentages[second])} %)</p>
   <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="0.1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0} onChange={e=>setUo(Number(e.target.value))} style={{display:'block',width:'100%'}}/></label>
   {expanded&&<div style={{paddingLeft:12}}>{parts.map(p=><div key={partKey(p.scope)} className="panel" style={{marginTop:8}}>
    <label>{p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId)} – {format(p.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}
     <input type="range" min="0" max="100" step="0.1" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – Fördelningsreglage'} value={values.get(partKey(p.scope))?.[first]??0} onChange={e=>setPart(p,Number(e.target.value))} style={{display:'block',width:'100%'}}/>
-   </label><p>{format(values.get(partKey(p.scope))?.[first]??0)} % {dimension.categories[0].name} · {format(values.get(partKey(p.scope))?.[second]??0)} % {dimension.categories[1].name}</p>
+   </label><p>{format(p.hours*(values.get(partKey(p.scope))?.[first]??0)/100)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[0].name} ({format(values.get(partKey(p.scope))?.[first]??0)} %) · {format(p.hours*(values.get(partKey(p.scope))?.[second]??0)/100)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[1].name} ({format(values.get(partKey(p.scope))?.[second]??0)} %)</p>
   </div>)}</div>}
   {detail.unknownCount>0&&<p role="status">Ofullständig aktivitetstäckning: {detail.coverage}</p>}
   {error&&<p role="alert">{error}</p>}
