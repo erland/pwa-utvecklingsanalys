@@ -21,10 +21,10 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  return <section className="panel" aria-label={'Timviktad fördelning '+name(uoId)} style={{minWidth:0,marginTop:12}}>
   <button type="button" className="secondary" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'▾':'▸'} {name(uoId)} – {expanded?'Dölj LO':'Visa LO'}</button>
   <p><strong>{format(rollup.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</strong> · {format(rollup.percentages[first])} % {dimension.categories[0].name} · {format(rollup.percentages[second])} % {dimension.categories[1].name}</p>
-  <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0} onChange={e=>setUo(Number(e.target.value))} style={{display:'block',width:'100%'}}/></label>
+  <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="0.1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0} onChange={e=>setUo(Number(e.target.value))} style={{display:'block',width:'100%'}}/></label>
   {expanded&&<div style={{paddingLeft:12}}>{parts.map(p=><div key={partKey(p.scope)} className="panel" style={{marginTop:8}}>
    <label>{p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId)} – {format(p.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}
-    <input type="range" min="0" max="100" step="1" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – Fördelningsreglage'} value={values.get(partKey(p.scope))?.[first]??0} onChange={e=>setPart(p,Number(e.target.value))} style={{display:'block',width:'100%'}}/>
+    <input type="range" min="0" max="100" step="0.1" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – Fördelningsreglage'} value={values.get(partKey(p.scope))?.[first]??0} onChange={e=>setPart(p,Number(e.target.value))} style={{display:'block',width:'100%'}}/>
    </label><p>{format(values.get(partKey(p.scope))?.[first]??0)} % {dimension.categories[0].name} · {format(values.get(partKey(p.scope))?.[second]??0)} % {dimension.categories[1].name}</p>
   </div>)}</div>}
   {detail.unknownCount>0&&<p role="status">Ofullständig aktivitetstäckning: {detail.coverage}</p>}
