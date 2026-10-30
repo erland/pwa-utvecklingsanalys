@@ -30,7 +30,7 @@ const legacyNavigationGroups: {label:string;items:ViewId[]}[]=[
 export default function App(){
  const[replaceSourceId,setReplaceSourceId]=useState<string|null>(null);
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
- const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'Arbetsflöde',items:['overview','import','analysis'] as ViewId[]},{label:'Projekt',items:['settings'] as ViewId[]}];
+ const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'Arbetsflöde',items:['overview','import','allocations','analysis'] as ViewId[]},{label:'Projekt',items:['settings'] as ViewId[]}];
  const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
  const[overview,setOverview]=useState<OverviewStatus|null>(null);const[overviewError,setOverviewError]=useState('');
  useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>recoverSourceMutation()).then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
@@ -59,7 +59,7 @@ export default function App(){
  {view==='analysis'&&(analysisAvailable?<AnalyticsView refreshKey={analysisRefresh} onOpenCompletions={()=>setView(legacyNav?'gaps':'import')}/>:<section className="panel"><h2>Importera analysuppgifter först</h2><p>Det finns ännu inga importerade analysvärden i projektet.</p><button className="primary" onClick={()=>setView('import')}>Gå till importen</button></section>)}
  {view==='import'&&<ImportGuide replaceId={replaceSourceId} setReplaceId={setReplaceSourceId} onAnalyze={()=>{void openAnalysis()}} project={project} onProject={p=>{setProject(p);setAnalysisRefresh(v=>v+1)}}/>}
  {view==='relations'&&<RelationsView/>}
- {view==='allocations'&&<AllocationsView/>}
+ {view==='allocations'&&(legacyNav?<AllocationsView/>:<><div className="eyebrow">ARBETSFÖRDELNING</div><h1>Fördelningar</h1><OptionalAllocationsView mode="rules"/></>)}
  {view==='planning'&&<PlanningView/>}
  {view==='configuration'&&<ConfigurationView/>}
  {view==='groups'&&<GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)}/>}
