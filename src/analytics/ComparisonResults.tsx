@@ -44,7 +44,7 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen}:{r
    <thead><tr><th>Delområde</th><th>Värde</th><th>Andel</th></tr></thead>
    <tbody>{rows.map(row=><tr key={row.key}><th scope="row">{clickableLabel(row)}</th><td>{format(row.value)}</td><td>{total!==null&&total>0&&row.value!==null?(100*row.value/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td></tr>)}</tbody>
    <tfoot><tr><th scope="row">{totalLabel}</th><td>{format(total)}</td><td>{total!==null&&total>0?'100 %':'–'}</td></tr></tfoot>
-  </table></div>:<div className="canonical-trend" role="group" aria-label={'Stapeldiagram: '+title}>{rows.map(row=><div className="canonical-trend-row" key={row.key}><span>{row.label}</span><div className="canonical-trend-track"><div className="canonical-trend-fill" style={{width:row.value===null?'0%':100*row.value/max+'%'}}/></div><strong>{format(row.value)}</strong></div>)}</div>}
+  </table></div>:<div className="canonical-trend" role="group" aria-label={'Stapeldiagram: '+title}>{rows.map(row=><div className="canonical-trend-row" key={row.key}><span>{clickableLabel(row)}</span><div className="canonical-trend-track"><div className="canonical-trend-fill" style={{width:row.value===null?'0%':100*row.value/max+'%'}}/></div><strong>{format(row.value)}</strong></div>)}</div>}
   {!rows.length&&<p>Inga delområden att visa för aktuellt urval.</p>}
  </section>;
 }
