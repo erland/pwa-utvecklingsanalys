@@ -24,7 +24,7 @@ export default function UoDetailBreakdown({data,state,metrics,activity,year,sele
    <option value="">Välj UO</option>{uos.map(id=><option key={id} value={id}>{decodeURIComponent(id.slice(3))}</option>)}
   </select></label>}
   {error&&<p role="alert">{error}</p>}
-  {result&&<>{selectedPartId&&<button type="button" className="secondary" onClick={()=>onPartSelect?.(undefined)}>Visa alla LO och UO Övergripande</button>}<ComparisonResults title={selectedPartId?'Vald delpost':'LO och UO Övergripande'} totalLabel={selectedPartId?'Totalt vald delpost':'Totalt UO'} unit={result.unit} rows={visiblePartRows(result.rows.map(row=>({...row,split:activity==='all'?splits[row.key]:undefined})),{level:selectedPartId?'part':'uo',uoId,partId:selectedPartId})} onOpen={selectedPartId?undefined:onPartSelect} openLabel="Visa delpost"/>
+  {result&&<>{selectedPartId&&<button type="button" className="secondary" onClick={()=>onPartSelect?.(undefined)}>Visa alla LO och UO Övergripande</button>}<ComparisonResults title={selectedPartId?'Vald delpost':'LO och UO Övergripande'} totalLabel={selectedPartId?'Totalt vald delpost':'Totalt UO'} unit={result.unit} rows={visiblePartRows(result.rows.map(row=>({...row,split:activity==='all'?splits[row.key]:undefined})),{level:selectedPartId?'part':'uo',uoId,partId:selectedPartId})} onOpen={selectedPartId?undefined:onPartSelect}/>
   {result.unknownCount>0&&<p role="status">Aktivitetsfördelningen är ofullständig för {result.unknownCount} underlag. Saknade värden visas inte som noll.</p>}
   </>}
  </section>;
