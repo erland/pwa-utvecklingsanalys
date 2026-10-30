@@ -3,6 +3,7 @@ import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
 import WeightedUoEditor from './WeightedUoEditor';
+import {bulkInitializeUos} from './bulkInitialize';
 import {loadAllocations} from '../allocations/store';
 import {commitConfiguration,initializeConfiguration,readConfiguration,revisions} from '../config/store';
 import {emptyOptionalAllocations,optionalAllocationKey,parseOptionalAllocations,readOptionalAllocations,type OptionalAllocationDimension,type OptionalAllocationRule,type OptionalAllocationScope,type OptionalAllocations} from './optionalModel';
@@ -42,6 +43,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [activities,setActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']);
  const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(0),[expanded,setExpanded]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
+ const [bulkCategory,setBulkCategory]=useState<string|null>(null),[bulkBusy,setBulkBusy]=useState(false);
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
   const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
@@ -67,6 +69,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   await persist(next);setDimensionId(dimension.id);setName('');
  }catch(e){setError(String(e))}};
  const dimension=data.dimensions.find(d=>d.id===dimensionId)??data.dimensions[0];
+ const runBulk=async()=>{if(!dimension||!bulkCategory||bulkBusy)return;setBulkBusy(true);setError('');try{await persist(bulkInitializeUos(data,dimension.id,year,units.map(u=>u.id),bulkCategory));setBulkCategory(null)}catch(e){setError(String(e))}finally{setBulkBusy(false)}};
  const findRule=(scope:OptionalAllocationScope)=>data.rules.find(r=>r.dimensionId===dimension?.id&&r.year===year&&optionalAllocationKey(r)===optionalAllocationKey({dimensionId:dimension!.id,year,scope,percentages:{}}));
  const saveRule=async(rule:OptionalAllocationRule)=>{const key=optionalAllocationKey(rule);await persist({...data,rules:[...data.rules.filter(r=>optionalAllocationKey(r)!==key),rule]})};
  const removeRule=async(rule:OptionalAllocationRule)=>await persist({...data,rules:data.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(rule))});
@@ -82,9 +85,18 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  </fieldset>}
  {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
  {mode==='rules'&&data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
-  <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>setDimensionId(e.target.value)}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-  <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>setYear(Number(e.target.value))}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
+  <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>{setDimensionId(e.target.value);setBulkCategory(null)}}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+  <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>{setYear(Number(e.target.value));setBulkCategory(null)}}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
  </div><p>Omfattning: {dimension?.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}. En LO utan egen regel ärver UO-förslaget.</p>
+ {dimension&&units.length>0&&<section aria-label="Snabbfördela samtliga UO" className="panel">
+  <h4>Snabbfördela samtliga UO</h4>
+  <p>Välj vilken kategori som ska få 100 %. Det påverkar {units.length} UO {year===0?'i grundfördelningen för samtliga år':'för år '+year}. Individuella regler inom valt UO ersätts för denna period.</p>
+  <div className="actions">{dimension.categories.map(c=><button key={c.id} type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkCategory(c.id)}>100 % {c.name}</button>)}</div>
+  {bulkCategory&&<div className="panel" role="group" aria-label="Bekräfta snabbfördelning">
+   <p>Bekräfta: {units.length} UO sätts till 100 % {dimension.categories.find(c=>c.id===bulkCategory)?.name} {year===0?'för alla år (årsundantag behålls)':'för '+year}. Alla andra kategorier blir 0 %. Detta sparas som en enda revision.</p>
+   <div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta snabbfördelning</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkCategory(null)}>Avbryt</button></div>
+  </div>}
+ </section>}
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:units.map(u=>{
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
   const open=expanded.includes(u.id);
