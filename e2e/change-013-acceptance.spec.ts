@@ -23,7 +23,6 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await page.getByRole('button',{name:'Lägg till grupp'}).click();
  await page.getByLabel('Gruppnamn').fill('Digital utveckling');
  await page.getByLabel('UO A').check();
- await page.getByLabel('Aktiv gruppindelning').selectOption({label:'Acceptansmodell'});
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
 
