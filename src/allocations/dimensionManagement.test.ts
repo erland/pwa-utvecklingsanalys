@@ -26,7 +26,9 @@ describe('DEV-149 fördelningstyper',()=>{
   const before=original();
   const renamed=updateDimension(before,'d',{name:'Omdöpt',names:['Första','Andra'],metrics:['it_hours'],activities:['development']},()=> 'x');
   expect(renamed.rules).toEqual(before.rules);
-  const reduced=updateDimension(before,'d',{name:'Ny',names:['A','B'].slice(0,1),metrics:['it_hours'],activities:['development']},()=> 'x',true);
+  before.dimensions[0].categories.push({id:'c',name:'C'});
+  before.rules[0].percentages.c=0;
+  const reduced=updateDimension(before,'d',{name:'Ny',names:['A','B'],metrics:['it_hours'],activities:['development']},()=> 'x',true);
   expect(reduced.rules).toHaveLength(0);
  });
  it('tar bort typ och tillhörande regler utan att ändra andra typer',()=>{
