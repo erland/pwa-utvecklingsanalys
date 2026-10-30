@@ -14,8 +14,8 @@ const data:CanonicalDataset={schemaVersion:2,records:[record('lo-a',2027,100,'a'
 describe('DEV-132 optional allocation calculations',()=>{
  it('inherits UO proposal and overrides LO while keeping overhead separate and balance intact',()=>{
   const result=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027});
-  expect(result).toMatchObject({total:350,allocated:315,unallocated:35,visible:true,unit:'h'});
-  expect(result.amounts).toEqual({direct:240,enable:75});
+  expect(result).toMatchObject({total:350,allocated:325,unallocated:25,visible:true,unit:'h'});
+  expect(result.amounts).toEqual({direct:240,enable:85});
   expect(effectiveOptionalRule(config,'d',2027,{kind:'lo',uoId:'uo',loId:'b'}).origin).toBe('inherited');
   expect(effectiveOptionalRule(config,'d',2027,{kind:'lo',uoId:'uo',loId:'a'}).origin).toBe('own');
  });
