@@ -1,4 +1,4 @@
-import type {Activity,Metric} from '../domain/canonical';
+import type {Metric} from '../domain/canonical';
 
 /** Optional dimensions are independent of the legacy DEV-008 allocations and canonical source records. */
 export type OptionalAllocationScope=
