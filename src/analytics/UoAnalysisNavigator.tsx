@@ -49,8 +49,8 @@ export default function UoAnalysisNavigator({data,state,models,metrics,activity,
     const ids=uos.filter(id=>membership(id)===g.id);
     const values=ids.map(metricValue);
     const splits=ids.map(activityRows);return {key:g.id,label:g.label,value:values.every(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null,split:activity==='all'&&splits.every(v=>v!==null)?addActivitySplits(splits.filter((v):v is NonNullable<typeof v>=>v!==null)):undefined};
-   })} openLabel="Visa UO" onOpen={id=>show({entry:'groups',groupId:id})}/>:
-   <ComparisonResults title="UO i analys" totalLabel="Totalt UO" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={displayedUos.map(id=>({key:id,label:name(id),value:metricValue(id),split:activity==='all'?activityRows(id)??undefined:undefined}))} openLabel="Visa LO" onOpen={id=>show({entry:view.entry,groupId:view.groupId,uoId:id})}/>}
+   })} onOpen={id=>show({entry:'groups',groupId:id})}/>:
+   <ComparisonResults title="UO i analys" totalLabel="Totalt UO" unit={metrics.every(m=>m.endsWith('_hours'))?'h':'SEK'} rows={displayedUos.map(id=>({key:id,label:name(id),value:metricValue(id),split:activity==='all'?activityRows(id)??undefined:undefined}))} onOpen={id=>show({entry:view.entry,groupId:view.groupId,uoId:id})}/>}
 
  </section>;
 }

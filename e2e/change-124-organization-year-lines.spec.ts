@@ -37,7 +37,7 @@ test('DEV-124 organization lines track year matrix and hierarchy selection',asyn
  await expect(matrix).toContainText('UO A');
  await expect(matrix).toContainText('UO B');
  const navigator=page.getByRole('region',{name:'Utforska UO'});
- await navigator.getByRole('group',{name:'Cirkeldiagram: UO i analys'}).getByRole('button',{name:'Visa LO'}).first().click();
+ await navigator.getByRole('group',{name:'Cirkeldiagram: UO i analys'}).getByRole('button',{name:'UO A',exact:true}).click();
  await expect(lines.getByRole('list',{name:'Diagramförklaring'})).toContainText('LO A');
  // Year trends belong to multi-year analysis only; the current-year result remains.
  await page.getByLabel('period',{exact:true}).selectOption('2027');

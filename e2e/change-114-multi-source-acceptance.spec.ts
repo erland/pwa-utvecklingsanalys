@@ -44,7 +44,7 @@ test('DEV-114 multi-source acceptance: totals, yearly matrix, filters, UO drilld
  await expect(view.getByRole('group',{name:'Datakällor'})).toHaveCount(0);
  await expect(view.getByRole('group',{name:'UO',exact:true})).toHaveCount(0);
  await expect(view.getByRole('group',{name:'LO',exact:true})).toHaveCount(0);
- await uoPie.getByRole('button',{name:'Visa LO'}).first().click();
+ await uoPie.getByRole('button',{name:'UO A',exact:true}).click();
  const selectedTotal=await total.textContent();
  expect(['100 h','220 h']).toContain(selectedTotal?.trim());
  await expect(matrix.locator('tfoot')).toContainText(selectedTotal!.trim());

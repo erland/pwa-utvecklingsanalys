@@ -26,6 +26,6 @@ test('DEV-113 shows one organization-by-year table following UO and LO drilldown
  await expect(page.getByRole('table',{name:'Organisation per år'})).toHaveCount(1);
  await expect(page.getByRole('region',{name:'Fördjupade analysrapporter'})).toHaveCount(0);
  const navigator=page.getByRole('region',{name:'Utforska UO'});
- await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'Visa LO'}).click();
+ await navigator.getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'UO A',exact:true}).click();
  await expect(page.getByRole('table',{name:'Organisation per år'})).toContainText('LO 1');
 });
