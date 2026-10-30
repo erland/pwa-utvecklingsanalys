@@ -41,6 +41,22 @@ describe('DEV-132 optional allocation calculations',()=>{
   const result=analyzeOptionalAllocation(data,gaps,empty,'d');
   expect(result).toMatchObject({visible:false,allocated:0,unallocated:390,total:390});
  });
+ it('shows only selected LO or UO overhead with inherited and overridden percentages',()=>{
+  const lo=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,uoIds:['uo'],partId:'a'});
+  expect(lo).toMatchObject({visible:true,total:100,allocated:100,unallocated:0});
+  expect(lo.amounts).toEqual({direct:90,enable:10});
+  const overhead=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,uoIds:['uo'],partId:'uo-overhead:uo'});
+  expect(overhead).toMatchObject({visible:true,total:50,allocated:45,unallocated:5});
+  expect(overhead.amounts).toEqual({direct:30,enable:15});
+  const absent=analyzeOptionalAllocation(data,gaps,config,'d',{year:2027,uoIds:['uo'],partId:'missing'});
+  expect(absent).toMatchObject({visible:false,total:0,allocated:0});
+ });
+ it('excludes other UOs even when LO identities are the same',()=>{
+  const second:CanonicalDataset={...data,records:[...data.records,{...record('other-uo-a',2027,300,'a','lo'),scope:{axis:'work',uoId:'another',loId:'a'}}]};
+  expect(analyzeOptionalAllocation(second,gaps,config,'d',{year:2027,uoIds:['uo'],partId:'a'}).total).toBe(100);
+  expect(analyzeOptionalAllocation(second,gaps,config,'d',{year:2027,uoIds:['another'],partId:'a'}).total).toBe(300);
+  expect(analyzeOptionalAllocation(second,gaps,config,'d',{year:2027,uoIds:['another'],partId:'a'}).visible).toBe(false);
+ });
  it('never mutates canonical records or adds original volume',()=>{
   const before=JSON.stringify(data);
   analyzeOptionalAllocation(data,gaps,config,'d');
