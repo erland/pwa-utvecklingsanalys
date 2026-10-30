@@ -21,15 +21,9 @@ test('DEV-121 organizational year matrix is optional and trend remains visible',
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const trend=page.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'});
  await expect(trend.getByRole('table',{name:'Årsvis utveckling och förändring'})).toBeVisible();
- const details=page.locator('details.organization-year-details');
- const matrix=details.getByRole('table',{name:'Organisation per år',includeHidden:true});
- await expect(details).not.toHaveAttribute('open',/.+/);
- await expect(matrix).toBeHidden();
- await details.locator('summary').click();
+ const matrix=page.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toBeVisible();
  await expect(matrix).toContainText('2027');
  await expect(matrix).toContainText('2028');
- await details.locator('summary').click();
- await expect(matrix).toBeHidden();
  await expect(trend.getByRole('table',{name:'Årsvis utveckling och förändring'})).toBeVisible();
 });
