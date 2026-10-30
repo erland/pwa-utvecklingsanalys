@@ -1,4 +1,4 @@
-import {parseOptionalAllocations,type OptionalAllocations} from '../allocations/optionalModel';
+import {optionalAllocationKey,parseOptionalAllocations,type OptionalAllocations} from '../allocations/optionalModel';
 import {validateGroupModels,type UoGroupModel} from '../analytics/groupModels';
 import type {Allocations} from '../allocations/model';
 import {validateAllocation} from '../allocations/model';
@@ -49,6 +49,10 @@ export function conflicts(current:ConfigPackage, incoming:ConfigPackage):Conflic
   const old=a?.dimensions.find(x=>x.id===d.id||x.name.toLocaleLowerCase('sv-SE')===d.name.toLocaleLowerCase('sv-SE'));
   if(old&&JSON.stringify(old)!==JSON.stringify(d))out.push({section:'allocations',key:d.name,reason:'Definition med samma id eller namn skiljer sig'});
  }
+ for(const dimension of incoming.sections.optionalAllocations?.dimensions??[]){
+  const old=current.sections.optionalAllocations?.dimensions.find(d=>d.id===dimension.id||d.name.toLocaleLowerCase('sv-SE')===dimension.name.toLocaleLowerCase('sv-SE'));
+  if(old&&JSON.stringify(old)!==JSON.stringify(dimension))out.push({section:'optionalAllocations',key:dimension.name,reason:'Fördelningstyp med samma id eller namn skiljer sig'});
+ }
  for(const [key,val] of Object.entries(incoming.sections.mappings??{})){
   const old=current.sections.mappings?.[key];
   if(old&&JSON.stringify(old)!==JSON.stringify(val))out.push({section:'mappings',key,reason:'Mallprofil med samma namn skiljer sig'});
@@ -70,15 +74,16 @@ export function mergedPackage(current:ConfigPackage,incoming:ConfigPackage,polic
   allocations={schemaVersion:1,dimensions,rules};
  }
  const optionalCurrent=current.sections.optionalAllocations,optionalIncoming=incoming.sections.optionalAllocations;
- if(optionalCurrent&&optionalIncoming){
-  const existing=new Map(optionalCurrent.dimensions.map(d=>[d.id,d]));
-  for(const dimension of optionalIncoming.dimensions){const old=existing.get(dimension.id);if(old&&JSON.stringify(old)!==JSON.stringify(dimension)&&policy==='reject')throw new Error('CONFLICTS_REQUIRE_RESOLUTION')}
- }
  const optionalAllocations=optionalIncoming?{
   schemaVersion:2 as const,
-  dimensions:[...(optionalCurrent?.dimensions??[]).filter(d=>!optionalIncoming.dimensions.some(x=>x.id===d.id)),...optionalIncoming.dimensions],
+  dimensions:[
+   ...(optionalCurrent?.dimensions??[]).filter(d=>!optionalIncoming.dimensions.some(x=>x.id===d.id||x.name.toLocaleLowerCase('sv-SE')===d.name.toLocaleLowerCase('sv-SE'))),
+   ...optionalIncoming.dimensions
+  ],
   rules:incoming.mode==='definitions-only'?(optionalCurrent?.rules??[]):[
-   ...(optionalCurrent?.rules??[]).filter(r=>!optionalIncoming.rules.some(x=>JSON.stringify([x.dimensionId,x.year,x.scope])===JSON.stringify([r.dimensionId,r.year,r.scope]))),...optionalIncoming.rules]
+   ...(optionalCurrent?.rules??[]).filter(r=>!optionalIncoming.rules.some(x=>optionalAllocationKey(x)===optionalAllocationKey(r))),
+   ...optionalIncoming.rules
+  ]
  }:optionalCurrent;
  const groups=[...(current.sections.groups??[]).filter(g=>!(incoming.sections.groups??[]).some(x=>x.id===g.id||x.name.toLocaleLowerCase('sv-SE')===g.name.toLocaleLowerCase('sv-SE'))),...(incoming.sections.groups??[])];
  const next=buildPackage(allocations,{...(current.sections.mappings??{}),...(incoming.sections.mappings??{})},'full-configuration',groups,optionalAllocations);
