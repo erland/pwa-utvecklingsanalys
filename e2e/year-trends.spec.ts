@@ -14,7 +14,6 @@ test('annual bars and trend preserve imported yearly results',async({page})=>{
 
  await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toHaveCount(0);
- await expect(v2.getByRole('table',{name:'Organisation per år'})).toBeVisible();
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
 });
