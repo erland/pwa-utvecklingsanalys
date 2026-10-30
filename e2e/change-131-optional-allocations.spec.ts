@@ -6,6 +6,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  sheet.getCell('B1').value='UO: Test UO';sheet.getCell('D11').value=2027;
  sheet.getCell('B25').value='LO A';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=50;
  sheet.getCell('B29').value='LO B';sheet.getCell('C30').value='IT timmar (h)';sheet.getCell('D30').value=30;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'optional-allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
