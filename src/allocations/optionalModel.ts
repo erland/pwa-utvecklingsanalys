@@ -44,7 +44,7 @@ export function validateOptionalAllocations(input:unknown):string[]{
  }
  const keys=new Set<string>();
  for(const rule of data.rules){
-  if(!rule||!hasId(rule.dimensionId)||!Number.isInteger(rule.year)||rule.year<2000||rule.year>2100||!rule.scope||typeof rule.scope!=='object'){issues.push('INVALID_RULE');continue}
+  if(!rule||!hasId(rule.dimensionId)||!Number.isInteger(rule.year)||rule.year!==0&&(rule.year<2000||rule.year>2100)||!rule.scope||typeof rule.scope!=='object'){issues.push('INVALID_RULE');continue}
   const {scope}=rule;
   if(!hasId(scope.uoId)||!['uo','lo','uo-overhead'].includes(scope.kind)||scope.kind==='lo'&&!hasId(scope.loId)||scope.kind!=='lo'&&'loId' in scope)issues.push('INVALID_SCOPE');
   const key=optionalAllocationKey(rule);
