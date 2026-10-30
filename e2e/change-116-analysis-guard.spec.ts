@@ -24,6 +24,7 @@ test('DEV-116 analysis remains locked until a real import, and locks again when 
  await analysis.click();
  await expect(page.locator('.canonical-result-head strong')).toHaveText('42 h');
  await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Töm importerade data'}).click();
  await page.getByRole('textbox',{name:'Bekräftelsetext'}).fill('TA BORT');
  await page.getByRole('button',{name:'Bekräfta borttagning'}).click();
