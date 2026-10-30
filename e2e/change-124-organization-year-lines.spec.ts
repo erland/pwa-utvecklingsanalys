@@ -43,7 +43,7 @@ test('DEV-124 organization lines track year matrix and hierarchy selection',asyn
  await expect(page.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
  await expect(lines).toHaveCount(0);
  await expect(page.locator('.canonical-result-head strong')).toBeVisible();
- await expect(matrix).toBeVisible();
+ await expect(matrix).toHaveCount(0);
  await page.getByLabel('period',{exact:true}).selectOption('all');
  await expect(page.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toBeVisible();
  await expect(lines).toBeVisible();
