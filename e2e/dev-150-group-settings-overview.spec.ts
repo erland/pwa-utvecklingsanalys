@@ -1,0 +1,30 @@
+import {test,expect} from '@playwright/test';
+
+test('DEV-150 settings shows group overview first and opens one editor at a time',async({page})=>{
+ await page.goto('./');
+ await page.getByRole('button',{name:'Inställningar',exact:true}).click();
+ const overview=page.getByRole('region',{name:'Översikt UO-gruppmodeller'});
+ await expect(overview).toBeVisible();
+ await expect(page.getByLabel('Modellnamn')).toHaveCount(0);
+ await overview.getByRole('button',{name:'Ny gruppmodell'}).click();
+ await expect(page.getByLabel('Modellnamn')).toBeVisible();
+ await page.getByLabel('Modellnamn').fill('Arbetsmodell');
+ await page.getByRole('button',{name:'Avbryt redigering'}).click();
+ await expect(overview).toBeVisible();
+ await expect(overview).not.toContainText('Arbetsmodell');
+ await overview.getByRole('button',{name:'Ny gruppmodell'}).click();
+ await page.getByLabel('Modellnamn').fill('Arbetsmodell');
+ await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
+ await expect(overview.getByText('Arbetsmodell',{exact:true})).toBeVisible();
+ await overview.getByRole('button',{name:'Redigera Arbetsmodell'}).click();
+ await page.getByLabel('Modellnamn').fill('Ändring som avbryts');
+ await page.getByRole('button',{name:'Avbryt redigering'}).click();
+ await expect(overview.getByText('Arbetsmodell',{exact:true})).toBeVisible();
+ await overview.getByRole('button',{name:'Ta bort Arbetsmodell'}).click();
+ await expect(page.getByRole('group',{name:'Bekräfta borttagning av Arbetsmodell'})).toBeVisible();
+ await page.getByRole('button',{name:'Avbryt',exact:true}).click();
+ await expect(overview.getByText('Arbetsmodell',{exact:true})).toBeVisible();
+ await overview.getByRole('button',{name:'Ta bort Arbetsmodell'}).click();
+ await page.getByRole('button',{name:'Bekräfta borttagning'}).click();
+ await expect(overview).not.toContainText('Arbetsmodell');
+});
