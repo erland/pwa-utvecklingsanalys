@@ -26,7 +26,6 @@ test('CHANGE-050: v2 migration gate checks group-year totals and source records'
  await expect(page.getByRole('status')).toContainText('Gruppmodeller sparade');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
- await page.locator('.canonical-analytics details.organization-year-details > summary').click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('60 h');
  const matrix=v2.getByRole('table',{name:'Organisation per år'});
  await expect(matrix).toContainText('Operativa UO');
@@ -37,7 +36,7 @@ test('CHANGE-050: v2 migration gate checks group-year totals and source records'
  await expect(matrix.locator('tfoot')).toContainText('60 h');
  await v2.getByLabel('period',{exact:true}).selectOption('2027');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- await expect(matrix).toContainText('2028');
+ await expect(matrix).toHaveCount(0);
  await v2.getByLabel('period',{exact:true}).selectOption('all');
  await v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
  await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
