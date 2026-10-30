@@ -7,7 +7,7 @@ import type {Metric} from '../domain/canonical';
 
 const metricLabels:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',consultant_cost:'Konsultkostnader',other_cost:'Övriga kostnader'};
 const allMetrics=Object.keys(metricLabels) as Metric[];
-const label=(id:string)=>decodeURIComponent(id.startsWith('uo:')?id.slice(3):id.startsWith('lo:')?id.slice(3):id);
+const label=(id:string)=>decodeURIComponent(id.split(':').at(-1)??id);
 
 type Unit={id:string;los:string[];hasOverhead:boolean};
 const scopeLabel=(scope:OptionalAllocationScope)=>scope.kind==='uo'?'UO-förslag':scope.kind==='uo-overhead'?'UO Övergripande':label(scope.loId);
