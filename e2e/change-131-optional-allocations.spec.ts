@@ -28,5 +28,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(view.getByText('Egen regel',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await page.getByRole('button',{name:'Inställningar'}).click();
- await expect(page.getByRole('region',{name:'Valfria fördelningstyper'}).getByRole('button',{name:'Ta bort egen regel'})).toHaveCount(2);
+ const reopened=page.getByRole('region',{name:'Valfria fördelningstyper'});
+ await reopened.getByRole('button',{name:/Test UO.*Visa LO/}).click();
+ await expect(reopened.getByRole('button',{name:'Ta bort egen regel'})).toHaveCount(2);
+ await expect(reopened.getByLabel('LO A – Förutsättningsskapande')).toHaveValue('80');
 });
