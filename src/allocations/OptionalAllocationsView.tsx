@@ -40,7 +40,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [name,setName]=useState(''),[categories,setCategories]=useState('Förutsättningsskapande; Direkt effekt');
  const [unit,setUnit]=useState<'hours'|'costs'>('hours'),[metrics,setMetrics]=useState<Metric[]>(['it_hours','business_hours']);
  const [activities,setActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']);
- const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(2027),[expanded,setExpanded]=useState<string[]>([]);
+ const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(0),[expanded,setExpanded]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
@@ -56,7 +56,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
    map.set(uoId,item);
   }
   setUnits([...map.values()].sort((a,b)=>label(a.id).localeCompare(label(b.id),'sv')).map(x=>({...x,los:x.los.sort((a,b)=>label(a).localeCompare(label(b),'sv'))})));
-  setYears([...dateSet].sort());if(dateSet.size)setYear(Math.min(...dateSet));
+  setYears([...dateSet].sort());
  })().catch(e=>{if(live)setError(String(e))});return()=>{live=false}},[mode]);
  const persist=async(next:OptionalAllocations)=>{parseOptionalAllocations(next);const config=await readConfiguration();if(!config)throw new Error('Konfiguration saknas');const history=await revisions();await commitConfiguration({...config,sections:{...config.sections,optionalAllocations:next}},'Update optional allocations',history.at(-1)?.id);setData(next);setRevision(v=>v+1);setNotice('Fördelningen sparades i projektets konfiguration och versionshistorik.')};
  const create=async()=>{setError('');setNotice('');try{
@@ -71,7 +71,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const saveRule=async(rule:OptionalAllocationRule)=>{const key=optionalAllocationKey(rule);await persist({...data,rules:[...data.rules.filter(r=>optionalAllocationKey(r)!==key),rule]})};
  const removeRule=async(rule:OptionalAllocationRule)=>await persist({...data,rules:data.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(rule))});
  const renderRule=(scope:OptionalAllocationScope,base?:OptionalAllocationRule)=>dimension&&<PercentEditor key={JSON.stringify([dimension.id,year,scope,revision,findRule(scope)?.percentages,base?.percentages])} dimension={dimension} year={year} scope={scope} own={findRule(scope)} base={base} onSave={saveRule} onRemove={removeRule}/>;
- return <section aria-label={mode==='rules'?'Valfria fördelningar':'Valfria fördelningstyper'} className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>{mode==='rules'?'Fördela timmar och kostnader':'Valfria fördelningstyper'}</h2><p>{mode==='rules'?'Välj fördelningstyp och år. Dra reglaget för två kategorier, eller ange procenttal. Fördelning på UO- och LO-nivå följer tills vidare de befintliga arvsreglerna.':'Skapa kategorier och välj vilka timmar eller kostnader som ska omfattas. Själva fördelningen gör du sedan under fliken Fördelningar.'}</p>
+ return <section aria-label={mode==='rules'?'Valfria fördelningar':'Valfria fördelningstyper'} className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>{mode==='rules'?'Fördela timmar och kostnader':'Valfria fördelningstyper'}</h2><p>{mode==='rules'?'Välj fördelningstyp. Grundfördelningen gäller alla år; välj ett enskilt år för att göra ett undantag. Dra reglaget för två kategorier, eller ange procenttal. Fördelning på UO- och LO-nivå följer tills vidare de befintliga arvsreglerna.':'Skapa kategorier och välj vilka timmar eller kostnader som ska omfattas. Själva fördelningen gör du sedan under fliken Fördelningar.'}</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
  {mode==='definitions'&&<fieldset style={{minWidth:0}}><legend>Ny fördelningstyp</legend>
   <div className="mapping-grid"><label>Namn<input style={{maxWidth:"100%",minWidth:0}} aria-label="Namn på fördelningstyp" value={name} onChange={e=>setName(e.target.value)}/></label><label>Kategorier (semikolonseparerade)<input style={{maxWidth:"100%",minWidth:0}} aria-label="Fördelningskategorier" value={categories} onChange={e=>setCategories(e.target.value)}/></label>
@@ -83,7 +83,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
  {mode==='rules'&&data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
   <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>setDimensionId(e.target.value)}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-  <label>Budgetår<select aria-label="Fördelningsår" value={year} onChange={e=>setYear(Number(e.target.value))}>{(years.length?years:[year]).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+  <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>setYear(Number(e.target.value))}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
  </div><p>Omfattning: {dimension?.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}. En LO utan egen regel ärver UO-förslaget.</p>
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:units.map(u=>{
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
