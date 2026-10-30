@@ -51,6 +51,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
 
  // Replace the exact previously approved source; no imported record is manually edited.
  await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Ersätt',exact:true}).click();
  const replacement=new ExcelJS.Workbook(),rs=replacement.addWorksheet('UO Tot 2027-30');
  rs.getCell('B1').value='UO: UO A';
