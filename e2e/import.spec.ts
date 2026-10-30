@@ -22,6 +22,7 @@ test('direct import persists after reload and is available for analysis',async({
  await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await expect(page.getByRole('heading',{name:'Importerade källor'})).toBeVisible();
  await expect(page.getByRole('table').first()).toContainText('UO A');
  await page.getByRole('button',{name:'Översikt',exact:true}).click();
