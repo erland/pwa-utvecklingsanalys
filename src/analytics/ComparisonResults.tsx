@@ -3,7 +3,7 @@ import type {ActivitySplit} from './activityBreakdown';
 import {CHART_COLORS} from './charts';
 
 export type ComparisonRow={key:string;label:string;value:number|null;split?:ActivitySplit};
-export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,openLabel}:{rows:ComparisonRow[];unit:'h'|'SEK';title:string;totalLabel:string;onOpen?:(key:string)=>void;openLabel?:string}){
+export default function ComparisonResults({rows,unit,title,totalLabel,onOpen}:{rows:ComparisonRow[];unit:'h'|'SEK';title:string;totalLabel:string;onOpen?:(key:string)=>void}){
  const [display,setDisplay]=useState<'table'|'bars'|'pie'|'distribution'>('pie');
  const [activityOrder,setActivityOrder]=useState<'original'|'development'|'maintenance'>('original');
  const orderedRows=display==='distribution'&&activityOrder!=='original'?[...rows].sort((a,b)=>{const difference=(b.split?.[activityOrder]??-1)-(a.split?.[activityOrder]??-1);return difference||a.label.localeCompare(b.label,'sv')}):rows;
@@ -21,29 +21,30 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen,ope
  const developmentSum=sumSplit('development'),maintenanceSum=sumSplit('maintenance'),unallocatedSum=sumSplit('unallocated');
  const shareOf=(value:number,denominator:number)=>completeSplits&&denominator>0?(100*value/denominator).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–';
 
+ const clickableLabel=(row:ComparisonRow)=>onOpen?<button type="button" className="analysis-drilldown-label" onClick={()=>onOpen(row.key)}>{row.label}</button>:row.label;
  const format=(n:number|null)=>n===null?'Ej beräkningsbar':n.toLocaleString('sv-SE',{maximumFractionDigits:2})+' '+unit;
  return <section aria-label={title}>
   <div className="actions"><h3>{title}</h3><label>Presentation<select aria-label={'Presentation för '+title} value={activeDisplay} onChange={e=>setDisplay(e.target.value as 'table'|'bars'|'pie'|'distribution')}><option value="table">Tabell</option><option value="bars">Stapeldiagram</option>{rows.length>1&&<option value="pie">Cirkeldiagram</option>}{rows.some(row=>row.split)&&<option value="distribution">Utveckling / Förvaltning</option>}</select></label></div>
-  {activeDisplay==='pie'?(pieEligible?<div className="pie-layout" role="group" aria-label={'Cirkeldiagram: '+title}><div className="pie-chart" role="img" aria-label={'Andelar av totalt '+format(total)} style={{background:'conic-gradient('+pieGradient+')'}}/><ul className="pie-legend">{pieRows.map(({row,color,percent})=><li key={row.key}><span className="pie-swatch" style={{backgroundColor:color}} aria-hidden="true"/><span>{row.label}: {format(row.value)} ({percent.toLocaleString('sv-SE',{maximumFractionDigits:1})} %)</span>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}</li>)}</ul></div>:<p role="status">Cirkeldiagram kräver minst två giltiga poster och en positiv totalsumma. Välj tabell eller stapeldiagram i stället.</p>):activeDisplay==='distribution'?<div className="canonical-trend" role="group" aria-label={'Fördelning: '+title}>
+  {activeDisplay==='pie'?(pieEligible?<div className="pie-layout" role="group" aria-label={'Cirkeldiagram: '+title}><div className="pie-chart" role="img" aria-label={'Andelar av totalt '+format(total)} style={{background:'conic-gradient('+pieGradient+')'}}/><ul className="pie-legend">{pieRows.map(({row,color,percent})=><li key={row.key}><span className="pie-swatch" style={{backgroundColor:color}} aria-hidden="true"/><span>{clickableLabel(row)}: {format(row.value)} ({percent.toLocaleString('sv-SE',{maximumFractionDigits:1})} %)</span></li>)}</ul></div>:<p role="status">Cirkeldiagram kräver minst två giltiga poster och en positiv totalsumma. Välj tabell eller stapeldiagram i stället.</p>):activeDisplay==='distribution'?<div className="canonical-trend" role="group" aria-label={'Fördelning: '+title}>
    <p>Utveckling, förvaltning och ej fördelad aktivitet. Ej fördelat innebär att fördelningen saknas eller inte är godkänd.</p>
    {completeSplits&&<p role="status">Sammanlagt för visade delområden: utveckling {format(developmentSum)}, förvaltning {format(maintenanceSum)}{unallocatedSum>0?', ej fördelat '+format(unallocatedSum):''}. Jämför respektive delområdes bidrag nedan.</p>}
    {!completeSplits&&<p role="status">Alla delområden har inte en beräkningsbar aktivitetsfördelning. Någon fullständig sammanställning visas därför inte.</p>}
    <label>Sortera delområden<select aria-label={'Sortera fördelning: '+title} value={activityOrder} onChange={e=>setActivityOrder(e.target.value as 'original'|'development'|'maintenance')}><option value="original">Ursprunglig ordning</option><option value="development">Störst utvecklingsbidrag först</option><option value="maintenance">Störst förvaltningsbidrag först</option></select></label>
    {orderedRows.map(row=>{const v=row.split;const pct=(n:number)=>v&&v.total>0?100*n/v.total:0;return <div className="canonical-trend-row" key={row.key}>
-    <span>{row.label}</span>
+    <span>{clickableLabel(row)}</span>
     {v?<div className="canonical-trend-track" role="img" aria-label={row.label+': utveckling '+format(v.development)+', förvaltning '+format(v.maintenance)+', ej fördelat '+format(v.unallocated)} style={{display:'flex',overflow:'hidden'}}>
      <div style={{width:pct(v.development)+'%',background:'#26768c',minHeight:16}}/>
      <div style={{width:pct(v.maintenance)+'%',background:'#c66d26',minHeight:16}}/>
      <div style={{width:pct(v.unallocated)+'%',background:'#9ca3af',minHeight:16}}/>
     </div>:<span>Fördelning saknas</span>}
-    <div><strong>{format(row.value)}</strong>{v&&<small style={{display:'block'}}>Utveckling {pct(v.development).toLocaleString('sv-SE',{maximumFractionDigits:1})} % · Förvaltning {pct(v.maintenance).toLocaleString('sv-SE',{maximumFractionDigits:1})} %{v.unallocated>0?' · Ej fördelat '+pct(v.unallocated).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':''}</small>}{v&&<small style={{display:'block'}}>Andel av visade delområdens utveckling: {shareOf(v.development,developmentSum)} · förvaltning: {shareOf(v.maintenance,maintenanceSum)}</small>}</div>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}
+    <div><strong>{format(row.value)}</strong>{v&&<small style={{display:'block'}}>Utveckling {pct(v.development).toLocaleString('sv-SE',{maximumFractionDigits:1})} % · Förvaltning {pct(v.maintenance).toLocaleString('sv-SE',{maximumFractionDigits:1})} %{v.unallocated>0?' · Ej fördelat '+pct(v.unallocated).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':''}</small>}{v&&<small style={{display:'block'}}>Andel av visade delområdens utveckling: {shareOf(v.development,developmentSum)} · förvaltning: {shareOf(v.maintenance,maintenanceSum)}</small>}</div>
    </div>})}
    <p>Blå: utveckling · Orange: förvaltning · Grå: ej fördelat</p>
   </div>:activeDisplay==='table'?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
-   <thead><tr><th>Delområde</th><th>Värde</th><th>Andel</th>{onOpen&&<th>Fördjupning</th>}</tr></thead>
-   <tbody>{rows.map(row=><tr key={row.key}><th scope="row">{row.label}</th><td>{format(row.value)}</td><td>{total!==null&&total>0&&row.value!==null?(100*row.value/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td>{onOpen&&<td><button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button></td>}</tr>)}</tbody>
-   <tfoot><tr><th scope="row">{totalLabel}</th><td>{format(total)}</td><td>{total!==null&&total>0?'100 %':'–'}</td>{onOpen&&<td/>}</tr></tfoot>
-  </table></div>:<div className="canonical-trend" role="group" aria-label={'Stapeldiagram: '+title}>{rows.map(row=><div className="canonical-trend-row" key={row.key}><span>{row.label}</span><div className="canonical-trend-track"><div className="canonical-trend-fill" style={{width:row.value===null?'0%':100*row.value/max+'%'}}/></div><strong>{format(row.value)}</strong>{onOpen&&<button type="button" className="secondary" onClick={()=>onOpen(row.key)}>{openLabel??'Visa detaljer'}</button>}</div>)}</div>}
+   <thead><tr><th>Delområde</th><th>Värde</th><th>Andel</th></tr></thead>
+   <tbody>{rows.map(row=><tr key={row.key}><th scope="row">{clickableLabel(row)}</th><td>{format(row.value)}</td><td>{total!==null&&total>0&&row.value!==null?(100*row.value/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td></tr>)}</tbody>
+   <tfoot><tr><th scope="row">{totalLabel}</th><td>{format(total)}</td><td>{total!==null&&total>0?'100 %':'–'}</td></tr></tfoot>
+  </table></div>:<div className="canonical-trend" role="group" aria-label={'Stapeldiagram: '+title}>{rows.map(row=><div className="canonical-trend-row" key={row.key}><span>{row.label}</span><div className="canonical-trend-track"><div className="canonical-trend-fill" style={{width:row.value===null?'0%':100*row.value/max+'%'}}/></div><strong>{format(row.value)}</strong></div>)}</div>}
   {!rows.length&&<p>Inga delområden att visa för aktuellt urval.</p>}
  </section>;
 }
