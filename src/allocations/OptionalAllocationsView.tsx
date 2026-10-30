@@ -46,6 +46,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(0),[expanded,setExpanded]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
  const [bulkCategory,setBulkCategory]=useState<string|null>(null),[bulkBusy,setBulkBusy]=useState(false);
+ const [selectedUo,setSelectedUo]=useState<string|null>(null),[uoSearch,setUoSearch]=useState(''),[uoFilter,setUoFilter]=useState<'all'|'configured'|'missing'>('all');
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
   const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
@@ -95,8 +96,8 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {mode==='definitions'&&!creating&&editingId===null&&<section aria-label="Befintliga fördelningstyper"><div className="actions"><h3>Befintliga fördelningstyper</h3><button type="button" className="secondary" onClick={()=>{cancelEdit();setDeleteId(null);setCreating(true)}}>Ny fördelningstyp</button></div>{data.dimensions.length===0?<p>Inga fördelningstyper har skapats.</p>:data.dimensions.map(d=><div className="panel" key={d.id}><strong>{d.name}</strong><p>{d.categories.map(c=>c.name).join(' · ')}. {d.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')} · {data.rules.filter(r=>r.dimensionId===d.id).length} regler.</p><div className="actions"><button type="button" className="secondary" onClick={()=>beginEdit(d)}>Redigera {d.name}</button><button type="button" className="secondary" onClick={()=>{setDeleteId(d.id);setError('')}}>Ta bort {d.name}</button></div>{deleteId===d.id&&<div role="group" aria-label={'Bekräfta borttagning av '+d.name}><p>Ta bort fördelningstypen och dess {data.rules.filter(r=>r.dimensionId===d.id).length} sparade fördelningsregler? Detta sparas som en ny konfigurationsrevision.</p><div className="actions"><button type="button" className="primary" onClick={()=>void confirmDelete()}>Bekräfta borttagning</button><button type="button" className="secondary" onClick={()=>setDeleteId(null)}>Avbryt</button></div></div>}</div>)}</section>}
  {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
  {mode==='rules'&&data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
-  <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>{setDimensionId(e.target.value);setBulkCategory(null)}}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-  <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>{setYear(Number(e.target.value));setBulkCategory(null)}}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
+  <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>{setDimensionId(e.target.value);setBulkCategory(null);setSelectedUo(null)}}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+  <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>{setYear(Number(e.target.value));setBulkCategory(null);setSelectedUo(null)}}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
  </div><p>Omfattning: {dimension?.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}. En LO utan egen regel ärver UO-förslaget.</p>
  {dimension&&units.length>0&&<section aria-label="Snabbfördela samtliga UO" className="panel">
   <h4>Snabbfördela samtliga UO</h4>
@@ -107,14 +108,21 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
    <div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta snabbfördelning</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkCategory(null)}>Avbryt</button></div>
   </div>}
  </section>}
- {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:units.map(u=>{
+ {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:<section aria-label="Översikt UO-fördelningar" className="panel">
+  <h4>UO-fördelningar</h4>
+  <p>{units.length} UO · {units.filter(u=>data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id)).length} med sparad regel för vald period eller grundfördelning</p>
+  <div className="mapping-grid"><label>Sök UO<input aria-label="Sök UO" value={uoSearch} onChange={e=>setUoSearch(e.target.value)} placeholder="Filtrera på namn"/></label>
+  <label>Status<select aria-label="Filtrera UO-status" value={uoFilter} onChange={e=>setUoFilter(e.target.value as 'all'|'configured'|'missing')}><option value="all">Alla UO</option><option value="configured">Med sparad regel</option><option value="missing">Utan sparad regel</option></select></label></div>
+  {units.filter(u=>{const configured=data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id);return label(u.id).toLocaleLowerCase('sv-SE').includes(uoSearch.trim().toLocaleLowerCase('sv-SE'))&&(uoFilter==='all'||configured===(uoFilter==='configured'))}).map(u=>{
+  const configured=data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id);
+  const open=selectedUo===u.id;
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
-  const open=expanded.includes(u.id);
-  if(dimension?.categories.length===2&&canonicalData)return <WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>;
-  return <div key={u.id} className="panel" style={{marginTop:12}}><button type="button" className="secondary" aria-expanded={open} onClick={()=>setExpanded(prev=>open?prev.filter(id=>id!==u.id):[...prev,u.id])}>{open?'▾':'▸'} {label(u.id)} – {open?'Dölj detaljer':'Visa LO'}</button>
-  {renderRule(scope)}
-  {open&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}
+  const detailsOpen=expanded.includes(u.id);
+  return <div key={u.id} className="panel" style={{marginTop:8}}>
+   <div className="actions" style={{justifyContent:'space-between'}}><div><strong>{label(u.id)}</strong><p>{u.los.length} LO · {configured?'Sparad regel finns':'Ingen sparad regel'}</p></div><button type="button" className="secondary" aria-expanded={open} onClick={()=>setSelectedUo(open?null:u.id)}>{open?'Stäng':'Redigera'} {label(u.id)}</button></div>
+   {open&&(dimension?.categories.length===2&&canonicalData?<WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>:<div><button type="button" className="secondary" aria-expanded={detailsOpen} onClick={()=>setExpanded(prev=>detailsOpen?prev.filter(id=>id!==u.id):[...prev,u.id])}>{detailsOpen?'Dölj LO':'Visa LO'}</button>{renderRule(scope)}{detailsOpen&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}</div>)}
   </div>;
- })}</>}
+  })}
+ </section>}</>}
  </section>;
 }

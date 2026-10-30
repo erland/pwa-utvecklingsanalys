@@ -27,6 +27,10 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(rules).toBeVisible();
  await expect(rules.getByRole('heading',{name:'Fördela per UO och LO'})).toBeVisible();
  await expect(rules.getByLabel('Aktuell fördelningstyp')).toHaveValue(/.+/);
+ const uoOverview=rules.getByRole('region',{name:'Översikt UO-fördelningar'});
+ await expect(uoOverview).toBeVisible();
+ await expect(rules.getByRole('region',{name:'Timviktad fördelning Test UO'})).toHaveCount(0);
+ await uoOverview.getByRole('button',{name:'Redigera Test UO'}).click();
  const editor=rules.getByRole('region',{name:'Timviktad fördelning Test UO'});
  await expect(editor).toBeVisible();
  const uoSlider=editor.getByRole('slider',{name:'UO Test UO – Fördelningsreglage'});
@@ -59,6 +63,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const reopened=page.getByRole('region',{name:'Valfria fördelningar'});
+ await reopened.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:'Redigera Test UO'}).click();
  const persisted=reopened.getByRole('region',{name:'Timviktad fördelning Test UO'});
  await persisted.getByRole('button',{name:/Test UO.*Visa LO/}).click();
  await expect(persisted.getByRole('slider',{name:'LO A – Fördelningsreglage'})).toHaveValue('0');
