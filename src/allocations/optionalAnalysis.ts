@@ -1,9 +1,9 @@
 import {analyzeCanonical,type CanonicalAnalysisQuery} from '../analytics/canonicalQuery';
-import type {CanonicalDataset} from '../domain/canonical';
+import type {CanonicalDataset,Metric} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {parseOptionalAllocations,type OptionalAllocations,type OptionalAllocationDimension,type OptionalAllocationRule,type OptionalAllocationScope} from './optionalModel';
 
-export type OptionalAllocationQuery={year?:number;uoIds?:string[];loIds?:string[];datasetIds?:string[]};
+export type OptionalAllocationQuery={year?:number;uoIds?:string[];loIds?:string[];datasetIds?:string[];metrics?:Metric[];activity?:CanonicalAnalysisQuery['activity']};
 export type OptionalAllocationResult={
  dimensionId:string;unit:'h'|'SEK';total:number;
  amounts:Record<string,number>;unallocated:number;allocated:number;
@@ -24,13 +24,17 @@ export function analyzeOptionalAllocation(dataset:CanonicalDataset,gaps:GapState
  parseOptionalAllocations(config);
  const dimension:OptionalAllocationDimension|undefined=config.dimensions.find(d=>d.id===dimensionId);
  if(!dimension)throw new Error('UNKNOWN_DIMENSION');
- const {metrics,activities}=dimension.appliesTo;
- const activity:CanonicalAnalysisQuery['activity']=activities==='all'||activities.length===2?'all':activities[0];
+ const {metrics:definedMetrics,activities}=dimension.appliesTo;
+ const metrics=definedMetrics.filter(metric=>!filter.metrics||filter.metrics.includes(metric));
+ const definedActivity:CanonicalAnalysisQuery['activity']=activities==='all'||activities.length===2?'all':activities[0];
+ const selectedActivity=filter.activity??'all';
+ const activity:CanonicalAnalysisQuery['activity']=definedActivity==='all'?selectedActivity:selectedActivity==='all'||selectedActivity===definedActivity?definedActivity:'allocated';
+ const compatible=metrics.length>0&&(definedActivity==='all'||selectedActivity==='all'||selectedActivity===definedActivity);
  const years=[...new Set(dataset.records.filter(r=>r.scope.axis==='work'&&metrics.includes(r.metric)&&(!filter.year||r.year===filter.year)).map(r=>r.year))].sort();
  const uos=[...new Set(dataset.records.filter(r=>r.scope.axis==='work'&&metrics.includes(r.metric)&&(!filter.uoIds?.length||filter.uoIds.includes(r.scope.uoId))).map(r=>(r.scope.axis==='work'?r.scope.uoId:'')))].sort();
  const amounts=Object.fromEntries(dimension.categories.map(c=>[c.id,0])) as Record<string,number>;
  let total=0,unallocated=0,unknownCount=0,staleApprovals=0,excludedAlternatives=0,visible=false;
- for(const year of years)for(const uoId of uos){
+ for(const year of (compatible?years:[]))for(const uoId of uos){
   const detail=analyzeCanonical(dataset,gaps,{axis:'work',metrics,activity,year,detailUoId:uoId,datasetIds:filter.datasetIds,loIds:filter.loIds});
   unknownCount+=detail.unknownCount;
   // Approval/matrix metadata is global for a prepared projection, not additive per UO/year.
@@ -53,5 +57,5 @@ export function analyzeOptionalAllocation(dataset:CanonicalDataset,gaps:GapState
  }
  const allocated=Object.values(amounts).reduce((sum,v)=>sum+v,0);
  if(Math.abs(total-allocated-unallocated)>1e-6*Math.max(1,total))throw new Error('ALLOCATION_BALANCE');
- return {dimensionId,unit:metrics[0].endsWith('_hours')?'h':'SEK',total,amounts,allocated,unallocated,visible,unknownCount,staleApprovals,excludedAlternatives,coverage:unknownCount?'Vissa aktivitetsvärden saknar godkänd fördelning och ingår inte i beräknad total.':'Alla valda underlag har tillräcklig aktivitetstäckning.'};
+ return {dimensionId,unit:definedMetrics[0].endsWith('_hours')?'h':'SEK',total,amounts,allocated,unallocated,visible,unknownCount,staleApprovals,excludedAlternatives,coverage:unknownCount?'Vissa aktivitetsvärden saknar godkänd fördelning och ingår inte i beräknad total.':'Alla valda underlag har tillräcklig aktivitetstäckning.'};
 }
