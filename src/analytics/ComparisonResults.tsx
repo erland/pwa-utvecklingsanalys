@@ -21,7 +21,7 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen}:{r
  const developmentSum=sumSplit('development'),maintenanceSum=sumSplit('maintenance'),unallocatedSum=sumSplit('unallocated');
  const shareOf=(value:number,denominator:number)=>completeSplits&&denominator>0?(100*value/denominator).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–';
 
- const clickableLabel=(row:ComparisonRow)=>onOpen?<button type="button" className="analysis-drilldown-label" onClick={()=>onOpen(row.key)}>{row.label}</button>:row.label;
+ const clickableLabel=(row:ComparisonRow)=>onOpen?<button type="button" className="analysis-drilldown-label" style={{appearance:"none",background:"transparent",border:0,padding:0,color:"inherit",font:"inherit",fontWeight:600,textDecoration:"underline",textUnderlineOffset:3,cursor:"pointer",textAlign:"left"}} onClick={()=>onOpen(row.key)}>{row.label}</button>:row.label;
  const format=(n:number|null)=>n===null?'Ej beräkningsbar':n.toLocaleString('sv-SE',{maximumFractionDigits:2})+' '+unit;
  return <section aria-label={title}>
   <div className="actions"><h3>{title}</h3><label>Presentation<select aria-label={'Presentation för '+title} value={activeDisplay} onChange={e=>setDisplay(e.target.value as 'table'|'bars'|'pie'|'distribution')}><option value="table">Tabell</option><option value="bars">Stapeldiagram</option>{rows.length>1&&<option value="pie">Cirkeldiagram</option>}{rows.some(row=>row.split)&&<option value="distribution">Utveckling / Förvaltning</option>}</select></label></div>
