@@ -21,6 +21,7 @@ function PercentEditor({dimension,scope,year,own,base,onSave,onRemove}:{dimensio
  const remove=async()=>{if(!own)return;setBusy(true);setError('');try{await onRemove(own)}catch(e){setError(String(e))}finally{setBusy(false)}};
  return <div className="panel" style={{marginTop:8}}>
   <strong>{scopeLabel(scope)}</strong> <small>{own?'Egen regel':base?'Ärver UO':'Ingen regel'}</small>
+  {dimension.categories.length===2&&<label style={{display:'block',minWidth:0,marginTop:12}}>Dra fördelning mellan {dimension.categories[0].name} och {dimension.categories[1].name}<input type="range" min="0" max="100" step="1" aria-label={scopeLabel(scope)+' – Fördelningsreglage'} value={values[dimension.categories[0].id]??0} onChange={e=>{const n=Number(e.target.value);setValues({[dimension.categories[0].id]:String(n),[dimension.categories[1].id]:String(100-n)})}} style={{display:'block',width:'100%',maxWidth:'100%'}}/></label>}
   <div className="mapping-grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,12rem),1fr))",minWidth:0}}>{dimension.categories.map(c=><label key={c.id}>{c.name} (%)<input aria-label={scopeLabel(scope)+' – '+c.name} type="number" min="0" max="100" step="0.1" value={values[c.id]??''} onChange={e=>setValues(v=>({...v,[c.id]:e.target.value}))}/></label>)}</div>
   <p>Ofördelat: {valid?Math.max(0,100-sum).toLocaleString('sv-SE')+' %':'Kontrollera procentsatserna'}.</p>
   {error&&<p role="alert">{error}</p>}
@@ -28,7 +29,7 @@ function PercentEditor({dimension,scope,year,own,base,onSave,onRemove}:{dimensio
  </div>;
 }
 
-export default function OptionalAllocationsView(){
+export default function OptionalAllocationsView({mode='definitions'}:{mode?:'definitions'|'rules'}){
  const [data,setData]=useState<OptionalAllocations>(emptyOptionalAllocations);
  const [units,setUnits]=useState<Unit[]>([]),[years,setYears]=useState<number[]>([]);
  const [name,setName]=useState(''),[categories,setCategories]=useState('Förutsättningsskapande; Direkt effekt');
@@ -66,16 +67,17 @@ export default function OptionalAllocationsView(){
  const saveRule=async(rule:OptionalAllocationRule)=>{const key=optionalAllocationKey(rule);await persist({...data,rules:[...data.rules.filter(r=>optionalAllocationKey(r)!==key),rule]})};
  const removeRule=async(rule:OptionalAllocationRule)=>await persist({...data,rules:data.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(rule))});
  const renderRule=(scope:OptionalAllocationScope,base?:OptionalAllocationRule)=>dimension&&<PercentEditor key={JSON.stringify([dimension.id,year,scope,revision,findRule(scope)?.percentages,base?.percentages])} dimension={dimension} year={year} scope={scope} own={findRule(scope)} base={base} onSave={saveRule} onRemove={removeRule}/>;
- return <section aria-label="Valfria fördelningstyper" className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>Valfria fördelningar</h2><p>Skapa egna fördelningstyper för timmar eller kostnader. Reglerna ändrar inte importerade värden. Börja med ett UO-förslag och expandera ett UO för att överstyra en LO.</p>
+ return <section aria-label={mode==='rules'?'Valfria fördelningar':'Valfria fördelningstyper'} className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>{mode==='rules'?'Fördela timmar och kostnader':'Valfria fördelningstyper'}</h2><p>{mode==='rules'?'Välj fördelningstyp och år. Dra reglaget för två kategorier, eller ange procenttal. Fördelning på UO- och LO-nivå följer tills vidare de befintliga arvsreglerna.':'Skapa kategorier och välj vilka timmar eller kostnader som ska omfattas. Själva fördelningen gör du sedan under fliken Fördelningar.'}</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
- <fieldset style={{minWidth:0}}><legend>Ny fördelningstyp</legend>
+ {mode==='definitions'&&<fieldset style={{minWidth:0}}><legend>Ny fördelningstyp</legend>
   <div className="mapping-grid"><label>Namn<input style={{maxWidth:"100%",minWidth:0}} aria-label="Namn på fördelningstyp" value={name} onChange={e=>setName(e.target.value)}/></label><label>Kategorier (semikolonseparerade)<input style={{maxWidth:"100%",minWidth:0}} aria-label="Fördelningskategorier" value={categories} onChange={e=>setCategories(e.target.value)}/></label>
   <label>Enhet<select style={{maxWidth:"100%",minWidth:0}} aria-label="Enhet för fördelningstyp" value={unit} onChange={e=>{const v=e.target.value as 'hours'|'costs';setUnit(v);setMetrics(v==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label></div>
   <fieldset style={{minWidth:0}}><legend>Omfattade mått</legend>{allMetrics.filter(m=>unit==='hours'?m.endsWith('_hours'):m.endsWith('_cost')).map(m=><label className="check" key={m}><input type="checkbox" checked={metrics.includes(m)} onChange={e=>setMetrics(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{metricLabels[m]}</label>)}</fieldset>
   {unit==='hours'&&<fieldset style={{minWidth:0}}><legend>Aktiviteter</legend>{(['development','maintenance'] as const).map(a=><label className="check" key={a}><input type="checkbox" checked={activities.includes(a)} onChange={e=>setActivities(old=>e.target.checked?[...old,a]:old.filter(x=>x!==a))}/>{a==='development'?'Utveckling':'Förvaltning'}</label>)}</fieldset>}
   <button className="primary" type="button" disabled={!name.trim()||metrics.length===0||unit==='hours'&&activities.length===0} onClick={()=>void create()}>Skapa fördelningstyp</button>
- </fieldset>
- {data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
+ </fieldset>}
+ {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
+ {mode==='rules'&&data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
   <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>setDimensionId(e.target.value)}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
   <label>Budgetår<select aria-label="Fördelningsår" value={year} onChange={e=>setYear(Number(e.target.value))}>{(years.length?years:[year]).map(y=><option key={y} value={y}>{y}</option>)}</select></label>
  </div><p>Omfattning: {dimension?.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}. En LO utan egen regel ärver UO-förslaget.</p>
