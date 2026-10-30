@@ -21,11 +21,8 @@ test('DEV-123 pie is default when multiple valid UOs exist; table remains select
  await expect(page.getByRole('status').filter({hasText:'Importresultat'})).toContainText('dev123-b.xlsx');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const navigator=page.getByRole('region',{name:'Utforska UO'});
- const presentation=navigator.getByRole('combobox',{name:'Presentation för UO i analys'});
- await expect(presentation).toHaveValue('pie');
  await expect(navigator.getByRole('group',{name:'Cirkeldiagram: UO i analys'})).toBeVisible();
- await presentation.selectOption('table');
- await expect(navigator.getByRole('table',{name:'UO i analys'})).toBeVisible();
+ await expect(navigator.getByRole('combobox',{name:'Presentation för UO i analys'})).toHaveCount(0);
 });
 
 test('DEV-123 one UO uses table fallback, preserving drilldown',async({page})=>{
@@ -35,7 +32,7 @@ test('DEV-123 one UO uses table fallback, preserving drilldown',async({page})=>{
  await expect(page.getByRole('status').filter({hasText:'Importresultat'})).toContainText('dev123-one.xlsx');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const navigator=page.getByRole('region',{name:'Utforska UO'});
- await expect(navigator.getByRole('combobox',{name:'Presentation för UO i analys'})).toHaveValue('table');
+ await expect(navigator.getByRole('combobox',{name:'Presentation för UO i analys'})).toHaveCount(0);
  await expect(navigator.getByRole('table',{name:'UO i analys'})).toBeVisible();
  await navigator.getByRole('button',{name:'UO A',exact:true}).click();
  await expect(navigator.getByRole('table',{name:'LO och UO Övergripande'})).toBeVisible();

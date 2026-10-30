@@ -9,7 +9,6 @@ import {analyzeOptionalAllocation} from './optionalAnalysis';
 import {analyzeCanonical} from '../analytics/canonicalQuery';
 
 export default function OptionalAllocationAnalysis({data,state,config,metrics,activity,year,organization,groupModel}:{data:CanonicalDataset;state:GapState;config:OptionalAllocations;metrics:Metric[];activity:Activity|'all'|'allocated';year?:number;organization:OrganizationSelection;groupModel?:UoGroupModel}){
- const [mode,setMode]=useState<'pie'|'table'>('pie');
  const [active,setActive]=useState('resources');
  const scope=organizationScope(data,organization,groupModel);
  const visible:{id:string;name:string;categories:{name:string;value:number}[];total:number;unallocated:number;unit:string;coverage:string;unknownCount:number}[]=[];
@@ -53,10 +52,9 @@ export default function OptionalAllocationAnalysis({data,state,config,metrics,ac
   <h3>Fördelningsanalys</h3><p>Jämför standardfördelningar eller egna fördelningstyper med samma år, organisation, mått och aktivitet som i analysen.</p>
   <div className="mapping-grid">
    <label>Visa fördelning<select aria-label="Analysera fördelningstyp" value={current.id} onChange={e=>setActive(e.target.value)}>{visible.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-   <label>Presentation<select aria-label="Presentera fördelning" value={mode} onChange={e=>setMode(e.target.value as 'pie'|'table')}><option value="pie">Cirkeldiagram och tabell</option><option value="table">Endast tabell</option></select></label>
   </div>
   <p><strong>Totalt: {format(current.total)} {current.unit}</strong>{current.unallocated>0.000001?'. Ofördelat: '+format(current.unallocated)+' '+current.unit+'.':''}</p>
-  {mode==='pie'&&current.total>0&&<div style={{display:'flex',flexWrap:'wrap',gap:24,alignItems:'center'}}>
+  {current.total>0&&<div style={{display:'flex',flexWrap:'wrap',gap:24,alignItems:'center'}}>
    <div role="img" aria-label={current.name+': '+values.map(v=>v.name+' '+format(v.value)+' '+current.unit).join(', ')} style={{width:'min(200px,100%)',aspectRatio:'1',borderRadius:'50%',flexShrink:0,background:'conic-gradient('+slices.map(s=>s.color+' '+s.from+'% '+s.to+'%').join(', ')+')'}}/>
    <div>{slices.map(s=><p key={s.item.name} style={{margin:'4px 0'}}><span aria-hidden="true" style={{display:'inline-block',width:12,height:12,marginRight:8,background:s.color}}/>{s.item.name}: {format(s.item.value)} {current.unit}</p>)}</div>
   </div>}
