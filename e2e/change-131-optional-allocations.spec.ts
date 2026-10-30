@@ -12,7 +12,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await page.locator('#direct-import-files').setInputFiles({name:'optional-allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
  await expect(page.getByRole('status')).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.getByRole('region',{name:'Valfria fördelningar i analysen'})).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toBeVisible();
  await page.getByRole('button',{name:'Inställningar'}).click();
  const view=page.getByRole('region',{name:'Valfria fördelningstyper'});
  await expect(view).toBeVisible();
@@ -40,7 +40,10 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await editor.getByRole('button',{name:'Spara fördelning för Test UO'}).click();
  await expect(editor.getByRole('button',{name:'Spara fördelning för Test UO'})).toHaveCount(0);
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const allocation=page.getByRole('region',{name:'Valfria fördelningar i analysen'});
+ const allocation=page.getByRole('region',{name:'Fördelningsanalys'});
+ await expect(allocation.getByLabel('Analysera fördelningstyp')).toHaveValue('resources');
+ await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning'});
+ await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await expect(allocation).toBeVisible();
  await expect(allocation.getByRole('table',{name:'Fördelning Effekt'})).toBeVisible();
  await expect(allocation.getByRole('rowheader',{name:'Förutsättningsskapande'})).toBeVisible();
@@ -50,9 +53,10 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await allocation.getByLabel('Presentera fördelning').selectOption('pie');
  await expect(allocation.getByRole('img')).toHaveCount(1);
  await page.getByRole('combobox',{name:'enhet'}).selectOption('costs');
- await expect(page.getByRole('region',{name:'Valfria fördelningar i analysen'})).toHaveCount(0);
+ await expect(allocation.getByLabel('Analysera fördelningstyp').locator('option',{hasText:'Effekt'})).toHaveCount(0);
  await page.getByRole('combobox',{name:'enhet'}).selectOption('hours');
  await expect(allocation).toBeVisible();
+ await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const reopened=page.getByRole('region',{name:'Valfria fördelningar'});
  const persisted=reopened.getByRole('region',{name:'Timviktad fördelning Test UO'});
