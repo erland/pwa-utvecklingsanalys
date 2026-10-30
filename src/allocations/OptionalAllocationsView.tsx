@@ -4,6 +4,7 @@ import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
 import WeightedUoEditor from './WeightedUoEditor';
 import {bulkInitializeUos} from './bulkInitialize';
+import {updateDimension,deleteDimension} from './dimensionManagement';
 import {loadAllocations} from '../allocations/store';
 import {commitConfiguration,initializeConfiguration,readConfiguration,revisions} from '../config/store';
 import {emptyOptionalAllocations,optionalAllocationKey,parseOptionalAllocations,readOptionalAllocations,type OptionalAllocationDimension,type OptionalAllocationRule,type OptionalAllocationScope,type OptionalAllocations} from './optionalModel';
@@ -39,6 +40,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [gaps,setGaps]=useState<GapState>({requirements:[],resolutions:[]});
  const [units,setUnits]=useState<Unit[]>([]),[years,setYears]=useState<number[]>([]);
  const [name,setName]=useState(''),[categories,setCategories]=useState('Förutsättningsskapande; Direkt effekt');
+ const [editingId,setEditingId]=useState<string|null>(null),[deleteId,setDeleteId]=useState<string|null>(null);
  const [unit,setUnit]=useState<'hours'|'costs'>('hours'),[metrics,setMetrics]=useState<Metric[]>(['it_hours','business_hours']);
  const [activities,setActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']);
  const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(0),[expanded,setExpanded]=useState<string[]>([]);
@@ -68,6 +70,10 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   const next={...data,dimensions:[...data.dimensions,dimension]};
   await persist(next);setDimensionId(dimension.id);setName('');
  }catch(e){setError(String(e))}};
+ const beginEdit=(d:OptionalAllocationDimension)=>{setEditingId(d.id);setDeleteId(null);setName(d.name);setCategories(d.categories.map(c=>c.name).join('; '));const isHours=d.appliesTo.metrics.every(m=>m.endsWith('_hours'));setUnit(isHours?'hours':'costs');setMetrics([...d.appliesTo.metrics]);setActivities(d.appliesTo.activities==='all'?['development','maintenance']:[...d.appliesTo.activities]);setError('');setNotice('')};
+ const cancelEdit=()=>{setEditingId(null);setName('');setCategories('Förutsättningsskapande; Direkt effekt');setError('')};
+ const saveEdit=async()=>{if(!editingId)return;setError('');try{const next=updateDimension(data,editingId,{name,names:categories.split(';'),metrics,activities:unit==='hours'?activities:'all'},()=>crypto.randomUUID());await persist(next);cancelEdit()}catch(e){setError(String(e))}};
+ const confirmDelete=async()=>{if(!deleteId)return;setError('');try{await persist(deleteDimension(data,deleteId));setDeleteId(null);if(editingId===deleteId)cancelEdit();if(dimensionId===deleteId)setDimensionId('')}catch(e){setError(String(e))}};
  const dimension=data.dimensions.find(d=>d.id===dimensionId)??data.dimensions[0];
  const runBulk=async()=>{if(!dimension||!bulkCategory||bulkBusy)return;setBulkBusy(true);setError('');try{await persist(bulkInitializeUos(data,dimension.id,year,units.map(u=>u.id),bulkCategory));setBulkCategory(null)}catch(e){setError(String(e))}finally{setBulkBusy(false)}};
  const findRule=(scope:OptionalAllocationScope)=>data.rules.find(r=>r.dimensionId===dimension?.id&&r.year===year&&optionalAllocationKey(r)===optionalAllocationKey({dimensionId:dimension!.id,year,scope,percentages:{}}));
@@ -76,13 +82,15 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const renderRule=(scope:OptionalAllocationScope,base?:OptionalAllocationRule)=>dimension&&<PercentEditor key={JSON.stringify([dimension.id,year,scope,revision,findRule(scope)?.percentages,base?.percentages])} dimension={dimension} year={year} scope={scope} own={findRule(scope)} base={base} onSave={saveRule} onRemove={removeRule}/>;
  return <section aria-label={mode==='rules'?'Valfria fördelningar':'Valfria fördelningstyper'} className="panel" style={{minWidth:0,overflowWrap:"anywhere"}}><h2>{mode==='rules'?'Fördela timmar och kostnader':'Valfria fördelningstyper'}</h2><p>{mode==='rules'?'Välj fördelningstyp. Grundfördelningen gäller alla år; välj ett enskilt år för att göra ett undantag. Dra reglaget för två kategorier, eller ange procenttal. Fördelning på UO- och LO-nivå följer tills vidare de befintliga arvsreglerna.':'Skapa kategorier och välj vilka timmar eller kostnader som ska omfattas. Själva fördelningen gör du sedan under fliken Fördelningar.'}</p>
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
- {mode==='definitions'&&<fieldset style={{minWidth:0}}><legend>Ny fördelningstyp</legend>
+ {mode==='definitions'&&<fieldset style={{minWidth:0}}><legend>{editingId?'Redigera fördelningstyp':'Ny fördelningstyp'}</legend>
   <div className="mapping-grid"><label>Namn<input style={{maxWidth:"100%",minWidth:0}} aria-label="Namn på fördelningstyp" value={name} onChange={e=>setName(e.target.value)}/></label><label>Kategorier (semikolonseparerade)<input style={{maxWidth:"100%",minWidth:0}} aria-label="Fördelningskategorier" value={categories} onChange={e=>setCategories(e.target.value)}/></label>
   <label>Enhet<select style={{maxWidth:"100%",minWidth:0}} aria-label="Enhet för fördelningstyp" value={unit} onChange={e=>{const v=e.target.value as 'hours'|'costs';setUnit(v);setMetrics(v==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'])}}><option value="hours">Timmar</option><option value="costs">Kostnader</option></select></label></div>
   <fieldset style={{minWidth:0}}><legend>Omfattade mått</legend>{allMetrics.filter(m=>unit==='hours'?m.endsWith('_hours'):m.endsWith('_cost')).map(m=><label className="check" key={m}><input type="checkbox" checked={metrics.includes(m)} onChange={e=>setMetrics(old=>e.target.checked?[...old,m]:old.filter(x=>x!==m))}/>{metricLabels[m]}</label>)}</fieldset>
   {unit==='hours'&&<fieldset style={{minWidth:0}}><legend>Aktiviteter</legend>{(['development','maintenance'] as const).map(a=><label className="check" key={a}><input type="checkbox" checked={activities.includes(a)} onChange={e=>setActivities(old=>e.target.checked?[...old,a]:old.filter(x=>x!==a))}/>{a==='development'?'Utveckling':'Förvaltning'}</label>)}</fieldset>}
-  <button className="primary" type="button" disabled={!name.trim()||metrics.length===0||unit==='hours'&&activities.length===0} onClick={()=>void create()}>Skapa fördelningstyp</button>
+  <div className="actions"><button className="primary" type="button" disabled={!name.trim()||metrics.length===0||unit==='hours'&&activities.length===0} onClick={()=>void (editingId?saveEdit():create())}>{editingId?'Spara ändringar':'Skapa fördelningstyp'}</button>{editingId&&<button className="secondary" type="button" onClick={cancelEdit}>Avbryt redigering</button>}</div>
+  {editingId&&<p>Vid ändring av kategorier behålls deras identitet enligt ordningen i listan. Lägg nya kategorier sist. Kategorier som används i sparade regler kan inte tas bort.</p>}
  </fieldset>}
+ {mode==='definitions'&&<section aria-label="Befintliga fördelningstyper"><h3>Befintliga fördelningstyper</h3>{data.dimensions.length===0?<p>Inga fördelningstyper har skapats.</p>:data.dimensions.map(d=><div className="panel" key={d.id}><strong>{d.name}</strong><p>{d.categories.map(c=>c.name).join(' · ')}. {d.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}.</p><div className="actions"><button type="button" className="secondary" onClick={()=>beginEdit(d)}>Redigera {d.name}</button><button type="button" className="secondary" onClick={()=>{setDeleteId(d.id);setError('')}}>Ta bort {d.name}</button></div>{deleteId===d.id&&<div role="group" aria-label={'Bekräfta borttagning av '+d.name}><p>Ta bort fördelningstypen och dess {data.rules.filter(r=>r.dimensionId===d.id).length} sparade fördelningsregler? Detta sparas som en ny konfigurationsrevision.</p><div className="actions"><button type="button" className="primary" onClick={()=>void confirmDelete()}>Bekräfta borttagning</button><button type="button" className="secondary" onClick={()=>setDeleteId(null)}>Avbryt</button></div></div>}</div>)}</section>}
  {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
  {mode==='rules'&&data.dimensions.length>0&&<><h3>Fördela per UO och LO</h3><div className="mapping-grid">
   <label>Fördelningstyp<select aria-label="Aktuell fördelningstyp" value={dimension?.id??''} onChange={e=>{setDimensionId(e.target.value);setBulkCategory(null)}}>{data.dimensions.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
