@@ -16,6 +16,7 @@ test('DEV-117 approved allocation is collapsed but can be reopened and changed p
  await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
  await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
  await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('table',{name:''}).first().getByRole('button',{name:'Visa/ändra fördelningar'}).click();
  await expect(completion.getByText('Fördelningar för vald källa',{exact:false})).toBeVisible();
  await expect(completion.getByLabel(/^Utvecklingsandel /)).toHaveCount(2);
@@ -26,6 +27,7 @@ test('DEV-117 approved allocation is collapsed but can be reopened and changed p
  await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
  await page.reload();await page.getByRole('button',{name:'Import',exact:true}).click();
  await expect(page.getByRole('region',{name:'Komplettera efter import'}).getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
+ await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Visa/ändra fördelningar'}).click();
  await expect(page.getByRole('region',{name:'Komplettera efter import'}).getByLabel(/^Utvecklingsandel /).first()).toHaveValue('75');
 });
