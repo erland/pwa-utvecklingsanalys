@@ -1,5 +1,8 @@
 import {useEffect,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
+import {loadGapState,type GapState} from '../gaps/store';
+import type {CanonicalDataset} from '../domain/canonical';
+import WeightedUoEditor from './WeightedUoEditor';
 import {loadAllocations} from '../allocations/store';
 import {commitConfiguration,initializeConfiguration,readConfiguration,revisions} from '../config/store';
 import {emptyOptionalAllocations,optionalAllocationKey,parseOptionalAllocations,readOptionalAllocations,type OptionalAllocationDimension,type OptionalAllocationRule,type OptionalAllocationScope,type OptionalAllocations} from './optionalModel';
@@ -31,6 +34,8 @@ function PercentEditor({dimension,scope,year,own,base,onSave,onRemove}:{dimensio
 
 export default function OptionalAllocationsView({mode='definitions'}:{mode?:'definitions'|'rules'}){
  const [data,setData]=useState<OptionalAllocations>(emptyOptionalAllocations);
+ const [canonicalData,setCanonicalData]=useState<CanonicalDataset|null>(null);
+ const [gaps,setGaps]=useState<GapState>({requirements:[],resolutions:[]});
  const [units,setUnits]=useState<Unit[]>([]),[years,setYears]=useState<number[]>([]);
  const [name,setName]=useState(''),[categories,setCategories]=useState('Förutsättningsskapande; Direkt effekt');
  const [unit,setUnit]=useState<'hours'|'costs'>('hours'),[metrics,setMetrics]=useState<Metric[]>(['it_hours','business_hours']);
@@ -38,10 +43,10 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(2027),[expanded,setExpanded]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
  useEffect(()=>{let live=true;void (async()=>{
-  const [canonical,legacy]=await Promise.all([loadCanonical(),loadAllocations()]);
+  const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
   const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
   if(!live)return;
-  setData(readOptionalAllocations(config?.sections.optionalAllocations));
+  setData(readOptionalAllocations(config?.sections.optionalAllocations));setCanonicalData(canonical);setGaps(gapState);
   const map=new Map<string,Unit>(),dateSet=new Set<number>();
   for(const record of canonical.records){dateSet.add(record.year);if(record.scope.axis!=='work')continue;
    const {uoId,loId}=record.scope;
@@ -83,6 +88,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:units.map(u=>{
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
   const open=expanded.includes(u.id);
+  if(dimension?.categories.length===2&&canonicalData)return <WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id,revision])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>;
   return <div key={u.id} className="panel" style={{marginTop:12}}><button type="button" className="secondary" aria-expanded={open} onClick={()=>setExpanded(prev=>open?prev.filter(id=>id!==u.id):[...prev,u.id])}>{open?'▾':'▸'} {label(u.id)} – {open?'Dölj detaljer':'Visa LO'}</button>
   {renderRule(scope)}
   {open&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}
