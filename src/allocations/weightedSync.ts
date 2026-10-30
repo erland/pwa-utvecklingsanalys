@@ -32,5 +32,5 @@ export function shiftBinaryUo(parts:readonly WeightedPart[],values:ReadonlyMap<s
 export function putPartRules(config:OptionalAllocations,dimensionId:string,year:number,parts:readonly WeightedPart[],values:ReadonlyMap<string,Record<string,number>>):OptionalAllocations{
  const changes:OptionalAllocationRule[]=parts.map(p=>({dimensionId,year,scope:p.scope,percentages:values.get(partKey(p.scope))??{}}));
  const keys=new Set(changes.map(optionalAllocationKey));
- return {...config,rules:[...config.rules.filter(r=>!keys.has(optionalAllocationKey(r))),...changes]};
+ return {...config,rules:[...config.rules.filter(r=>!keys.has(optionalAllocationKey(r))&&!(r.dimensionId===dimensionId&&r.year===year&&r.scope.kind==='uo'&&parts.some(p=>p.scope.uoId===r.scope.uoId))),...changes]};
 }
