@@ -1,5 +1,5 @@
 import type {OptionalAllocations,OptionalAllocationScope} from './optionalModel';
-import {optionalAllocationKey,parseOptionalAllocations} from './optionalModel';
+import {parseOptionalAllocations} from './optionalModel';
 
 /** A bulk initialization writes one proposal per UO; child scopes inherit it.
  * Annual rules are not touched when initializing the shared all-years default.
