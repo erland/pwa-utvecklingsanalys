@@ -19,7 +19,7 @@ test('DEV-120 analysis controls are directly visible without extra disclosure pa
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('region',{name:'Redovisning och gruppering'})).toBeVisible();
  await expect(page.getByRole('combobox',{name:'organisation'})).toBeVisible();
- await expect(page.getByRole('combobox',{name:'resultatgruppering'})).toBeVisible();
+ await expect(page.getByRole('combobox',{name:'resultatgruppering'})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Avgränsa underlag'})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Utforska UO'})).toBeVisible();
  await expect(page.getByText('Fler analysval – organisation och gruppering')).toHaveCount(0);
