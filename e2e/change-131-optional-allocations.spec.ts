@@ -37,6 +37,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await loSlider.focus();await loSlider.press('Home');
  await expect(loSlider).toHaveValue('0');
  await expect(uoSlider).toHaveValue('37.5');
+ await expect(editor.getByRole('status').filter({hasText:'Sparar fördelningen'})).toHaveCount(0);
  await expect(editor.getByRole('button',{name:'Spara fördelning för Test UO'})).toHaveCount(0);
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const allocation=page.getByRole('region',{name:'Fördelningsanalys'});
