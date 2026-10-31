@@ -1,4 +1,6 @@
 import {useState} from 'react';
+import {approvedActivityParts} from '../domain/activityAllocation';
+import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 import {PeriodButtons} from './WeightedUoEditor';
 
@@ -39,9 +41,31 @@ export function builtInRows(data:CanonicalDataset,kind:Kind,year:number):Row[]{
  }
  return [...byUo].filter(([,v])=>v.hasData).sort(([a],[b])=>name(a).localeCompare(name(b),'sv')).map(([key,v])=>({key,title:name(key),values:{first:v.first,second:v.second},status:'Importerad · låst'}));
 }
-export default function BuiltInAllocations({data,years}:{data:CanonicalDataset;years:number[]}){
+export type ApprovedLoRow={key:string;uoId:string;loId:string;year:number;metric:Metric;development:number;maintenance:number;source:string};
+/** Only validated approvals can produce these derived LO values; stale decisions remain invisible. */
+export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):ApprovedLoRow[]{
+ const rows:ApprovedLoRow[]=[];
+ for(const rule of gaps.activityAllocationRules??[]){
+  if(year!==0&&rule.year!==year)continue;
+  const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+  if(!decision)continue;
+  const parts=approvedActivityParts(data,rule,decision);
+  const grouped=new Map<string,{development:number;maintenance:number}>();
+  for(const part of parts){
+   if(part.scope.axis!=='work'||(part.activity!=='development'&&part.activity!=='maintenance'))continue;
+   const loId=part.scope.loId??'uo-overhead:'+part.scope.uoId;
+   const entry=grouped.get(loId)??{development:0,maintenance:0};
+   entry[part.activity==='development'?'development':'maintenance']+=part.value;
+   grouped.set(loId,entry);
+  }
+  for(const [loId,entry] of grouped)rows.push({key:JSON.stringify([rule.datasetId,rule.uoId,loId,rule.metric,rule.year]),uoId:rule.uoId,loId,year:rule.year,metric:rule.metric,...entry,source:rule.datasetId});
+ }
+ return rows.sort((a,b)=>a.year-b.year||name(a.uoId).localeCompare(name(b.uoId),'sv')||name(a.loId).localeCompare(name(b.loId),'sv')||a.metric.localeCompare(b.metric));
+}
+export default function BuiltInAllocations({data,years,gaps}:{data:CanonicalDataset;years:number[];gaps:GapState}){
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
+ const approvedRows=approvedLoRows(data,gaps,year);
  const kinds:[Kind,string,string,string][]=[
   ['activity','Utveckling / Förvaltning','Utveckling','Förvaltning'],
   ['metric','IT-timmar / Verksamhetstimmar','IT-timmar','Verksamhetstimmar']
@@ -58,8 +82,9 @@ export default function BuiltInAllocations({data,years}:{data:CanonicalDataset;y
     <p><small>Importerade originalvärden · endast visning</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <h4>{title} per UO</h4>
-      {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. LO-kompletteringar och omfördelningar visas först när den gemensamma läsmodellen är införd.</p>}
-      {rows.length===0?<p>Inga uppgifter att visa.</p>:<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>{first} (h)</th><th>{second} (h)</th><th>Ursprung</th></tr></thead><tbody>{rows.map(r=><tr key={r.key}><td>{r.title}</td><td>{format(r.values.first)}</td><td>{format(r.values.second)}</td><td>{r.status}</td></tr>)}</tbody></table></div>}
+      {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
+      {kind==='activity'&&approvedRows.length>0&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Ändringar görs tills vidare i importflödet.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
+      {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>{first} (h)</th><th>{second} (h)</th><th>Ursprung</th></tr></thead><tbody>{rows.map(r=><tr key={r.key}><td>{r.title}</td><td>{format(r.values.first)}</td><td>{format(r.values.second)}</td><td>{r.status}</td></tr>)}</tbody></table></div>}
     </section>}
    </div>;
   })}
