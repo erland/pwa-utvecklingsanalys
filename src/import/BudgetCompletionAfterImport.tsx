@@ -109,9 +109,11 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
    await saveGapState(next);
    setState(next);
   }}/>;
+  const legacy=entries.some(e=>e.decision?.sharedPercentages===true);
   return <div key={key} className="mapping-settings" data-allocation-source={entries[0].rule.datasetId}>
    <h3>{label} · Gemensam utvecklingsandel för IT- och verksamhetstimmar</h3>
    <p role="status">{approved?'Godkänd fördelning – kan justeras på nytt':'Behöver godkännas'}</p>
+   {legacy&&<p role="status">Tidigare beslut använder fria LO-procentandelar. Vid en ny manuell justering ersätts de med balanserade beslut mot importerade UO-totaler; tidigare värden ändras inte förrän du sparar.</p>}
    {showEditor?editor:<details><summary>Ändra fördelning för {label}</summary>{editor}</details>}
   </div>;
  };
