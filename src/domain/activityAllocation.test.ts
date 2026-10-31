@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {emptyCanonical,summarizeCanonical,type AnalysisRecord} from './canonical';
-import {previewActivityAllocation,approveActivityAllocation,approveSharedActivityAllocation,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
+import {previewActivityAllocation,approveActivityAllocation,approveSharedActivityAllocation,approveBalancedActivityGroup,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
 const rule:ActivityAllocationRule={id:'rule1',datasetId:'ds',uoId:'uo',metric:'it_hours',year:2027,reason:'Fördelning utifrån LO-totaler'};
 const base=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:string):AnalysisRecord=>({
  id,metric:'it_hours',value,year:2027,activity,scope:{axis:'work',uoId:'uo',...(loId?{loId}:{})},
@@ -106,4 +106,21 @@ describe('v2 approved activity allocations',()=>{
   expect(()=>approveActivityAllocation(preview,'  ')).toThrow('APPROVAL_REASON_REQUIRED');
   expect(approvedActivityParts(data,rule,{ruleId:rule.id,fingerprint:'old',approvedAt:'2026',reason:'old'})).toEqual([]);
  });
+ it('validates all metric previews before issuing shared balanced decisions',()=>{
+  const itPreview=previewActivityAllocation(fixture(),rule);
+  const businessPreview={...itPreview,ruleId:'business-rule',uo:{development:550,maintenance:450}};
+  const originals=JSON.stringify([itPreview,businessPreview]);
+  expect(()=>approveBalancedActivityGroup([itPreview,businessPreview],'Group',[
+   {loId:'lo1',developmentPercent:80}
+  ])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
+  expect(JSON.stringify([itPreview,businessPreview])).toBe(originals);
+  const decisions=approveBalancedActivityGroup([itPreview,businessPreview],'Group',[
+   {loId:'lo1',developmentPercent:50}
+  ]);
+  expect(decisions).toHaveLength(2);
+  expect(decisions.every(d=>d.sharedPercentages!==true)).toBe(true);
+  expect(decisions.map(d=>d.ruleId)).toEqual([rule.id,'business-rule']);
+  expect(()=>approveBalancedActivityGroup([itPreview,itPreview],'Group',[])).toThrow('DUPLICATE_ACTIVITY_RULE');
+ });
+
 });
