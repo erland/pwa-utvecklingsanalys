@@ -55,4 +55,24 @@ describe('canonical approved import mapping',()=>{
   expect(()=>canonicalFromBudget({...input,issues:[{code:'x',severity:'error',message:'bad'}]},'source1')).toThrow('IMPORT_NOT_APPROVED');
   expect(()=>canonicalFromBudget({...input,facts:[{...input.facts[0],value:-1}]},'source1')).toThrow('NEGATIVE_SOURCE_AMOUNT');
  });
+ it('imports a locked original LO pair without adding extra workload and invalidates it on reimport',()=>{
+  const original={...input,loActivities:[{area:'LO A',year:2027,metric:'it_hours' as const,development:240,maintenance:360,
+   source:{sheet:'LO Aktiviteter 2027-2030',developmentCell:'D2',maintenanceCell:'E2'}}]};
+  const records=canonicalFromBudget(original,'source1',true);
+  expect(validateCanonical({...emptyCanonical(),records})).toEqual([]);
+  expect(records.filter(r=>r.scope.axis==='work'&&r.scope.loId==='lo:UO%20A:LO%20A')).toHaveLength(3);
+  expect(records.filter(r=>r.authority==='original'&&r.granularity==='activity-part'&&r.scope.axis==='work'&&r.scope.loId)).toHaveLength(2);
+  expect(summarizeCanonical({...emptyCanonical(),records},'work',['it_hours'],'all').value).toBe(1000);
+  const changed={...input,loActivities:[{...original.loActivities[0],development:200,maintenance:400}]};
+  const next=replaceCanonicalSource({...emptyCanonical(),records},canonicalFromBudget(changed,'source1',true),'source1');
+  expect(next.records).toHaveLength(records.length);
+  expect(next.records.filter(r=>r.activity==='development'&&r.scope.axis==='work'&&r.scope.loId).map(r=>r.value)).toEqual([200]);
+ });
+ it('rejects LO activity pairs without a matching imported total or with mismatched hours',()=>{
+  const pair={area:'LO A',year:2027,metric:'it_hours' as const,development:240,maintenance:300,
+   source:{sheet:'LO Aktiviteter 2027-2030',developmentCell:'D2',maintenanceCell:'E2'}};
+  expect(()=>canonicalFromBudget({...input,loActivities:[pair]},'source1',true)).toThrow('LO_ACTIVITY_TOTAL_MISMATCH');
+  expect(()=>canonicalFromBudget({...input,loActivities:[{...pair,area:'LO Z'}]},'source1',true)).toThrow('LO_ACTIVITY_TOTAL_MISSING');
+ });
+
 });
