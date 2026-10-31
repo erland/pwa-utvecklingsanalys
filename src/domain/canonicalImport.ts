@@ -36,6 +36,23 @@ export function canonicalFromBudget(result:ImportResult,datasetId:string,include
   const group=[datasetId,work.uoId,work.loId??'overhead',fact.measure,fact.period.year,fact.period.month??'year'].join('|');
   add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measure].map(slug).join('|'),metric:fact.measure,value:fact.value,year:fact.period.year,...(fact.period.month?{month:fact.period.month}:{}),activity:'unknown',scope:work,authority:'original',approval:'reported',workloadId:group,granularity:'total',workPart:work.loId?'lo':'uo-overhead',source:from(fact.source.sheet,fact.source.cell)});
  }
+ // Optional LO activity sheet: complete original annual pairs replace no total;
+ // they describe the same workload as its imported LO total.
+ for(const fact of result.loActivities??[]){
+  const loId='lo:'+slug(result.uo)+':'+slug(fact.area);
+  const totals=records.filter(r=>r.scope.axis==='work'&&r.scope.loId===loId&&r.metric===fact.metric&&r.year===fact.year&&r.granularity==='total');
+  if(totals.length!==1)throw new Error('LO_ACTIVITY_TOTAL_MISSING');
+  const total=totals[0];
+  if(Math.abs(total.value-fact.development-fact.maintenance)>Math.max(1e-8,total.value*1e-10))throw new Error('LO_ACTIVITY_TOTAL_MISMATCH');
+  for(const activity of ['development','maintenance'] as const){
+   const cell=activity==='development'?fact.source.developmentCell:fact.source.maintenanceCell;
+   add({id:[datasetId,fact.source.sheet,cell,fact.metric].map(slug).join('|'),metric:fact.metric,
+    value:activity==='development'?fact.development:fact.maintenance,year:fact.year,
+    activity,scope:{axis:'work',uoId:'uo:'+slug(result.uo),loId},authority:'original',
+    approval:'reported',workloadId:total.workloadId,granularity:'activity-part',workPart:'lo',
+    source:from(fact.source.sheet,cell)});
+  }
+ }
  if(includeMatrix&&result.matrix){
   if(result.matrix.issues.length)throw new Error('MATRIX_HAS_UNREVIEWED_ISSUES');
   for(const fact of result.matrix.facts){
