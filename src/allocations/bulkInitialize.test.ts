@@ -13,7 +13,7 @@ describe('DEV-144 bulk UO initialization',()=>{
   expect(next.rules.filter(r=>r.year===0)).toHaveLength(2);
   expect(effectiveOptionalRule(next,'impact',2027,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:100,b:0});
   expect(effectiveOptionalRule(next,'impact',2027,{kind:'lo',uoId:'U2',loId:'L2'}).rule?.percentages).toEqual({a:100,b:0});
-  expect(effectiveOptionalRule(next,'impact',2028,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:70,b:30});
+  expect(effectiveOptionalRule(next,'impact',2028,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:35,b:65});
   expect(data.rules).toHaveLength(3);
  });
  it('supports reverse endpoint and isolates a single year',()=>{
@@ -29,8 +29,8 @@ describe('DEV-144 bulk UO initialization',()=>{
 });
 
 describe('DEV-161 massfördelning och rensning',()=>{
- it('förhandsgranskar exakt antal regler och bevarar årsundantag',()=>{
-  expect(previewBulkChange(data,'impact',0,['U1','U2'])).toEqual({uos:2,removedRules:2,loRules:1,overheadRules:0,annualExceptions:1});
+ it('förhandsgranskar alla berörda år och ersätter tidigare årsundantag',()=>{
+  expect(previewBulkChange(data,'impact',0,['U1','U2'])).toEqual({uos:2,removedRules:3,loRules:2,overheadRules:0,annualExceptions:0});
   const next=bulkSetPercentages(data,'impact',0,['U1','U2'],{a:35,b:65});
   expect(next.rules.filter(r=>r.year===0)).toHaveLength(2);
   expect(effectiveOptionalRule(next,'impact',2027,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:35,b:65});
