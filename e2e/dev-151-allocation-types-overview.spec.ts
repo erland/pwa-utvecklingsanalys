@@ -18,7 +18,7 @@ test('DEV-151 allocation types show overview and open forms on demand',async({pa
  await view.getByRole('button',{name:'Skapa fördelningstyp'}).click();
  await expect(overview).toContainText('Effekt');
  await expect(overview).toContainText('0 regler');
- await overview.getByRole('button',{name:'Redigera Effekt'}).click();
+ await overview.getByRole('button',{name:/Effekt.*regler/}).click();
  await expect(view.getByLabel('Namn på fördelningstyp')).toHaveValue('Effekt');
  await view.getByLabel('Namn på fördelningstyp').fill('Osparad');
  await view.getByRole('button',{name:'Avbryt',exact:true}).click();
