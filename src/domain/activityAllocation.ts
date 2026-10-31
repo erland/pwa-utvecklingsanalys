@@ -1,10 +1,11 @@
-import {rebalanceUoBudgetAllocation,type LoDevelopmentOverride} from '../import/formats/uoBudgetCompletion';
+import {rebalanceUoBudgetAllocation,type LoDevelopmentOverride,type LockedLoActivity} from '../import/formats/uoBudgetCompletion';
+import {importedLoActivityLocks} from './importedLoLocks';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric} from './canonical';
 
 /** Decisions are kept separately from immutable imported observations. */
 export type ActivityAllocationRule={id:string;datasetId:string;uoId:string;metric:Metric;year:number;reason:string};
 export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string;overrides?:LoDevelopmentOverride[];sharedPercentages?:boolean};
-export type AllocationPreview={ruleId:string;fingerprint:string;uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
+export type AllocationPreview={ruleId:string;fingerprint:string;lockedLo?:LockedLoActivity[];uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
 
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
 export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAllocationRule):AllocationPreview{
@@ -34,8 +35,10 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  const total=loTotals.reduce((n,r)=>n+r.value,0);
  if(sourceTotal<=0||total<=0)throw new Error('UO_LO_TOTAL_MISMATCH');
  const dev=total*matrixDev/sourceTotal,maintenance=total-dev;
+ const {locks,incompleteLoIds}=importedLoActivityLocks(data,rule);
+ if(incompleteLoIds.length)throw new Error('INCOMPLETE_IMPORTED_LO_ACTIVITY');
  const existing=data.records.filter(r=>r.metric===rule.metric&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId&&(Boolean(r.scope.loId)||r.workPart==='uo-overhead')&&r.granularity==='activity-part');
- if(existing.length)throw new Error('EXISTING_LO_ACTIVITY_DATA');
+ if(existing.some(r=>r.authority!=='original'||r.approval!=='reported'||r.month!==undefined))throw new Error('EXISTING_LO_ACTIVITY_DATA');
  let allocatedDev=0;
  const items=loTotals.sort((a,b)=>a.id.localeCompare(b.id)).map((r,i,all)=>{
   const development=i===all.length-1?dev-allocatedDev:dev*r.value/total;
@@ -44,8 +47,10 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
   return {loId,total:r.value,development,maintenance:r.value-development,workloadId:r.workloadId};
  });
  // Source proportions apply only when the LO and UO totals reconcile. All provenance is fingerprinted.
- const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loSources])]);
- return {ruleId:rule.id,fingerprint,uo:{development:dev,maintenance},items};
+ const fingerprint=JSON.stringify([rule.datasetId,rule.uoId,rule.metric,rule.year,sortRows([...matrix,...loSources,...existing])]);
+ const preview:AllocationPreview={ruleId:rule.id,fingerprint,uo:{development:dev,maintenance},items,...(locks.length?{lockedLo:locks}:{})};
+ if(locks.length)return rebalanceUoBudgetAllocation(preview,[],locks);
+ return preview;
 }
 /** Apply one explicit development percentage per LO, independently of the source metric.
  * The UO matrix supplies the initial share; edited shares are authoritative per LO.
@@ -87,7 +92,7 @@ export function approveBalancedActivityGroup(
 export function approveActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]=[]):ActivityAllocationDecision{
  if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
  // Validate the complete balancing before storing any user-supplied percentages.
- rebalanceUoBudgetAllocation(preview,overrides);
+ rebalanceUoBudgetAllocation(preview,overrides,preview.lockedLo??[]);
  return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim(),...(overrides.length?{overrides:overrides.map(o=>({...o}))}:{})};
 }
 /** Generate read-only approved completions; never write them into original source storage. */
@@ -96,8 +101,8 @@ export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocat
  let preview:AllocationPreview;
  try{preview=previewActivityAllocation(data,rule)}catch{return []}
  if(preview.fingerprint!==decision.fingerprint)return [];
- try{preview=decision.sharedPercentages?applySharedPercentages(preview,decision.overrides??[]):rebalanceUoBudgetAllocation(preview,decision.overrides??[])}catch{return []}
- return preview.items.flatMap(item=>['development','maintenance'].map(activity=>({
+ try{preview=decision.sharedPercentages?applySharedPercentages(preview,decision.overrides??[]):rebalanceUoBudgetAllocation(preview,decision.overrides??[],preview.lockedLo??[])}catch{return []}
+ return preview.items.filter(item=>!preview.lockedLo?.some(lock=>lock.loId===item.loId)).flatMap(item=>['development','maintenance'].map(activity=>({
   id:['allocation',rule.id,item.loId,activity,rule.year].join('|'),metric:rule.metric,year:rule.year,
   value:activity==='development'?item.development:item.maintenance,
   activity:activity as Activity,scope:item.loId.startsWith('uo-overhead:')?{axis:'work' as const,uoId:rule.uoId}:{axis:'work' as const,uoId:rule.uoId,loId:item.loId},...(item.loId.startsWith('uo-overhead:')?{workPart:'uo-overhead' as const}:{}),authority:'derived' as const,approval:'approved' as const,
