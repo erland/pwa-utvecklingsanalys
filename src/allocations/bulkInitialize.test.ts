@@ -13,7 +13,7 @@ describe('DEV-144 bulk UO initialization',()=>{
   expect(next.rules.filter(r=>r.year===0)).toHaveLength(2);
   expect(effectiveOptionalRule(next,'impact',2027,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:100,b:0});
   expect(effectiveOptionalRule(next,'impact',2027,{kind:'lo',uoId:'U2',loId:'L2'}).rule?.percentages).toEqual({a:100,b:0});
-  expect(effectiveOptionalRule(next,'impact',2028,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:35,b:65});
+  expect(effectiveOptionalRule(next,'impact',2028,{kind:'lo',uoId:'U1',loId:'L1'}).rule?.percentages).toEqual({a:70,b:30});
   expect(data.rules).toHaveLength(3);
  });
  it('supports reverse endpoint and isolates a single year',()=>{
