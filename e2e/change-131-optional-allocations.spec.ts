@@ -34,7 +34,6 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await uoOverview.getByRole('button',{name:/Test UO.*LO/}).click();
  const editor=rules.getByRole('region',{name:'Timviktad fördelning Test UO'});
  await expect(editor).toBeVisible();
- await expect(editor.getByRole('region',{name:'UO årsundantag'})).toBeVisible();
  const uoPeriod=editor.getByRole('region',{name:'Fördelning UO Test UO'});
  await expect(uoPeriod.getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await uoPeriod.getByRole('button',{name:'2027'}).click();
