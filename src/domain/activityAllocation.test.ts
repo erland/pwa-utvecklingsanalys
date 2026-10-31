@@ -125,11 +125,11 @@ describe('v2 approved activity allocations',()=>{
 
  it('preserves complete imported LO while distributing remaining hours and excludes duplicated derivations',()=>{
   const data=fixture();
-  data.records.push({...base('IMP1',200,'development','lo1'),granularity:'activity-part'});
-  data.records.push({...base('IMP2',500,'maintenance','lo1'),granularity:'activity-part'});
+  data.records.push({...base('IMP1',300,'development','lo1'),granularity:'activity-part'});
+  data.records.push({...base('IMP2',400,'maintenance','lo1'),granularity:'activity-part'});
   const before=JSON.stringify(data);
   const proposal=previewActivityAllocation(data,rule);
-  expect(proposal.lockedLo).toEqual([{loId:'lo1',development:200,maintenance:500}]);
+  expect(proposal.lockedLo).toEqual([{loId:'lo1',development:300,maintenance:400}]);
   expect(proposal.items.find(i=>i.loId==='lo2')?.development).toBe(300);
   expect(()=>approveActivityAllocation(proposal,'Otillåtet',[{loId:'lo1',developmentPercent:50}])).toThrow('LOCKED_LO_OVERRIDE');
   const approved=approveActivityAllocation(proposal,'Godkänt');
