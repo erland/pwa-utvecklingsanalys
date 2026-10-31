@@ -22,3 +22,29 @@ export function bulkInitializeUos(config:OptionalAllocations,dimensionId:string,
  ]};
  return parseOptionalAllocations(next);
 }
+
+/** Preview reports exact overwritten rules; default-year operations keep annual exceptions. */
+export function previewBulkChange(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[]){
+ const ids=new Set(uoIds);
+ const affected=config.rules.filter(r=>r.dimensionId===dimensionId&&r.year===year&&ids.has(r.scope.uoId));
+ return {uos:ids.size,removedRules:affected.length,loRules:affected.filter(r=>r.scope.kind==='lo').length,overheadRules:affected.filter(r=>r.scope.kind==='uo-overhead').length,
+  annualExceptions:year===0?config.rules.filter(r=>r.dimensionId===dimensionId&&r.year!==0&&ids.has(r.scope.uoId)).length:0};
+}
+export function bulkSetPercentages(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[],percentages:Record<string,number>):OptionalAllocations{
+ const dimension=config.dimensions.find(d=>d.id===dimensionId);
+ if(!dimension)throw new Error('UNKNOWN_DIMENSION');
+ if(!Number.isInteger(year)||year!==0&&(year<2000||year>2100))throw new Error('INVALID_YEAR');
+ const ids=[...new Set(uoIds.filter(Boolean))];if(!ids.length)throw new Error('NO_UOS');
+ if(Object.keys(percentages).some(id=>!dimension.categories.some(c=>c.id===id))||dimension.categories.some(c=>!Number.isFinite(percentages[c.id])||percentages[c.id]<0||percentages[c.id]>100)||Math.abs(dimension.categories.reduce((n,c)=>n+percentages[c.id],0)-100)>0.00001)throw new Error('INVALID_PERCENTAGES');
+ const keys=new Set(ids);
+ return parseOptionalAllocations({...config,rules:[
+  ...config.rules.filter(r=>!(r.dimensionId===dimensionId&&r.year===year&&keys.has(r.scope.uoId))),
+  ...ids.map(uoId=>({dimensionId,year,scope:{kind:'uo' as const,uoId},percentages:{...percentages}}))
+ ]});
+}
+export function bulkClearPercentages(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[]):OptionalAllocations{
+ if(!config.dimensions.some(d=>d.id===dimensionId))throw new Error('UNKNOWN_DIMENSION');
+ if(!Number.isInteger(year)||year!==0&&(year<2000||year>2100))throw new Error('INVALID_YEAR');
+ const keys=new Set(uoIds);
+ return parseOptionalAllocations({...config,rules:config.rules.filter(r=>!(r.dimensionId===dimensionId&&r.year===year&&keys.has(r.scope.uoId)))});
+}

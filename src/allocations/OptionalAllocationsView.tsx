@@ -4,7 +4,7 @@ import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
 import WeightedUoEditor from './WeightedUoEditor';
-import {bulkInitializeUos} from './bulkInitialize';
+import {bulkSetPercentages,bulkClearPercentages,previewBulkChange} from './bulkInitialize';
 import {updateDimension,deleteDimension,dimensionChangeImpact} from './dimensionManagement';
 import {loadAllocations} from '../allocations/store';
 import {commitConfiguration,initializeConfiguration,readConfiguration,revisions} from '../config/store';
@@ -46,7 +46,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [activities,setActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']);
  const [dimensionId,setDimensionId]=useState(''),[year,setYear]=useState(0),[expanded,setExpanded]=useState<string[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState(''),[revision,setRevision]=useState(0);
- const [bulkCategory,setBulkCategory]=useState<string|null>(null),[bulkBusy,setBulkBusy]=useState(false);
+ const [bulkCategory,setBulkCategory]=useState<string|null>(null),[bulkBusy,setBulkBusy]=useState(false),[bulkPercent,setBulkPercent]=useState(50),[bulkAction,setBulkAction]=useState<'set'|'clear'|null>(null);
  const [selectedUo,setSelectedUo]=useState<string|null>(null),[uoSearch,setUoSearch]=useState(''),[uoFilter,setUoFilter]=useState<'all'|'configured'|'missing'>('all');
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
@@ -78,7 +78,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const saveEdit=async(confirmed=false)=>{if(!editingId)return;setError('');try{const input=editInput();const impact=dimensionChangeImpact(data,editingId,input);if(impact.requiresConfirmation&&!confirmed){setConfirmImpact(true);return}const next=updateDimension(data,editingId,input,()=>crypto.randomUUID(),confirmed);await persist(next);cancelEdit()}catch(e){setError(String(e))}};
  const confirmDelete=async()=>{if(!deleteId)return;setError('');try{await persist(deleteDimension(data,deleteId));setDeleteId(null);if(editingId===deleteId)cancelEdit();if(dimensionId===deleteId)setDimensionId('')}catch(e){setError(String(e))}};
  const dimension=data.dimensions.find(d=>d.id===dimensionId)??data.dimensions[0];
- const runBulk=async()=>{if(!dimension||!bulkCategory||bulkBusy)return;setBulkBusy(true);setError('');try{await persist(bulkInitializeUos(data,dimension.id,year,units.map(u=>u.id),bulkCategory));setBulkCategory(null)}catch(e){setError(String(e))}finally{setBulkBusy(false)}};
+ const runBulk=async()=>{if(!dimension||!bulkAction||bulkBusy)return;setBulkBusy(true);setError('');try{const ids=units.map(u=>u.id);const next=bulkAction==='clear'?bulkClearPercentages(data,dimension.id,year,ids):bulkSetPercentages(data,dimension.id,year,ids,Object.fromEntries(dimension.categories.map((c,i)=>[c.id,dimension.categories.length===2?(i===0?bulkPercent:100-bulkPercent):(c.id===(bulkCategory??dimension.categories[0].id)?100:0)])));await persist(next);setBulkAction(null);setBulkCategory(null)}catch(e){setError(String(e))}finally{setBulkBusy(false)}};
  const findRule=(scope:OptionalAllocationScope)=>data.rules.find(r=>r.dimensionId===dimension?.id&&r.year===year&&optionalAllocationKey(r)===optionalAllocationKey({dimensionId:dimension!.id,year,scope,percentages:{}}));
  const saveRule=async(rule:OptionalAllocationRule)=>{const key=optionalAllocationKey(rule);await persist({...data,rules:[...data.rules.filter(r=>optionalAllocationKey(r)!==key),rule]})};
  const removeRule=async(rule:OptionalAllocationRule)=>await persist({...data,rules:data.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(rule))});
@@ -111,12 +111,15 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   <label>Fördelningsperiod<select aria-label="Fördelningsår" value={year} onChange={e=>{setYear(Number(e.target.value));setBulkCategory(null);setSelectedUo(null)}}><option value={0}>Samtliga år (grundfördelning)</option>{years.map(y=><option key={y} value={y}>{y} (egen justering)</option>)}</select></label>
  </div><p>Omfattning: {dimension?.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')}. En LO utan egen regel ärver UO-förslaget.</p>
  {dimension&&units.length>0&&<section aria-label="Snabbfördela samtliga UO" className="panel">
-  <h4>Snabbfördela samtliga UO</h4>
-  <p>Välj vilken kategori som ska få 100 %. Det påverkar {units.length} UO {year===0?'i grundfördelningen för samtliga år':'för år '+year}. Individuella regler inom valt UO ersätts för denna period.</p>
-  <div className="actions">{dimension.categories.map(c=><button key={c.id} type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkCategory(c.id)}>100 % {c.name}</button>)}</div>
-  {bulkCategory&&<div className="panel" role="group" aria-label="Bekräfta snabbfördelning">
-   <p>Bekräfta: {units.length} UO sätts till 100 % {dimension.categories.find(c=>c.id===bulkCategory)?.name} {year===0?'för alla år (årsundantag behålls)':'för '+year}. Alla andra kategorier blir 0 %. Detta sparas som en enda revision.</p>
-   <div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta snabbfördelning</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkCategory(null)}>Avbryt</button></div>
+  <h4>Massfördelning för samtliga UO</h4>
+  <p>Ändra grundfördelningen för alla UO samtidigt eller rensa regler för vald period. Årsundantag för andra perioder behålls.</p>
+  {dimension.categories.length===2?<label>{dimension.categories[0].name}: {bulkPercent} % · {dimension.categories[1].name}: {100-bulkPercent} %
+    <input type="range" aria-label="Massfördelning procent" min={0} max={100} step={1} value={bulkPercent} onChange={e=>{setBulkPercent(Number(e.target.value));setBulkAction(null)}}/>
+   </label>:<label>Kategori för 100 %<select aria-label="Massfördelning kategori" value={bulkCategory??dimension.categories[0].id} onChange={e=>{setBulkCategory(e.target.value);setBulkAction(null)}}>{dimension.categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>}
+  <div className="actions"><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkAction('set')}>Fördela alla UO</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkAction('clear')}>Rensa fördelningar</button></div>
+  {bulkAction&&<div className="panel" role="group" aria-label="Bekräfta massändring">
+    {(()=>{const impact=previewBulkChange(data,dimension.id,year,units.map(u=>u.id));return <p>{bulkAction==='clear'?'Rensa sparade regler':'Ersätt fördelningar'} för {impact.uos} UO, inklusive {impact.removedRules} befintliga regler ({impact.loRules} LO, {impact.overheadRules} UO Övergripande) för {year===0?'grundfördelningen':year}. {impact.annualExceptions>0?impact.annualExceptions+' årsundantag behålls.':''} {bulkAction==='set'&&dimension.categories.length===2?'Ny andel: '+bulkPercent+' % '+dimension.categories[0].name+' och '+(100-bulkPercent)+' % '+dimension.categories[1].name+'.':''} Ändringen sparas som en revision.</p>})()}
+    <div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta {bulkAction==='clear'?'rensning':'massfördelning'}</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkAction(null)}>Avbryt</button></div>
   </div>}
  </section>}
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:<section aria-label="Översikt UO-fördelningar" className="panel">
