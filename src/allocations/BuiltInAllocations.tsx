@@ -1,5 +1,7 @@
 import {useState} from 'react';
-import {approvedActivityParts} from '../domain/activityAllocation';
+import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
+import LoAllocationDraft from '../gaps/LoAllocationDraft';
+import {loadGapState,saveGapState} from '../gaps/store';
 import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 import {PeriodButtons} from './WeightedUoEditor';
@@ -62,10 +64,41 @@ export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):
  }
  return rows.sort((a,b)=>a.year-b.year||name(a.uoId).localeCompare(name(b.uoId),'sv')||name(a.loId).localeCompare(name(b.loId),'sv')||a.metric.localeCompare(b.metric));
 }
-export default function BuiltInAllocations({data,years,gaps}:{data:CanonicalDataset;years:number[];gaps:GapState}){
+export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:CanonicalDataset;years:number[];gaps:GapState;onSaved:(next:GapState)=>void}){
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
+ const [editing,setEditing]=useState<string|null>(null);
  const approvedRows=approvedLoRows(data,gaps,year);
+ const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
+ for(const rule of gaps.activityAllocationRules??[]){
+  if(year!==0&&rule.year!==year)continue;
+  const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+  if(!decision||approvedActivityParts(data,rule,decision).length===0)continue;
+  let preview:AllocationPreview;
+  try{preview=previewActivityAllocation(data,rule)}catch{continue}
+  const key=JSON.stringify([rule.datasetId,rule.uoId,rule.year]);
+  const group=editorGroups.get(key)??{rules:[],previews:[]};
+  group.rules.push(rule);group.previews.push(preview);editorGroups.set(key,group);
+ }
+ const saveGroup=async(group:{rules:ActivityAllocationRule[];previews:AllocationPreview[]},overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
+  const approvals=approveBalancedActivityGroup(group.previews,reason,overrides);
+  const latest=await loadGapState();
+  // Abort if another tab has replaced source-linked decisions since the displayed snapshot.
+  for(const rule of group.rules){
+   const shown=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   const current=(latest.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   if(JSON.stringify(shown)!==JSON.stringify(current))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
+  }
+  const decisions=[...(latest.activityAllocationDecisions??[])];
+  for(let i=0;i<group.rules.length;i++){
+   const ruleId=group.rules[i].id;
+   const index=decisions.findIndex(d=>d.ruleId===ruleId);
+   if(index<0)throw new Error('Fördelningsbeslut saknas. Ladda om sidan.');
+   decisions[index]=approvals[i];
+  }
+  const next={...latest,activityAllocationDecisions:decisions};
+  await saveGapState(next);onSaved(next);setEditing(null);
+ };
  const kinds:[Kind,string,string,string][]=[
   ['activity','Utveckling / Förvaltning','Utveckling','Förvaltning'],
   ['metric','IT-timmar / Verksamhetstimmar','IT-timmar','Verksamhetstimmar']
@@ -83,7 +116,22 @@ export default function BuiltInAllocations({data,years,gaps}:{data:CanonicalData
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <h4>{title} per UO</h4>
       {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
-      {kind==='activity'&&approvedRows.length>0&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Ändringar görs tills vidare i importflödet.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
+      {kind==='activity'&&approvedRows.length>0&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Du kan justera godkända LO-fördelningar nedan.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
+      {kind==='activity'&&[...editorGroups].map(([key,group])=>{
+       const firstRule=group.rules[0];
+       const items=new Map<string,AllocationPreview['items'][number]>();
+       for(const preview of group.previews)for(const item of preview.items){
+        const prior=items.get(item.loId);
+        items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
+       }
+       const combined:AllocationPreview={ruleId:key,fingerprint:group.previews.map(p=>p.fingerprint).join('|'),items:[...items.values()],uo:{development:group.previews.reduce((v,p)=>v+p.uo.development,0),maintenance:group.previews.reduce((v,p)=>v+p.uo.maintenance,0)}};
+       const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
+       return <section key={key} className="panel">
+        <button type="button" className="secondary" onClick={()=>setEditing(v=>v===key?null:key)}>{editing===key?'Stäng redigering':'Ändra LO-fördelning'} – {name(firstRule.uoId)} · {firstRule.year}</button>
+        {legacy&&<p>Äldre beslut visas oförändrat tills du sparar en ny, balanserad fördelning.</p>}
+        {editing===key&&<LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} balancedPreviews={group.previews} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>}
+       </section>;
+      })}
       {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>{first} (h)</th><th>{second} (h)</th><th>Ursprung</th></tr></thead><tbody>{rows.map(r=><tr key={r.key}><td>{r.title}</td><td>{format(r.values.first)}</td><td>{format(r.values.second)}</td><td>{r.status}</td></tr>)}</tbody></table></div>}
     </section>}
    </div>;
