@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import type {ImportFormat} from './registry';
 import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
+import {readLoActivitySheet,type LoActivityFact} from '../loActivitySheet';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
 export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
 export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name));}
@@ -11,7 +12,7 @@ export type Mapping={sheet:string;uoCell:string;headerRow:number;areaColumn:numb
 export const defaultMapping:Mapping={sheet:'UO Tot 2027-30',uoCell:'B1',headerRow:11,areaColumn:2,labelColumn:3,startRow:19};
 export type Coverage={candidates:number;imported:number;unresolved:number;formulas:number;perArea:{name:string;count:number}[]};
 export type DeclaredTotal={measure:Measure;period:{year:number;month?:number};value:number;source:{sheet:string;cell:string};formula:boolean};
-export type ImportResult={declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
+export type ImportResult={loActivities?:LoActivityFact[];declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
 function valueText(cell:ExcelJS.Cell):string{const v=cell.value;if(v==null)return '';if(typeof v==='object'&&! (v instanceof Date)){if('text'in v)return String(v.text);if('result'in v)return String(v.result??'');return '';}return String(v);}
 /** Resolve only same-sheet single-cell references in area headings; ExcelJS does not calculate formulas. */
 function areaText(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen=new Set<string>()):string{
@@ -68,8 +69,10 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  }
  if(!facts.length)issues.push({code:'NO_DETAIL_VALUES',severity:'warning',message:'Inga ifyllda detaljvärden hittades.'});
  const counts=new Map<string,number>();for(const f of facts)counts.set(f.area,(counts.get(f.area)??0)+1);
+ const loActivity=readLoActivitySheet(wb);
+ for(const issue of loActivity.issues)issues.push({code:'INVALID_LO_ACTIVITY',severity:'error',message:issue.message,cell:issue.cell});
  const matrix=matrixMapping===null?undefined:await readMatrix(bytes,matrixMapping??developmentMatrix(sheet.name));
- return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
+ return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,loActivities:loActivity.facts,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
 }
 
 /** Complete registration of this format lives with its code and tests. */
