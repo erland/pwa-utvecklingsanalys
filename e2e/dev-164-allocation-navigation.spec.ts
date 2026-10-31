@@ -22,7 +22,8 @@ test('DEV-164 period is selected in overview and no allocation type is preselect
  await expect(overview.getByRole('button',{name:/Effekt/})).toBeVisible();
  await expect(view.getByLabel('Aktuell fördelningstyp')).toHaveCount(0);
  await expect(view.getByLabel('Fördelningsår')).toHaveCount(0);
- await overview.getByLabel('Översiktsperiod').getByRole('button',{name:'2027'}).click();
+ await expect(overview.getByLabel('Översiktsperiod')).toHaveCount(0);
+ await overview.getByLabel('Period Effekt').getByRole('button',{name:'2027'}).click();
  await expect(overview.getByLabel('Period Effekt').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
  await overview.getByRole('button',{name:/Effekt/}).click();
  await expect(view.getByRole('heading',{name:'Effekt – Fördela per UO och LO'})).toBeVisible();
@@ -31,5 +32,5 @@ test('DEV-164 period is selected in overview and no allocation type is preselect
  await expect(view.getByLabel('Fördelningsår')).toHaveCount(0);
  await view.getByRole('button',{name:/Alla fördelningstyper/}).click();
  await expect(overview).toBeVisible();
- await expect(overview.getByLabel('Översiktsperiod').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
+ await expect(overview.getByLabel('Period Effekt').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
 });
