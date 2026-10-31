@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,saveGapState,type GapState} from '../gaps/store';
-import {previewActivityAllocation,approveSharedActivityAllocation,approvedActivityParts,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
+import {previewActivityAllocation,approveBalancedActivityGroup,approveSharedActivityAllocation,approvedActivityParts,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import type {CanonicalDataset} from '../domain/canonical';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 
@@ -54,7 +54,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   const total=mergedItems.reduce((n,i)=>n+i.total,0);
   const development=mergedItems.reduce((n,i)=>n+i.development,0);
   const preview:AllocationPreview={ruleId:key,fingerprint:entries.map(e=>e.preview.fingerprint).join('|'),items:mergedItems,uo:{development,maintenance:total-development}};
-  return {key,entries,preview,approved:entries.every(e=>e.approved&&e.decision?.sharedPercentages)};
+  return {key,entries,preview,approved:entries.every(e=>e.approved)};
  });
  const pending=yearGroups.filter(g=>!g.approved);
  const saveShared=async(entries:typeof candidates,overrides:{loId:string;developmentPercent:number}[],reason:string,latest:GapState)=>{
@@ -75,14 +75,27 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   setBulkBusy(true);setBulkMessage('');
   try{
    const latest=await loadGapState();
-   let next=latest;
+   const rules=[...(latest.activityAllocationRules??[])];
+   const decisions=[...(latest.activityAllocationDecisions??[])];
    for(const group of pending){
-    const overrides=group.preview.items.map(item=>({loId:item.loId,developmentPercent:item.total?100*item.development/item.total:0}));
-    next=await saveShared(group.entries,overrides,'Gemensamt godkännande av årsbaserad LO-fördelning',next);
+    // Validate all metrics in this UO/year before modifying the pending state.
+    // No explicit LO override: each metric preserves its imported UO activity totals.
+    const approved=approveBalancedActivityGroup(group.entries.map(e=>e.preview),'Gemensamt godkännande av årsbaserad LO-fördelning',[]);
+    for(let i=0;i<group.entries.length;i++){
+     const {rule}=group.entries[i];
+     const existing=rules.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
+     const target=existing??rule;
+     if(!existing)rules.push(target);
+     const decision={...approved[i],ruleId:target.id};
+     const index=decisions.findIndex(d=>d.ruleId===target.id);
+     if(index>=0)decisions[index]=decision;else decisions.push(decision);
+    }
    }
+   const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
+   // A single store write follows validation of every pending group.
    await saveGapState(next);
    setState(next);
-   setBulkMessage(`${pending.length} fördelningar godkända. Analysen använder nu de sparade fördelningarna.`);
+   setBulkMessage(`${pending.length} fördelningar godkända med låsta importerade UO-totaler.`);
   }catch(e){setBulkMessage(`Kunde inte godkänna alla fördelningar: ${e instanceof Error?e.message:String(e)}`)}
   finally{setBulkBusy(false)}
  };
@@ -108,7 +121,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   <h2>Fördela utveckling och förvaltning per LO och år</h2>
   <p>En gemensam utvecklingsandel per LO och år gäller för både IT-timmar och verksamhetstimmar. UO Övergripande ingår som egen rad. Godkänn för att använda fördelningen i årsanalysen.</p>
   {pending.length>0&&<button className="primary" disabled={bulkBusy} onClick={()=>void approveAll()}>{bulkBusy?'Godkänner…':`Godkänn alla föreslagna fördelningar (${pending.length})`}</button>}
-  {pending.length>0&&<p>Massgodkännande använder de automatiskt föreslagna procentandelarna. Osparade ändringar i reglagen ingår inte; spara sådana i respektive tabell först.</p>}
+  {pending.length>0&&<p>Massgodkännande använder de automatiskt föreslagna LO-andelarna separat för varje timmått och bevarar importerade UO-totaler. Osparade ändringar i reglagen ingår inte.</p>}
   {bulkMessage&&<p role="status">{bulkMessage}</p>}
   {selectedSourceId&&<div className="notice" role="status"><strong>Fördelningar för vald källa</strong> – visa och justera även godkända beslut. <button className="secondary" onClick={onCloseSource}>Visa alla källor</button></div>}
   {pending.filter(g=>!selectedSourceId||g.entries[0].rule.datasetId===selectedSourceId).map(g=>renderGroup(g,true))}
