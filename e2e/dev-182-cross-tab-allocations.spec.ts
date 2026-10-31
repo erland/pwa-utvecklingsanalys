@@ -23,6 +23,7 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  const builtIn=view.getByRole('region',{name:'Inbyggda fördelningstyper'});
  await expect(builtIn).toBeVisible();
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
  await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toBeVisible();
  await builtIn.getByRole('button',{name:/Ändra LO-fördelning/}).click();
  await builtIn.getByLabel(/^Utvecklingsandel /).first().fill('60');

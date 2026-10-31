@@ -1,0 +1,26 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+test('DEV-192 built-in allocation cards drill into UO and navigate back',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=40;
+ sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.02;sheet.getCell('E5').value=0.02;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'dev-192.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
+ await expect(page.getByRole('status').filter({hasText:'dev-192.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await builtIn.getByRole('button',{name:/IT-timmar \/ Verksamhetstimmar/}).click();
+ await expect(builtIn.getByRole('heading',{name:/IT-timmar \/ Verksamhetstimmar – Fördelning per UO och LO/})).toBeVisible();
+ const overview=builtIn.getByRole('region',{name:'Översikt UO-fördelningar'});
+ await overview.getByRole('button',{name:/UO A/}).click();
+ await expect(overview.getByRole('region',{name:'LO-detaljer UO A'})).toBeVisible();
+ await expect(overview.getByText('IT- och verksamhetstimmar är importerade och kan inte redigeras.')).toBeVisible();
+ await builtIn.getByRole('button',{name:'← Alla UO'}).click();
+ await expect(overview.getByRole('region',{name:'LO-detaljer UO A'})).toHaveCount(0);
+ await builtIn.getByRole('button',{name:'← Alla fördelningstyper'}).click();
+ await expect(builtIn.getByRole('heading',{name:/Fördelning per UO och LO/})).toHaveCount(0);
+});
