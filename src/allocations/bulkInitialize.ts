@@ -23,7 +23,7 @@ export function bulkInitializeUos(config:OptionalAllocations,dimensionId:string,
  return parseOptionalAllocations(next);
 }
 
-/** Preview reports exact overwritten rules; default-year operations keep annual exceptions. */
+/** Preview counts all rules replaced by an all-years operation, including prior annual exceptions. */
 export function previewBulkChange(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[]){
  const ids=new Set(uoIds);
  const affected=config.rules.filter(r=>r.dimensionId===dimensionId&&(year===0||r.year===year)&&ids.has(r.scope.uoId));
