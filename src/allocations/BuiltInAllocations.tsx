@@ -77,7 +77,6 @@ export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):
 export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:CanonicalDataset;years:number[];gaps:GapState;onSaved:(next:GapState)=>void}){
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
- const [editing,setEditing]=useState<string|null>(null);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
@@ -108,7 +107,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    decisions[index]=approvals[i];
   }
   const next={...latest,activityAllocationDecisions:decisions};
-  await saveGapState(next);onSaved(next);setEditing(null);
+  await saveGapState(next);onSaved(next);
  };
  const kinds:[Kind,string,string,string][]=[
   ['activity','Utveckling / Förvaltning','Utveckling','Förvaltning'],
@@ -120,17 +119,18 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    const totals=rows.reduce((v,r)=>({first:v.first+r.values.first,second:v.second+r.values.second}),{first:0,second:0});
    const total=totals.first+totals.second;
    return <div key={kind} className="panel" style={{width:'100%',minWidth:0}}>
-    <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);setEditing(null)}}><strong>{title} ›</strong></button>
+    <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);}}><strong>{title} ›</strong></button>
     <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Period '+title}/>
     <p>{total>0?`${first}: ${format(totals.first)} h · ${second}: ${format(totals.second)} h`:'Inga fullständiga importerade uppgifter för perioden.'}</p>
-    <p><small>Importerade originalvärden · endast visning</small></p>
+    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
-      <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);setEditing(null)}}>← Alla fördelningstyper</button>
+      <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
-      {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);setEditing(null)}}>← Alla UO</button>}
+      <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Detaljperiod '+title}/>
+      {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
       <h4>{title} per UO</h4>
       {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
-      {kind==='activity'&&selectedUo&&<section aria-label="Godkända LO-kompletteringar" className="panel">
+      {kind==='activity'&&selectedUo&&![...editorGroups.values()].some(g=>g.rules[0].uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar" className="panel">
        <h4>LO-fördelningar</h4><p>Godkända, kompletterade timmar. IT- och verksamhetstimmar visas sammanräknade som timmar.</p>
        {(()=>{
         const groups=new Map<string,{loId:string;year:number;development:number;maintenance:number}>();
@@ -171,21 +171,22 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
        const combined:AllocationPreview={ruleId:key,fingerprint:group.previews.map(p=>p.fingerprint).join('|'),items:[...items.values()],uo:{development:group.previews.reduce((v,p)=>v+p.uo.development,0),maintenance:group.previews.reduce((v,p)=>v+p.uo.maintenance,0)}};
        const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
        return <section key={key} className="panel">
-        <button type="button" className="secondary" onClick={()=>setEditing(v=>v===key?null:key)}>{editing===key?'Stäng redigering':'Ändra LO-fördelning'} – {name(firstRule.uoId)} · {firstRule.year}</button>
+        <h4>LO-fördelningar · {firstRule.year}</h4>
         {legacy&&<p>Äldre beslut visas oförändrat tills du sparar en ny, balanserad fördelning.</p>}
-        {editing===key&&<LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} balancedPreviews={group.previews} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>}
+        <LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===firstRule.id)} balancedPreviews={group.previews} cards quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
        </section>;
       })}
       {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
        <h4>UO-fördelningar</h4>
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
-        <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);setEditing(null)}}>
+        <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);void 0}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
         </button>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
+         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-period '+r.title}/>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <p>Importerade originalvärden är skrivskyddade.</p>
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
