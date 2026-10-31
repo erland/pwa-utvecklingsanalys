@@ -15,8 +15,8 @@ test('DEV-150 settings shows group overview first and opens one editor at a time
  await overview.getByRole('button',{name:'Ny gruppmodell'}).click();
  await page.getByLabel('Modellnamn').fill('Arbetsmodell');
  await page.getByRole('button',{name:'Spara gruppmodeller'}).click();
- await expect(overview.getByText('Arbetsmodell',{exact:true})).toBeVisible();
- await overview.getByRole('button',{name:'Redigera Arbetsmodell'}).click();
+ await expect(overview.getByRole('button',{name:/Arbetsmodell/})).toBeVisible();
+ await overview.getByRole('button',{name:/Arbetsmodell/}).click();
  await page.getByLabel('Modellnamn').fill('Ändring som avbryts');
  await page.getByRole('button',{name:'Avbryt redigering'}).click();
  await expect(overview.getByText('Arbetsmodell',{exact:true})).toBeVisible();
