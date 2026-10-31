@@ -52,5 +52,9 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  await completion.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
  await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('55 h');
+ // Navigation remounts Analytics and restores the default (all activities) filter.
+ const updatedAnalysis=page.locator('.canonical-analytics');
+ await updatedAnalysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();
+ await updatedAnalysis.getByRole('checkbox',{name:'Förvaltning',exact:true}).uncheck();
+ await expect(updatedAnalysis.locator('.canonical-result-head strong')).toContainText('55 h');
 });
