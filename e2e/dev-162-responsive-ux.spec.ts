@@ -29,12 +29,18 @@ for(const device of [
   await rules.getByRole('region',{name:'Översikt fördelningstyper'}).getByRole('button',{name:/Effekt/}).click();
   await rules.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/Test UO.*LO/}).click();
   await expect(rules.getByRole('region',{name:'Timviktad fördelning Test UO'})).toBeVisible();
-  await rules.getByRole('slider',{name:'Massfördelning procent'}).fill('65');
-  await rules.getByRole('button',{name:'Fördela alla UO'}).click();
-  const confirm=rules.getByRole('group',{name:'Bekräfta massändring'});
-  await expect(confirm).toContainText('65 %');
-  await confirm.getByRole('button',{name:'Avbryt'}).click();
-  await expect(confirm).toHaveCount(0);
+  await rules.getByRole('button',{name:'Massfördela samtliga UO'}).click();
+  const dialog=page.getByRole('dialog',{name:'Massfördelning för samtliga UO'});
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel('Kategori för 100 procent').selectOption({label:'Direkt effekt'});
+  await dialog.getByRole('button',{name:'Fördela 100 %'}).click();
+  const confirm=dialog.getByRole('group',{name:'Bekräfta massändring'});
+  await expect(confirm).toContainText('100 % till Direkt effekt');
+  await confirm.getByRole('button',{name:'Tillbaka'}).click();
+  await dialog.getByRole('button',{name:'Fördela jämnt'}).click();
+  await expect(confirm).toContainText('Fördela lika');
+  await dialog.getByRole('button',{name:'Stäng'}).click();
+  await expect(dialog).toHaveCount(0);
   await page.getByRole('button',{name:'Analys',exact:true}).click();
   await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toBeVisible();
   // The application must not force horizontal scrolling of the top-level page.
