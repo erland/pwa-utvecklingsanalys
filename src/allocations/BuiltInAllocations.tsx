@@ -175,6 +175,25 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <p>Importerade originalvärden är skrivskyddade.</p>
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
+         {kind==='metric'&&(()=>{
+          const loValues=new Map<string,Values>();
+          for(const metric of ['it_hours','business_hours'] as const)for(const original of annual(data.records,metric,year)){
+           if(original.scope.axis!=='work'||original.scope.uoId!==r.key)continue;
+           const loId=original.scope.loId??(original.workPart==='uo-overhead'?'uo-overhead:'+r.key:null);
+           if(!loId)continue;
+           const values=loValues.get(loId)??{first:0,second:0};
+           values[metric==='it_hours'?'first':'second']+=original.value;loValues.set(loId,values);
+          }
+          return <section aria-label={'LO-värden '+r.title}>
+           <h4>LO-fördelningar</h4>
+           {[...loValues].map(([loId,values])=><div key={loId} className="panel" style={{marginTop:8}}>
+            <strong>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</strong>
+            <DistributionIndicator first={values.first} second={values.second} labels={['IT-timmar','Verksamhetstimmar']}/>
+            <small>Importerad · skrivskyddad</small>
+           </div>)}
+          </section>;
+         })()}
+
          {kind==='activity'&&<p>Godkända LO-kompletteringar och möjligheten att ändra redigerbara LO visas ovan.</p>}
         </section>}
        </div>)}
