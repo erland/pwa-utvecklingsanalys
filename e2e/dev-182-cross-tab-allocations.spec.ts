@@ -1,0 +1,42 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are shared with Import',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=60;
+ sheet.getCell('B31').value='LO 2';sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=40;
+ sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.05;sheet.getCell('E5').value=0.05;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'dev-182.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
+ await expect(page.getByRole('status').filter({hasText:'dev-182.xlsx'})).toContainText('importerad');
+ const importView=page.getByRole('region',{name:'Komplettera efter import'});
+ await importView.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
+ await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ // Reload after the import approval so the allocations view reads the persisted canonical snapshot.
+ await page.reload();
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ const view=page.getByRole('region',{name:'Valfria fördelningar'});
+ const builtIn=view.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await expect(builtIn).toBeVisible();
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toBeVisible();
+ await builtIn.getByRole('button',{name:/Ändra LO-fördelning/}).click();
+ await builtIn.getByLabel(/^Utvecklingsandel /).first().fill('60');
+ await expect(builtIn.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
+ await expect(builtIn.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
+ await builtIn.getByRole('button',{name:'Spara LO-fördelning'}).click();
+ await expect(builtIn.getByRole('button',{name:/Ändra LO-fördelning/})).toBeVisible();
+ await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toContainText('36');
+ await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toContainText('14');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Analys',exact:true}).click();
+ const analysis=page.locator('.canonical-analytics');
+ await analysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();
+ await analysis.getByRole('checkbox',{name:'Förvaltning',exact:true}).uncheck();
+ await expect(analysis.locator('.canonical-result-head strong')).toContainText('50 h');
+});
