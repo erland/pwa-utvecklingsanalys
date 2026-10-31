@@ -26,8 +26,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const rules=page.getByRole('region',{name:'Valfria fördelningar'});
  await expect(rules).toBeVisible();
- await expect(rules.getByRole('heading',{name:'Fördela per UO och LO'})).toBeVisible();
- await expect(rules.getByLabel('Aktuell fördelningstyp')).toHaveValue(/.+/);
+ await rules.getByRole('region',{name:'Översikt fördelningstyper'}).getByRole('button',{name:/Effekt/}).click();
+ await expect(rules.getByRole('heading',{name:'Effekt – Fördela per UO och LO'})).toBeVisible();
  const uoOverview=rules.getByRole('region',{name:'Översikt UO-fördelningar'});
  await expect(uoOverview).toBeVisible();
  await expect(rules.getByRole('region',{name:'Timviktad fördelning Test UO'})).toHaveCount(0);
