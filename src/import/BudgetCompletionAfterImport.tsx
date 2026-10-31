@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,saveGapState,type GapState} from '../gaps/store';
-import {previewActivityAllocation,approveBalancedActivityGroup,approveSharedActivityAllocation,approvedActivityParts,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
+import {previewActivityAllocation,approveBalancedActivityGroup,approvedActivityParts,type ActivityAllocationRule,type ActivityAllocationDecision,type AllocationPreview} from '../domain/activityAllocation';
 import type {CanonicalDataset} from '../domain/canonical';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 
@@ -22,7 +22,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
  const {candidates,diagnostics}=useMemo(()=>{
   if(!data)return {candidates:[],diagnostics:[]};
   const diagnostics:string[]=[];
-  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ReturnType<typeof approveSharedActivityAllocation>;approved:boolean}>();
+  const found=new Map<string,{rule:ActivityAllocationRule;preview:ReturnType<typeof previewActivityAllocation>;decision?:ActivityAllocationDecision;approved:boolean}>();
   for(const record of data.records){
    if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
    const candidate={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
@@ -57,15 +57,16 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   return {key,entries,preview,approved:entries.every(e=>e.approved)};
  });
  const pending=yearGroups.filter(g=>!g.approved);
- const saveShared=async(entries:typeof candidates,overrides:{loId:string;developmentPercent:number}[],reason:string,latest:GapState)=>{
+ const saveBalanced=async(entries:typeof candidates,overrides:{loId:string;developmentPercent:number}[],reason:string,latest:GapState)=>{
   const rules=[...(latest.activityAllocationRules??[])],decisions=[...(latest.activityAllocationDecisions??[])];
-  for(const {rule,preview} of entries){
+  const approved=approveBalancedActivityGroup(entries.map(e=>e.preview),reason,overrides);
+  for(let i=0;i<entries.length;i++){
+   const {rule}=entries[i];
    const existing=rules.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
    const target=existing??rule;
-   const decision=approveSharedActivityAllocation(preview,reason,overrides);
    if(!existing)rules.push(target);
    const index=decisions.findIndex(d=>d.ruleId===target.id);
-   const updated={...decision,ruleId:target.id};
+   const updated={...approved[i],ruleId:target.id};
    if(index>=0)decisions[index]=updated;else decisions.push(updated);
   }
   return {...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
@@ -102,9 +103,9 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
  const renderGroup=(group:typeof yearGroups[number],showEditor:boolean)=>{
   const {key,entries,preview,approved}=group;
   const label=decodeURIComponent(entries[0].rule.uoId.startsWith('uo:')?entries[0].rule.uoId.slice(3):entries[0].rule.uoId)+' · '+entries[0].rule.year;
-  const editor=<LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(entries[0].decision?.overrides??[])} preview={preview} decision={approved?entries[0].decision:undefined} sharedMode quick onApprove={async(overrides,reason)=>{
+  const editor=<LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(entries[0].decision?.overrides??[])} preview={preview} decision={approved&&entries[0].decision?.sharedPercentages!==true?entries[0].decision:undefined} balancedPreviews={entries.map(e=>e.preview)} quick onApprove={async(overrides,reason)=>{
    const latest=await loadGapState();
-   const next=await saveShared(entries,overrides,reason,latest);
+   const next=await saveBalanced(entries,overrides,reason,latest);
    await saveGapState(next);
    setState(next);
   }}/>;
