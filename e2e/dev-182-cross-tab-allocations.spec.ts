@@ -15,9 +15,12 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  const importView=page.getByRole('region',{name:'Komplettera efter import'});
  await importView.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
  await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ // Reload after the import approval so the allocations view reads the persisted canonical snapshot.
+ await page.reload();
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const view=page.getByRole('region',{name:'Valfria fördelningar'});
  const builtIn=view.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await expect(builtIn).toBeVisible();
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
  await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toBeVisible();
  await builtIn.getByRole('button',{name:/Ändra LO-fördelning/}).click();
