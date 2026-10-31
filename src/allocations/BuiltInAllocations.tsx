@@ -68,6 +68,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
  const [editing,setEditing]=useState<string|null>(null);
+ const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  for(const rule of gaps.activityAllocationRules??[]){
@@ -109,15 +110,18 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    const totals=rows.reduce((v,r)=>({first:v.first+r.values.first,second:v.second+r.values.second}),{first:0,second:0});
    const total=totals.first+totals.second;
    return <div key={kind} className="panel" style={{width:'100%',minWidth:0}}>
-    <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>setSelected(v=>v===kind?null:kind)}><strong>{title} ›</strong></button>
+    <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);setEditing(null)}}><strong>{title} ›</strong></button>
     <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Period '+title}/>
     <p>{total>0?`${first}: ${format(totals.first)} h · ${second}: ${format(totals.second)} h`:'Inga fullständiga importerade uppgifter för perioden.'}</p>
     <p><small>Importerade originalvärden · endast visning</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
+      <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);setEditing(null)}}>← Alla fördelningstyper</button>
+      <h3>{title} – Fördelning per UO och LO</h3>
+      {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);setEditing(null)}}>← Alla UO</button>}
       <h4>{title} per UO</h4>
       {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
-      {kind==='activity'&&approvedRows.length>0&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Du kan justera godkända LO-fördelningar nedan.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
-      {kind==='activity'&&[...editorGroups].map(([key,group])=>{
+      {kind==='activity'&&selectedUo&&approvedRows.some(r=>r.uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Du kan justera godkända LO-fördelningar nedan.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.filter(r=>r.uoId===selectedUo).map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
+      {kind==='activity'&&selectedUo&&[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo).map(([key,group])=>{
        const firstRule=group.rules[0];
        const items=new Map<string,AllocationPreview['items'][number]>();
        for(const preview of group.previews)for(const item of preview.items){
@@ -132,7 +136,22 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         {editing===key&&<LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} balancedPreviews={group.previews} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>}
        </section>;
       })}
-      {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>{first} (h)</th><th>{second} (h)</th><th>Ursprung</th></tr></thead><tbody>{rows.map(r=><tr key={r.key}><td>{r.title}</td><td>{format(r.values.first)}</td><td>{format(r.values.second)}</td><td>{r.status}</td></tr>)}</tbody></table></div>}
+      {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
+       <h4>UO-fördelningar</h4>
+       {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
+        <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);setEditing(null)}}>
+         <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
+         <p>{first}: {format(r.values.first)} h · {second}: {format(r.values.second)} h</p>
+         <small>{r.status}</small>
+        </button>
+        {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
+         <h4>{r.title} – fördelning</h4>
+         <p>{first}: {format(r.values.first)} h · {second}: {format(r.values.second)} h. Importerade originalvärden är skrivskyddade.</p>
+         {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
+         {kind==='activity'&&<p>Godkända LO-kompletteringar och möjligheten att ändra redigerbara LO visas ovan.</p>}
+        </section>}
+       </div>)}
+      </section>}
     </section>}
    </div>;
   })}
