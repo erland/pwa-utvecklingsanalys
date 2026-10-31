@@ -48,16 +48,24 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  const detail=useMemo(()=>{
   const years=year===0?[...new Set(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId).map(r=>r.year))]:[year];
   const totals=new Map<string,{key:string;label:string;value:number}>();
+  const annualRows:{year:number;key:string;value:number}[]=[];
   let unknownCount=0,coverage='';
   for(const y of years){
    const result=analyzeCanonical(data,gaps,{axis:'work',metrics:dimension.appliesTo.metrics,activity:dimension.appliesTo.activities==='all'||dimension.appliesTo.activities.length===2?'all':dimension.appliesTo.activities[0],year:y,detailUoId:uoId});
    unknownCount+=result.unknownCount;coverage=result.coverage;
-   for(const row of result.rows){const previous=totals.get(row.key);totals.set(row.key,{...row,value:row.value+(previous?.value??0)})}
+   for(const row of result.rows){annualRows.push({year:y,key:row.key,value:row.value});const previous=totals.get(row.key);totals.set(row.key,{...row,value:row.value+(previous?.value??0)})}
   }
-  return {rows:[...totals.values()],unknownCount,coverage};
+  return {rows:[...totals.values()],annualRows,unknownCount,coverage};
  },[data,gaps,dimension,year,uoId]);
  const parts:WeightedPart[]=detail.rows.filter(r=>r.value>0).map(r=>({scope:r.key==='uo-overhead:'+uoId||r.key===uoId?{kind:'uo-overhead',uoId}: {kind:'lo',uoId,loId:r.key},hours:r.value}));
- const base=useMemo(()=>new Map(parts.map(p=>[partKey(p.scope),percentagesFor(config,dimension.id,year,p.scope,[first,second])])),[config,dimension,year,first,second,detail]);
+ const base=useMemo(()=>new Map(parts.map(p=>{
+  const key=p.scope.kind==='lo'?p.scope.loId:'uo-overhead:'+uoId;
+  const rows=detail.annualRows.filter(r=>r.key===key||(p.scope.kind==='uo-overhead'&&r.key===uoId));
+  const total=rows.reduce((n,r)=>n+r.value,0);
+  const allocated=rows.reduce((n,r)=>n+r.value*(percentagesFor(config,dimension.id,r.year,p.scope,[first,second])[first]??0),0);
+  const proportion=total?allocated/total:0;
+  return [partKey(p.scope),{[first]:proportion,[second]:total?rows.reduce((n,r)=>n+r.value*(percentagesFor(config,dimension.id,r.year,p.scope,[first,second])[second]??0),0)/total:0}];
+ })),[config,dimension,first,second,detail,parts.length,uoId]);
  const values=pending??base;
  const rollup=weightedSummary(parts,values,[first,second]);
  const change=(next:Map<string,Record<string,number>>)=>{pendingRef.current=next;setPending(next);setError('')};
