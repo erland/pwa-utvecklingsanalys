@@ -1,9 +1,34 @@
 import {test,expect} from '@playwright/test';
-test('DEV-164 overview is unselected and period is chosen only on overview',async({page})=>{
+import ExcelJS from 'exceljs';
+
+test('DEV-164 period is selected in overview and no allocation type is preselected',async({page})=>{
+ const workbook=new ExcelJS.Workbook(),sheet=workbook.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: Test UO';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO A';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=50;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'dev-164.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
+ await expect(page.getByRole('status')).toContainText('importerad');
+ await page.getByRole('button',{name:'Inställningar',exact:true}).click();
+ const definitions=page.getByRole('region',{name:'Valfria fördelningstyper'});
+ await definitions.getByRole('button',{name:'Ny fördelningstyp'}).click();
+ await definitions.getByLabel('Namn på fördelningstyp').fill('Effekt');
+ await definitions.getByRole('button',{name:'Skapa fördelningstyp'}).click();
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const view=page.getByRole('region',{name:'Valfria fördelningar'});
+ const overview=view.getByRole('region',{name:'Översikt fördelningstyper'});
+ await expect(overview).toBeVisible();
+ await expect(overview.getByRole('button',{name:/Effekt/})).toBeVisible();
  await expect(view.getByLabel('Aktuell fördelningstyp')).toHaveCount(0);
  await expect(view.getByLabel('Fördelningsår')).toHaveCount(0);
- await expect(view).toContainText('Skapa först en fördelningstyp under Inställningar.');
+ await overview.getByLabel('Översiktsperiod').selectOption('2027');
+ await overview.getByRole('button',{name:/Effekt/}).click();
+ await expect(view.getByRole('heading',{name:'Effekt – Fördela per UO och LO'})).toBeVisible();
+ await expect(view).toContainText('Period: 2027');
+ await expect(view.getByLabel('Översiktsperiod')).toHaveCount(0);
+ await expect(view.getByLabel('Fördelningsår')).toHaveCount(0);
+ await view.getByRole('button',{name:/Alla fördelningstyper/}).click();
+ await expect(overview).toBeVisible();
+ await expect(overview.getByLabel('Översiktsperiod')).toHaveValue('2027');
 });
