@@ -36,6 +36,14 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  await expect(completion.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
  await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
  await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
+ const loPanels=builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'});
+ await expect(loPanels).toContainText('LO 1');
+ await expect(loPanels).toContainText('LO 2');
+ await expect(loPanels).toContainText('LO 3');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await analysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();
