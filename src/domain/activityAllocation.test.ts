@@ -48,7 +48,7 @@ describe('v2 approved activity allocations',()=>{
   const data=fixture();data.records[3].value=290;
   expect(previewActivityAllocation(data,rule).uo.development).toBeCloseTo(594);
   const prior=fixture();prior.records.push({...base('F26',500,'development','lo1'),granularity:'activity-part',workloadId:'other'});
-  expect(()=>previewActivityAllocation(prior,rule)).toThrow('EXISTING_LO_ACTIVITY_DATA');
+  expect(()=>previewActivityAllocation(prior,rule)).toThrow('INCOMPLETE_IMPORTED_LO_ACTIVITY');
  });
  it('aggregates month-only LO inputs into annual allocation without mutating originals',()=>{
   const data=fixture();
