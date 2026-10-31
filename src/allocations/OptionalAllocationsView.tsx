@@ -121,7 +121,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  </section>}
  {units.length===0?<p>Importera UO-data innan du gör en fördelning.</p>:<section aria-label="Översikt UO-fördelningar" className="panel">
   <h4>UO-fördelningar</h4>
-  <p>{units.length} UO · {units.filter(u=>data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id)).length} med sparad regel för vald period eller grundfördelning</p>
+  <p>{units.length} UO · {dimension&&canonicalData?units.filter(u=>{const v=allocationTypeOverview(canonicalData,gaps,data,dimension.id,year,[u.id]);return v.total>0&&v.unallocated<=Math.max(1e-7,v.total*1e-7)}).length:0} fullständigt fördelade</p>
   <div className="mapping-grid"><label>Sök UO<input aria-label="Sök UO" value={uoSearch} onChange={e=>setUoSearch(e.target.value)} placeholder="Filtrera på namn"/></label>
   <label>Status<select aria-label="Filtrera UO-status" value={uoFilter} onChange={e=>setUoFilter(e.target.value as 'all'|'configured'|'missing')}><option value="all">Alla UO</option><option value="configured">Fullständigt fördelade</option><option value="missing">Med ofördelade värden</option></select></label></div>
   {units.filter(u=>{const stats=dimension&&canonicalData?allocationTypeOverview(canonicalData,gaps,data,dimension.id,year,[u.id]):null;const configured=Boolean(stats&&stats.total>0&&stats.unallocated<=Math.max(1e-7,stats.total*1e-7));return label(u.id).toLocaleLowerCase('sv-SE').includes(uoSearch.trim().toLocaleLowerCase('sv-SE'))&&(uoFilter==='all'||configured===(uoFilter==='configured'))}).map(u=>{
