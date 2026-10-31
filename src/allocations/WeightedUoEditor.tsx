@@ -14,8 +14,17 @@ const format=(value:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigit
 function LoYearOverride({data,gaps,config,dimension,scope,year,onSave}:{data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;scope:OptionalAllocationScope;year:number;onSave:(next:OptionalAllocations)=>Promise<void>}){
  const first=dimension.categories[0].id,second=dimension.categories[1].id;
  const effective=effectiveOptionalRule(config,dimension.id,year,scope).rule?.percentages;
+ const uoAnnualPercent=scope.kind==='uo'?(()=>{
+  const result=analyzeCanonical(data,gaps,{axis:'work',metrics:dimension.appliesTo.metrics,activity:dimension.appliesTo.activities==='all'||dimension.appliesTo.activities.length===2?'all':dimension.appliesTo.activities[0],year,detailUoId:scope.uoId});
+  const total=result.rows.reduce((n,row)=>n+Math.max(0,row.value),0);
+  const a=result.rows.reduce((n,row)=>{
+   const partScope:WeightedPart['scope']=row.key===scope.uoId||row.key==='uo-overhead:'+scope.uoId?{kind:'uo-overhead',uoId:scope.uoId}:{kind:'lo',uoId:scope.uoId,loId:row.key};
+   return n+Math.max(0,row.value)*(percentagesFor(config,dimension.id,year,partScope,[first,second])[first]??0)/100;
+  },0);
+  return total?100*a/total:0;
+ })():null;
  const own=config.rules.find(r=>r.dimensionId===dimension.id&&r.year===year&&r.scope.kind===scope.kind&&r.scope.uoId===scope.uoId&&(scope.kind!=='lo'||r.scope.kind==='lo'&&r.scope.loId===scope.loId));
- const [value,setValue]=useState(effective?.[first]??0),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [value,setValue]=useState(uoAnnualPercent??effective?.[first]??0),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const dirty=useRef(false);
  const save=async()=>{
   if(!dirty.current||busy)return;dirty.current=false;setBusy(true);setError('');
@@ -30,7 +39,7 @@ function LoYearOverride({data,gaps,config,dimension,scope,year,onSave}:{data:Can
   try{await onSave({...config,rules:config.rules.filter(r=>optionalAllocationKey(r)!==optionalAllocationKey(own))})}catch(e){setError(String(e))}finally{setBusy(false)}
  };
  return <div className="panel" aria-label={'Årsundantag '+year} style={{marginTop:8,padding:10}}>
-  <p><strong>{year}</strong> · {own?'Eget årsundantag':effective?'Ärver gällande fördelning':'Ingen fördelning'}</p>
+  <p><strong>{year}</strong> · {scope.kind==='uo'?'Timviktad UO-fördelning':own?'Eget årsundantag':effective?'Ärver gällande fördelning':'Ingen fördelning'}</p>
   <label>{dimension.categories[0].name}: {format(value)} % / {dimension.categories[1].name}: {format(100-value)} %
    <input type="range" aria-label={'Årsfördelning '+year} min="0" max="100" step="0.1" value={value} disabled={busy} onChange={e=>{dirty.current=true;setValue(Number(e.target.value))}} onPointerUp={()=>void save()} onKeyUp={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(e.key))void save()}} onBlur={()=>void save()} style={{display:'block',width:'100%'}}/>
   </label>
