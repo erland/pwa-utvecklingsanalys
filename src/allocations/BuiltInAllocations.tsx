@@ -122,12 +122,12 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);}}><strong>{title} ›</strong></button>
     <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Period '+title}/>
     <p>{total>0?`${first}: ${format(totals.first)} h · ${second}: ${format(totals.second)} h`:'Inga fullständiga importerade uppgifter för perioden.'}</p>
-    <p><small>Importerade originalvärden · endast visning</small></p>
+    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
-      <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);setEditing(null)}}>← Alla fördelningstyper</button>
+      <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
       <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Detaljperiod '+title}/>
-      {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);setEditing(null)}}>← Alla UO</button>}
+      {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
       <h4>{title} per UO</h4>
       {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
       {kind==='activity'&&selectedUo&&![...editorGroups.values()].some(g=>g.rules[0].uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar" className="panel">
@@ -173,13 +173,13 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
        return <section key={key} className="panel">
         <h4>LO-fördelningar · {firstRule.year}</h4>
         {legacy&&<p>Äldre beslut visas oförändrat tills du sparar en ny, balanserad fördelning.</p>}
-        <LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} balancedPreviews={group.previews} cards quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
+        <LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===firstRule.id)} balancedPreviews={group.previews} cards quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
        </section>;
       })}
       {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
        <h4>UO-fördelningar</h4>
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
-        <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);setEditing(null)}}>
+        <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);void 0}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
