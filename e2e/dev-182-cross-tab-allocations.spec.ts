@@ -8,6 +8,7 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  sheet.getCell('B31').value='LO 2';sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=40;
  sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
  sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.05;sheet.getCell('E5').value=0.05;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'dev-182.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
