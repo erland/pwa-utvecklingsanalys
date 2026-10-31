@@ -1,6 +1,6 @@
 # CHANGE-175 – Gemensam vy för importerade och egna fördelningar
 
-Status: **beslutad funktionsmålbild; ej implementerad eller verifierad**. Detta dokument styr senare CHANGE-steg och ska inte läsas som en beskrivning av redan levererat beteende.
+Status (2026-10-31): **kärnflödet implementerat och CI-verifierat; CHANGE-175 ännu inte slutligt stängd**. Den ursprungliga målbilden och acceptanskriterierna nedan bevaras som kravhistorik. Se verifierings- och restpunktsmatrisen i slutet. Äldre avsnittet ”Kodbas och påverkan (granskat utgångsläge)” beskriver nuläget när planen skrevs, inte dagens kod.
 
 ## Syfte och omfattning
 Fliken **Fördelningar** ska visa och hantera tre typer på samma sätt ur användarens perspektiv:
@@ -59,3 +59,36 @@ För varje (dataset, UO, år, mått) med godkänd importerad aktivitetsmatris:
 
 ## Utanför detta steg
 Inga kodförändringar, inget införande av ny Excelimportprofil för LO-aktiviteter och ingen ändring av de användardefinierade fördelningarnas beräkningsmodell.
+
+
+## Genomförande och verifiering – avstämning 2026-10-31
+
+**Slutsats:** Beräknings- och importkedjan är implementerad, men alla ursprungliga acceptanspunkter har **inte** verifierats. CHANGE-175 kan därför inte formellt märkas helt stängd enbart genom gröna kodtester.
+
+| Område | Evidens | Bedömning |
+|---|---|---|
+| Samlad Fördelningar-vy och importflöde | PR #192–200, webbregression DEV-182 | Implementerat/testat för verifierade scenarier |
+| Importerade UO-matriser, låsning och balansering | PR #201–202; domäntester DEV-184/186 | Testat |
+| Återimport och ogiltigförklaring | PR #203 (DEV-185), #207 (DEV-189) | Webbläsartestat |
+| LO-aktivitetspar i Excel och spårbar kanonisk import | PR #205–206; test #208 | Testat |
+| Äldre godkännanden med sharedPercentages | PR #209 (DEV-191) | Regressionstestat; historisk semantik bevaras |
+| Huvudgren efter PR #207 | GitHub Actions run 41239993138 | PASS |
+| PR #208 | GitHub Actions run 41240354773 | PASS |
+| PR #209 | GitHub Actions run 41240940786 | PASS |
+| Mobilanpassad Fördelningar-vy | Inget särskilt CHANGE-175 mobilacceptansbevis sammanställt | **NOT VERIFIED** |
+| Offlineflöde för godkännande/analys | Inget särskilt offlineacceptansbevis sammanställt | **NOT VERIFIED** |
+| Backup/restore av fördelningsbeslut | Ingen särskild CHANGE-175 återläsningskontroll sammanställd | **NOT VERIFIED** |
+| Fullständig proveniensvisning i alla nivåer samt saknad UO-matris | Ingen fullständig acceptansmatris kontrollerad | **NOT VERIFIED** |
+
+### Kända avgränsningar
+- Excel-tillägget är ett **frivilligt blad** `LO Aktiviteter 2027-2030`; äldre budgetfiler utan bladet stöds fortfarande.
+- LO-import kräver två fullständiga icke-negativa aktivitetsvärden per LO/år/timmått. Ofullständiga och inkonsistenta par stoppas i stället för att gissas.
+- Äldre beslut med `sharedPercentages: true` använder sin historiska beräkningssemantik; nya balanserade beslut får inte tyst skriva om dem.
+- Grön CI verifierar testade kontrakt; den ersätter inte manuell acceptans av alla UI-, offline- och återställningsfall.
+
+### Återstående steg före formell stängning
+1. Verifiera AC-175-01/02/08 med avseende på faktisk vy, källstatus och backup/restore.
+2. Kör avgränsat Playwright- eller manuellt acceptanstest för mobil och offline enligt planens sista steg.
+3. Dokumentera PASS/FAIL/NOT VERIFIED per återstående AC och stäng CHANGE-175 först när verifieringarna finns, eller när eventuella undantag uttryckligen accepterats.
+
+Referenser: [PR #207](https://github.com/erland/pwa-utvecklingsanalys/pull/207), [PR #208](https://github.com/erland/pwa-utvecklingsanalys/pull/208), [PR #209](https://github.com/erland/pwa-utvecklingsanalys/pull/209).
