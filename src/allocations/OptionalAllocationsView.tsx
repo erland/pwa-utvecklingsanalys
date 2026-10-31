@@ -3,7 +3,7 @@ import {useEffect,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
-import WeightedUoEditor,{PeriodSlider} from './WeightedUoEditor';
+import WeightedUoEditor,{PeriodSlider,PeriodButtons} from './WeightedUoEditor';
 import {bulkSetPercentages,bulkClearPercentages,previewBulkChange} from './bulkInitialize';
 import {updateDimension,deleteDimension,dimensionChangeImpact} from './dimensionManagement';
 import {loadAllocations} from '../allocations/store';
@@ -101,7 +101,8 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {mode==='definitions'&&!creating&&editingId===null&&<section aria-label="Befintliga fördelningstyper"><div className="actions"><h3>Befintliga fördelningstyper</h3><button type="button" className="secondary" onClick={()=>{cancelEdit();setDeleteId(null);setCreating(true)}}>Ny fördelningstyp</button></div>{data.dimensions.length===0?<p>Inga fördelningstyper har skapats.</p>:data.dimensions.map(d=><button type="button" className="panel" key={d.id} onClick={()=>beginEdit(d)} style={{display:'block',width:'100%',textAlign:'left',cursor:'pointer'}}><strong>{d.name} ›</strong><p>{d.categories.map(c=>c.name).join(' · ')}. {d.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')} · {data.rules.filter(r=>r.dimensionId===d.id).length} regler.</p></button>)}</section>}
  {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
  {mode==='rules'&&!showDimensionDetails&&data.dimensions.length>0&&canonicalData&&<section className="panel" aria-label="Översikt fördelningstyper"><h3>Fördelningstyper – viktade andelar</h3><p>Andelarna beräknas från fördelade timmar eller kostnader, inte antal UO. UO med ofördelade värden räknas separat.</p>
- <label>Översiktsperiod<select aria-label="Översiktsperiod" value={year} onChange={e=>{setYear(Number(e.target.value));setDimensionId('');setShowDimensionDetails(false);setSelectedUo(null);setBulkCategory(null)}}><option value={0}>Samtliga år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label>
+ <PeriodButtons years={years} selected={year} onSelect={setYear} label="Översiktsperiod"/>
+
  {data.dimensions.map(d=>{const stats=allocationTypeOverview(canonicalData,gaps,data,d.id,year,units.map(u=>u.id));return <button type="button" key={d.id} className="panel" onClick={()=>{setDimensionId(d.id);setShowDimensionDetails(true);setSelectedUo(null);setBulkCategory(null);setBulkAction(null)}} style={{display:'block',width:'100%',textAlign:'left',cursor:'pointer',border:undefined}}>
  <strong>{d.name} ›</strong>
  {stats.allocated>0?<><div role="img" aria-label={d.categories.map(c=>c.name+' '+stats.percentages[c.id].toFixed(1)+' procent').join(', ')} style={{display:'flex',width:'100%',height:14,overflow:'hidden',borderRadius:8,marginTop:12,background:'#e2e8f0'}}>{d.categories.map((c,i)=><span key={c.id} style={{width:stats.percentages[c.id]+'%',background:['#2563eb','#0d9488','#b45309','#9333ea','#be123c','#64748b'][i%6]}}/>)}</div><p>{d.categories.map(c=>c.name+': '+stats.percentages[c.id].toLocaleString('sv-SE',{maximumFractionDigits:1})+' %').join(' · ')}</p></>:<p>Ingen fördelning har sparats för tillämpliga värden.</p>}
@@ -136,8 +137,8 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
     <p>{u.los.length} LO · {stats?.total?configured?'Fullständigt fördelat':'Saknar helt eller delvis fördelning':'Inga tillämpliga värden'}</p>
     {stats&&stats.unallocated>0&&<p>Ofördelat: {stats.unallocated.toLocaleString('sv-SE',{maximumFractionDigits:1})} {dimension?.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</p>}
    </button>
-   {!open&&dimension?.categories.length===2&&canonicalData&&<PeriodSlider key={JSON.stringify([dimension.id,u.id,revision])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} uoId={u.id} scope={{kind:'uo',uoId:u.id}} years={years} onSave={persist}/>}
-   {open&&(dimension?.categories.length===2&&canonicalData?<WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>:<div><button type="button" className="secondary" aria-expanded={detailsOpen} onClick={()=>setExpanded(prev=>detailsOpen?prev.filter(id=>id!==u.id):[...prev,u.id])}>{detailsOpen?'Dölj LO':'Visa LO'}</button>{renderRule(scope)}{detailsOpen&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}</div>)}
+   {!open&&dimension?.categories.length===2&&canonicalData&&<PeriodSlider key={JSON.stringify([dimension.id,u.id,revision])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} uoId={u.id} scope={{kind:'uo',uoId:u.id}} years={years} selected={year} onSelect={setYear} onSave={persist}/>}
+   {open&&(dimension?.categories.length===2&&canonicalData?<WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} onSelectYear={setYear} uoId={u.id} onSave={persist}/>:<div><button type="button" className="secondary" aria-expanded={detailsOpen} onClick={()=>setExpanded(prev=>detailsOpen?prev.filter(id=>id!==u.id):[...prev,u.id])}>{detailsOpen?'Dölj LO':'Visa LO'}</button>{renderRule(scope)}{detailsOpen&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}</div>)}
   </div>;
   })}
  </section>}</>}
