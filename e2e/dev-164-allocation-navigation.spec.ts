@@ -27,7 +27,8 @@ test('DEV-164 period is selected in overview and no allocation type is preselect
  await expect(overview.getByLabel('Period Effekt').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
  await overview.getByRole('button',{name:/Effekt/}).click();
  await expect(view.getByRole('heading',{name:'Effekt – Fördela per UO och LO'})).toBeVisible();
- await expect(view.getByLabel('Period fördelningstyp').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
+ await expect(view.getByLabel('Period fördelningstyp')).toHaveCount(0);
+ await expect(view.getByRole('slider',{name:'UO årsfördelning 2027'}).first()).toBeVisible();
  await expect(view.getByLabel('Översiktsperiod')).toHaveCount(0);
  await expect(view.getByLabel('Fördelningsår')).toHaveCount(0);
  await view.getByRole('button',{name:/Alla fördelningstyper/}).click();
