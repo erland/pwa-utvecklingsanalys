@@ -25,7 +25,8 @@ test('import directly offers LO completion and opens analysis after one approval
  const completion=page.getByRole('region',{name:'Komplettera efter import'});
  await expect(completion.getByText('Fördela utveckling och förvaltning per LO')).toBeVisible();
  await completion.getByLabel(/^Utvecklingsandel /).first().fill('60');
- await expect(completion.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('50');
+ // Imported UO is 50/50: LO1 has 36 development hours, so LO2 must have 14/40 = 35%.
+ await expect(completion.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
  await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
  await expect(completion.getByRole('group',{name:'Godkända fördelningar'})).toHaveCount(1);
  await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
@@ -36,5 +37,5 @@ test('import directly offers LO completion and opens analysis after one approval
  const analysis=page.locator('.canonical-analytics');
  await expect(analysis.locator('.canonical-result-head strong')).toContainText('100 h');
  await selectActivity(analysis,'development');
- await expect(analysis.locator('.canonical-result-head strong')).toContainText('56 h');
+ await expect(analysis.locator('.canonical-result-head strong')).toContainText('50 h');
 });
