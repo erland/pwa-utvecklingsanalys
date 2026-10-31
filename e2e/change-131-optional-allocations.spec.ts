@@ -39,7 +39,6 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(uoSlider).toHaveValue('100');
  await expect(rules.getByRole('status').filter({hasText:'Fördelningen sparades'})).toBeVisible();
  await expect(editor.getByRole('button',{name:'Spara fördelning för Test UO'})).toHaveCount(0);
- await editor.getByRole('button',{name:/Test UO.*Visa LO/}).click();
  const loSlider=editor.getByRole('slider',{name:'LO A – Fördelningsreglage'});
  await loSlider.focus();await loSlider.press('Home');
  await expect(loSlider).toHaveValue('0');
@@ -67,7 +66,6 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await reopened.getByRole('region',{name:'Översikt fördelningstyper'}).getByRole('button',{name:/Effekt/}).click();
  await reopened.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/Test UO.*LO/}).click();
  const persisted=reopened.getByRole('region',{name:'Timviktad fördelning Test UO'});
- await persisted.getByRole('button',{name:/Test UO.*Visa LO/}).click();
  await expect(persisted.getByRole('slider',{name:'LO A – Fördelningsreglage'})).toHaveValue('0');
  await expect(persisted.getByRole('slider',{name:'UO Test UO – Fördelningsreglage'})).toHaveValue('37.5');
 });
