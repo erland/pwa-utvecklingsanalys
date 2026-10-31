@@ -52,7 +52,7 @@ export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):
   const parts=approvedActivityParts(data,rule,decision);
   const grouped=new Map<string,{development:number;maintenance:number}>();
   for(const part of parts){
-   if(part.scope.axis!=='work')continue;
+   if(part.scope.axis!=='work'||(part.activity!=='development'&&part.activity!=='maintenance'))continue;
    const loId=part.scope.loId??'uo-overhead:'+part.scope.uoId;
    const entry=grouped.get(loId)??{development:0,maintenance:0};
    entry[part.activity==='development'?'development':'maintenance']+=part.value;
