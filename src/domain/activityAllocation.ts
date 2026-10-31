@@ -15,7 +15,7 @@ export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAll
  // Use annual LO records when available; otherwise roll up monthly LO source values
  // into a virtual annual total for approval. Never mutate source records or add months
  // on top of an annual record for the same LO.
- const matrix=original.filter(r=>r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId);
+ const matrix=original.filter(r=>r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId&&r.workPart!=='uo-overhead');
  const loSources=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&(Boolean(r.scope.loId)||r.workPart==='uo-overhead'));
  const overheadKey='uo-overhead:'+rule.uoId;
  const loIdsForYear=[...new Set(loSources.map(r=>r.scope.axis==='work'?(r.scope.loId??overheadKey):''))];
