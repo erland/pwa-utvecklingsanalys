@@ -34,6 +34,6 @@ test('CHANGE-013 integrated acceptance: XLSX, grouping, combined measures, chart
  await expect(v2.getByRole('table',{name:'Organisation per år'})).toHaveCount(0);
  await page.reload();await page.getByRole('button',{name:'Inställningar',exact:true}).click();
  await expect(page.getByRole('region',{name:'Översikt UO-gruppmodeller'})).toContainText('Acceptansmodell');
- await page.getByRole('button',{name:'Redigera Acceptansmodell'}).click();
+ await page.getByRole('region',{name:'Översikt UO-gruppmodeller'}).getByRole('button',{name:/Acceptansmodell/}).click();
  await expect(page.getByLabel('Modellnamn')).toHaveValue('Acceptansmodell');
 });
