@@ -24,17 +24,18 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
    if(!value.trim())throw new Error('Ange en procentandel mellan 0 och 100.');
    return {loId,developmentPercent:Number(value)};
   });
-  if(uoBudget2027_30.kind==='budget'&&uoBudget2027_30.completion){
+  const completion=uoBudget2027_30.kind==='budget'?uoBudget2027_30.completion:undefined;
+  if(completion){
    shown=balancedPreviews?.length?(()=>{
     approveBalancedActivityGroup(balancedPreviews,'Förhandsgranskning',overrides);
-    const results=balancedPreviews.map(p=>uoBudget2027_30.completion!(p,overrides));
+    const results=balancedPreviews.map(p=>completion(p,overrides));
     const items=new Map<string,AllocationPreview['items'][number]>();
     for(const result of results)for(const item of result.items){
      const old=items.get(item.loId);
      items.set(item.loId,old?{...old,total:old.total+item.total,development:old.development+item.development,maintenance:old.maintenance+item.maintenance}:item);
     }
     return {...preview,items:[...items.values()],uo:{development:results.reduce((n,p)=>n+p.uo.development,0),maintenance:results.reduce((n,p)=>n+p.uo.maintenance,0)}};
-   })():sharedMode?applySharedPercentages(preview,overrides):uoBudget2027_30.completion(preview,overrides);
+   })():sharedMode?applySharedPercentages(preview,overrides):completion(preview,overrides);
   }
  }catch(e){problem=e instanceof Error?e.message:String(e)}
  const totalDev=shown.items.reduce((sum,item)=>sum+item.development,0);
