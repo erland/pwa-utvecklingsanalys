@@ -25,6 +25,25 @@ export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,d
   const observation:Observation={id:cellId,entityId:areaId,measureId:fact.measure,value:fact.value,period:fact.period,planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'detail',quality:'reported'};
   observations.push(observation);
  }
+ // The optional LO activity sheet is an alternative breakdown of imported totals.
+ // Require exact annual detail reconciliation before committing semantic observations.
+ for(const fact of result.loActivities??[]){
+  const entityId='lo:'+identifier(result.uo)+':'+identifier(fact.area);
+  const matches=observations.filter(o=>o.source.datasetId===datasetId&&o.entityId===entityId&&o.measureId===fact.metric&&o.period.year===fact.year&&o.kind==='detail');
+  const annual=matches.filter(o=>o.period.month===undefined);
+  const monthly=matches.filter(o=>o.period.month!==undefined);
+  const chosen=fact.year===2027&&monthly.length?monthly:annual.length?annual:monthly;
+  const total=chosen.reduce((n,o)=>n+o.value,0);
+  if(!chosen.length)throw new Error('LO_ACTIVITY_TOTAL_MISSING');
+  if(Math.abs(total-fact.development-fact.maintenance)>Math.max(1e-8,total*1e-10))throw new Error('LO_ACTIVITY_TOTAL_MISMATCH');
+  for(const activity of ['development','maintenance'] as const){
+   const cell=activity==='development'?fact.source.developmentCell:fact.source.maintenanceCell;
+   const id=[datasetId,fact.source.sheet,cell,fact.metric].map(identifier).join('|');
+   observations.push({id,entityId,measureId:fact.metric,value:activity==='development'?fact.development:fact.maintenance,
+    period:{year:fact.year},planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell},
+    kind:'subset',sectionId:'lo-activity',activity,quality:'reported'});
+  }
+ }
  if(includeMatrix&&result.matrix){
   if(result.matrix.issues.length)throw new Error('Matrix contains unreviewed import issues');
   for(const fact of result.matrix.facts){
