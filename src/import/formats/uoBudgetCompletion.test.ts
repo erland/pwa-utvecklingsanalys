@@ -51,4 +51,24 @@ describe('budget-format owned LO completion',()=>{
   expect(actual.items[2].development).toBe(16);
   expect(actual.items.reduce((n,item)=>n+item.development,0)).toBe(100);
  });
+ it('keeps imported locked LO exact while balancing other LO',()=>{
+  const original=preview();original.uo={development:120,maintenance:80};original.items=[
+   {loId:'A',total:60,development:36,maintenance:24,workloadId:'a'},
+   {loId:'B',total:80,development:48,maintenance:32,workloadId:'b'},
+   {loId:'C',total:60,development:36,maintenance:24,workloadId:'c'}
+  ];
+  const snapshot=JSON.stringify(original);
+  const result=rebalance(original,[{loId:'A',developmentPercent:100}],[{loId:'B',development:48,maintenance:32}]);
+  expect(result.items.map(v=>[v.development,v.maintenance])).toEqual([[60,0],[48,32],[12,48]]);
+  expect(result.uo).toEqual(original.uo);
+  expect(JSON.stringify(original)).toBe(snapshot);
+ });
+ it('rejects tampering, mismatched imported totals, and infeasible locked allocations',()=>{
+  const locked=[{loId:'LO1',development:50,maintenance:50}];
+  expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:60}],locked)).toThrow('LOCKED_LO_OVERRIDE');
+  expect(()=>rebalance(preview(),[],[{loId:'LO1',development:60,maintenance:50}])).toThrow('LOCKED_LO_TOTAL_MISMATCH');
+  expect(()=>rebalance(preview(),[],[{loId:'LO1',development:100,maintenance:0},{loId:'LO2',development:100,maintenance:0}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
+  expect(()=>rebalance(preview(),[],[{loId:'LO3',development:0,maintenance:0}])).toThrow('UNKNOWN_LOCKED_LO');
+ });
+
 });
