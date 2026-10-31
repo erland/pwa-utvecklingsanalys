@@ -39,6 +39,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(editor.getByRole('region',{name:'UO årsundantag'}).getByRole('slider',{name:'Årsfördelning 2027'})).toBeVisible();
  await editor.getByRole('region',{name:'UO årsundantag'}).getByRole('button',{name:'2027'}).click();
  await expect(editor.getByLabel('LO-översikt')).toBeVisible();
+ await expect(editor.getByLabel('LO-översikt')).toContainText('Inga egna årsregler');
+ await expect(editor).not.toContainText('Alla LO visas direkt. Grundfördelningen justeras nedan');
  await expect(editor.getByLabel('LO-översikt').getByText('LO A',{exact:true})).toBeVisible();
  await expect(editor.getByLabel('LO-översikt').getByText('LO B',{exact:true})).toBeVisible();
  await expect(editor.getByLabel('LO-översikt').getByRole('button',{name:'2027'})).toHaveCount(2);
