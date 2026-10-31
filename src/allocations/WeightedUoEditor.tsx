@@ -8,7 +8,7 @@ import {applyProportionalScope} from './proportionalScope';
 
 const name=(id:string)=>decodeURIComponent(id.split(':').at(-1)??id);
 const format=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(n);
-const partScope=(uoId:string,key:string):OptionalAllocationScope=>key===uoId||key==='uo-overhead:'+uoId?{kind:'uo-overhead',uoId}:{kind:'lo',uoId,loId:key};
+const partScope=(uoId:string,key:string):Extract<OptionalAllocationScope,{kind:'lo'|'uo-overhead'}>=>key===uoId||key==='uo-overhead:'+uoId?{kind:'uo-overhead',uoId}:{kind:'lo',uoId,loId:key};
 const activity=(dimension:OptionalAllocationDimension)=>dimension.appliesTo.activities==='all'||dimension.appliesTo.activities.length===2?'all' as const:dimension.appliesTo.activities[0];
 type Props={data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;uoId:string;onSave:(next:OptionalAllocations)=>Promise<void>};
 
