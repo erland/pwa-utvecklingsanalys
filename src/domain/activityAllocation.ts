@@ -71,6 +71,19 @@ export function approveSharedActivityAllocation(preview:AllocationPreview,reason
  applySharedPercentages(preview,overrides);
  return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim(),sharedPercentages:true,overrides:overrides.map(o=>({...o}))};
 }
+/** Validate every metric before producing any decisions. Existing sharedPercentages
+ * decisions stay readable with their original semantics; new decisions use the
+ * UO-preserving rebalance mode (sharedPercentages is absent).
+ */
+export function approveBalancedActivityGroup(
+ previews:readonly AllocationPreview[],reason:string,overrides:readonly LoDevelopmentOverride[]
+):ActivityAllocationDecision[]{
+ if(!previews.length)throw new Error('EMPTY_ACTIVITY_GROUP');
+ if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
+ const unique=new Set(previews.map(p=>p.ruleId));
+ if(unique.size!==previews.length)throw new Error('DUPLICATE_ACTIVITY_RULE');
+ return previews.map(preview=>approveActivityAllocation(preview,reason,overrides));
+}
 export function approveActivityAllocation(preview:AllocationPreview,reason:string,overrides:readonly LoDevelopmentOverride[]=[]):ActivityAllocationDecision{
  if(!reason.trim())throw new Error('APPROVAL_REASON_REQUIRED');
  // Validate the complete balancing before storing any user-supplied percentages.
