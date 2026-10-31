@@ -17,7 +17,7 @@ export function bulkInitializeUos(config:OptionalAllocations,dimensionId:string,
  // Remove explicit children in the selected scope so the new UO baseline takes effect,
  // but leave every other year, dimension and UO untouched.
  const next:OptionalAllocations={...config,rules:[
-  ...config.rules.filter(r=>!(r.dimensionId===dimensionId&&r.year===year&&keys.has(r.scope.uoId))),
+  ...config.rules.filter(r=>!(r.dimensionId===dimensionId&&(year===0||r.year===year)&&keys.has(r.scope.uoId))),
   ...rules
  ]};
  return parseOptionalAllocations(next);
@@ -26,9 +26,9 @@ export function bulkInitializeUos(config:OptionalAllocations,dimensionId:string,
 /** Preview reports exact overwritten rules; default-year operations keep annual exceptions. */
 export function previewBulkChange(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[]){
  const ids=new Set(uoIds);
- const affected=config.rules.filter(r=>r.dimensionId===dimensionId&&r.year===year&&ids.has(r.scope.uoId));
+ const affected=config.rules.filter(r=>r.dimensionId===dimensionId&&(year===0||r.year===year)&&ids.has(r.scope.uoId));
  return {uos:ids.size,removedRules:affected.length,loRules:affected.filter(r=>r.scope.kind==='lo').length,overheadRules:affected.filter(r=>r.scope.kind==='uo-overhead').length,
-  annualExceptions:year===0?config.rules.filter(r=>r.dimensionId===dimensionId&&r.year!==0&&ids.has(r.scope.uoId)).length:0};
+  annualExceptions:0};
 }
 export function bulkSetPercentages(config:OptionalAllocations,dimensionId:string,year:number,uoIds:readonly string[],percentages:Record<string,number>):OptionalAllocations{
  const dimension=config.dimensions.find(d=>d.id===dimensionId);
