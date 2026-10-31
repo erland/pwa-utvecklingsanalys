@@ -1,3 +1,4 @@
+import BuiltInAllocations from './BuiltInAllocations';
 import {allocationTypeOverview} from './typeOverview';
 import {useEffect,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
@@ -99,7 +100,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   {editingId&&<p>Kategoriers identitet bevaras vid namnändring. Om du tar bort en kategori krävs bekräftelse och sparade regler för fördelningstypen rensas.</p>}
  </fieldset>}
  {mode==='definitions'&&!creating&&editingId===null&&<section aria-label="Befintliga fördelningstyper"><div className="actions"><h3>Befintliga fördelningstyper</h3><button type="button" className="secondary" onClick={()=>{cancelEdit();setDeleteId(null);setCreating(true)}}>Ny fördelningstyp</button></div>{data.dimensions.length===0?<p>Inga fördelningstyper har skapats.</p>:data.dimensions.map(d=><button type="button" className="panel" key={d.id} onClick={()=>beginEdit(d)} style={{display:'block',width:'100%',textAlign:'left',cursor:'pointer'}}><strong>{d.name} ›</strong><p>{d.categories.map(c=>c.name).join(' · ')}. {d.appliesTo.metrics.map(m=>metricLabels[m]).join(', ')} · {data.rules.filter(r=>r.dimensionId===d.id).length} regler.</p></button>)}</section>}
- {mode==='rules'&&(data.dimensions.length===0?<p>Skapa först en fördelningstyp under Inställningar.</p>:null)}
+ {mode==='rules'&&canonicalData&&<BuiltInAllocations data={canonicalData} years={years}/>}
  {mode==='rules'&&!showDimensionDetails&&data.dimensions.length>0&&canonicalData&&<section className="panel" aria-label="Översikt fördelningstyper"><h3>Fördelningstyper – viktade andelar</h3><p>Andelarna beräknas från fördelade timmar eller kostnader, inte antal UO. UO med ofördelade värden räknas separat.</p>
 
  {data.dimensions.map(d=>{const stats=allocationTypeOverview(canonicalData,gaps,data,d.id,year,units.map(u=>u.id));return <div key={d.id} className="panel" style={{width:'100%',minWidth:0}}>
