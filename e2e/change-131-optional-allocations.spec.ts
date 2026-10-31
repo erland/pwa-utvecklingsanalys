@@ -38,6 +38,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(uoPeriod.getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await uoPeriod.getByRole('button',{name:'2027'}).click();
  await expect(uoPeriod.getByRole('slider',{name:'UO årsfördelning 2027'})).toBeVisible();
+ await expect(editor.getByRole('region',{name:'Fördelning LO A'}).getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
  await uoPeriod.getByRole('button',{name:'Alla'}).click();
  await expect(editor.getByLabel('LO-översikt')).toBeVisible();
 
@@ -46,7 +47,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(editor.getByLabel('LO-översikt').getByText('LO B',{exact:true})).toBeVisible();
  await expect(editor.getByLabel('LO-översikt').getByRole('button',{name:'2027'})).toHaveCount(2);
  await editor.getByLabel('LO-översikt').getByRole('button',{name:'2027'}).first().click();
- await expect(editor.getByRole('slider',{name:'Årsfördelning 2027'})).toBeVisible();
+ await expect(editor.getByRole('slider',{name:'Årsfördelning 2027'}).first()).toBeVisible();
+ await expect(uoPeriod.getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
  await editor.getByRole('region',{name:'Fördelning LO A'}).getByRole('button',{name:'Alla'}).click();
  const uoSlider=editor.getByRole('slider',{name:'UO Test UO – Fördelningsreglage'});
  await uoSlider.focus();await uoSlider.press('End');
