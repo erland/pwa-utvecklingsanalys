@@ -4,13 +4,14 @@ import type {GapState} from '../gaps/store';
 import {analyzeCanonical} from '../analytics/canonicalQuery';
 import type {OptionalAllocations,OptionalAllocationDimension} from './optionalModel';
 import {effectiveOptionalRule} from './optionalAnalysis';
+import {applyProportionalScope} from './proportionalScope';
 import {optionalAllocationKey,type OptionalAllocationRule,type OptionalAllocationScope} from './optionalModel';
 import {partKey,percentagesFor,putPartRules,shiftBinaryUo,weightedSummary,type WeightedPart} from './weightedSync';
 
 const name=(id:string)=>decodeURIComponent(id.split(':').at(-1)??id);
 const format=(value:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:1}).format(value);
 
-function LoYearOverride({config,dimension,scope,year,onSave}:{config:OptionalAllocations;dimension:OptionalAllocationDimension;scope:OptionalAllocationScope;year:number;onSave:(next:OptionalAllocations)=>Promise<void>}){
+function LoYearOverride({data,gaps,config,dimension,scope,year,onSave}:{data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;scope:OptionalAllocationScope;year:number;onSave:(next:OptionalAllocations)=>Promise<void>}){
  const first=dimension.categories[0].id,second=dimension.categories[1].id;
  const effective=effectiveOptionalRule(config,dimension.id,year,scope).rule?.percentages;
  const own=config.rules.find(r=>r.dimensionId===dimension.id&&r.year===year&&r.scope.kind===scope.kind&&r.scope.uoId===scope.uoId&&(scope.kind!=='lo'||r.scope.kind==='lo'&&r.scope.loId===scope.loId));
@@ -21,7 +22,7 @@ function LoYearOverride({config,dimension,scope,year,onSave}:{config:OptionalAll
   try{
    const rule:OptionalAllocationRule={dimensionId:dimension.id,year,scope,percentages:{[first]:value,[second]:100-value}};
    const key=optionalAllocationKey(rule);
-   await onSave({...config,rules:[...config.rules.filter(r=>optionalAllocationKey(r)!==key),rule]});
+   await onSave(scope.kind==='uo'?applyProportionalScope(data,gaps,config,dimension,{uoId:scope.uoId,year},value):{...config,rules:[...config.rules.filter(r=>optionalAllocationKey(r)!==key),rule]});
   }catch(e){dirty.current=true;setError(String(e))}finally{setBusy(false)}
  };
  const remove=async()=>{
@@ -42,6 +43,7 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  const [activeYears,setActiveYears]=useState<Record<string,number|null>>({}),[activeUoYear,setActiveUoYear]=useState<number|null>(null),[pending,setPending]=useState<Map<string,Record<string,number>>|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pendingRef=useRef<Map<string,Record<string,number>>|null>(null);
  const savingRef=useRef(false);
+ const editRef=useRef<{kind:'uo'|'part';target:number;part?:WeightedPart}|null>(null);
  const first=dimension.categories[0].id,second=dimension.categories[1].id;
  const detail=useMemo(()=>{
   const years=year===0?[...new Set(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId).map(r=>r.year))]:[year];
@@ -59,14 +61,16 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
  const values=pending??base;
  const rollup=weightedSummary(parts,values,[first,second]);
  const change=(next:Map<string,Record<string,number>>)=>{pendingRef.current=next;setPending(next);setError('')};
- const setUo=(target:number)=>change(shiftBinaryUo(parts,pendingRef.current??base,first,second,target));
- const setPart=(part:WeightedPart,target:number)=>change(new Map(pendingRef.current??base).set(partKey(part.scope),{[first]:target,[second]:100-target}));
+ const setUo=(target:number)=>{editRef.current={kind:'uo',target};change(shiftBinaryUo(parts,pendingRef.current??base,first,second,target))};
+ const setPart=(part:WeightedPart,target:number)=>{editRef.current={kind:'part',part,target};change(new Map(pendingRef.current??base).set(partKey(part.scope),{[first]:target,[second]:100-target}))};
  const save=async()=>{
   const snapshot=pendingRef.current;
   if(!snapshot||savingRef.current)return;
   savingRef.current=true;setBusy(true);setError('');
   try{
-   await onSave(putPartRules(config,dimension.id,year,parts,snapshot));
+   const edit=editRef.current;
+   await onSave(edit?applyProportionalScope(data,gaps,config,dimension,{uoId,year,...(edit.kind==='part'?(edit.part!.scope.kind==='lo'?{loId:edit.part!.scope.loId}:{overhead:true}):{})},edit.target):putPartRules(config,dimension.id,year,parts,snapshot));
+   editRef.current=null;
    pendingRef.current=null;setPending(null);
   }catch(e){setError('Kunde inte spara fördelningen: '+String(e))}
   finally{savingRef.current=false;setBusy(false)}
@@ -80,10 +84,9 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
   <p><strong>{format(rollup.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</strong> · {format(rollup.allocatedHours[first])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[0].name} ({format(rollup.percentages[first])} %) · {format(rollup.allocatedHours[second])} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} {dimension.categories[1].name} ({format(rollup.percentages[second])} %)</p>
   <label>UO – Fördelningsreglage<input type="range" min="0" max="100" step="0.1" aria-label={'UO '+name(uoId)+' – Fördelningsreglage'} value={rollup.percentages[first]} disabled={rollup.hours===0||busy} onChange={e=>setUo(Number(e.target.value))} onPointerUp={()=>void save()} onKeyUp={e=>finishKey(e.key)} onBlur={()=>void save()} style={{display:'block',width:'100%'}}/></label>
   {year===0&&<section aria-label="UO årsundantag" className="panel" style={{padding:12,marginTop:12}}>
-   <strong>Justera UO för ett enskilt år</strong>
-   <p>En årsregel för UO gäller även LO utan egen regel för samma år. Tidigare LO-grundregler kan då åsidosättas, medan uttryckliga årsregler på LO fortfarande gäller.</p>
+   <strong>UO per år</strong>
    <div className="actions">{[...new Set(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId).map(r=>r.year))].sort().map(y=><button type="button" className="secondary" key={y} aria-expanded={activeUoYear===y} onClick={()=>setActiveUoYear(old=>old===y?null:y)}>{y}{config.rules.some(r=>r.dimensionId===dimension.id&&r.year===y&&r.scope.kind==='uo'&&r.scope.uoId===uoId)?' •':''}</button>)}</div>
-   {activeUoYear!==null&&<LoYearOverride key={'uo-'+activeUoYear+'-'+config.rules.length} config={config} dimension={dimension} scope={{kind:'uo',uoId}} year={activeUoYear} onSave={onSave}/>}
+   {activeUoYear!==null&&<LoYearOverride key={'uo-'+activeUoYear+'-'+config.rules.length} data={data} gaps={gaps} config={config} dimension={dimension} scope={{kind:'uo',uoId}} year={activeUoYear} onSave={onSave}/>}
   </section>}
   {<div aria-label="LO-översikt" style={{minWidth:0}}>{parts.map(p=>{const current=values.get(partKey(p.scope))??{};const share=current[first]??0;const allocated=(current[first]??0)+(current[second]??0);const direct=config.rules.some(r=>r.dimensionId===dimension.id&&r.year===year&&r.scope.kind===p.scope.kind&&r.scope.uoId===uoId&&(p.scope.kind!=='lo'||r.scope.kind==='lo'&&r.scope.loId===p.scope.loId));return <div key={partKey(p.scope)} className="panel" style={{marginTop:8,minWidth:0,padding:12}}><strong>{p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId)}</strong><p style={{margin:'4px 0'}}>{format(p.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'} · {direct?'Egen regel':allocated>0?'Ärvd fördelning':'Saknar fördelning'}</p><div role="img" aria-label={(p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId))+' – '+dimension.categories[0].name+' '+format(share)+' procent'} style={{display:'flex',height:10,borderRadius:5,overflow:'hidden',width:'100%',background:'#e2e8f0'}}><span style={{width:share+'%',background:'#2563eb'}}/><span style={{width:(current[second]??0)+'%',background:'#0d9488'}}/></div><p style={{margin:'4px 0'}}>{format(share)} % / {format(current[second]??0)} %</p>
    <label>{p.scope.kind==='uo-overhead'?'UO Övergripande':name(p.scope.loId)} – {format(p.hours)} {dimension.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}
