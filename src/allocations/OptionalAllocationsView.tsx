@@ -123,14 +123,20 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   <h4>UO-fördelningar</h4>
   <p>{units.length} UO · {units.filter(u=>data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id)).length} med sparad regel för vald period eller grundfördelning</p>
   <div className="mapping-grid"><label>Sök UO<input aria-label="Sök UO" value={uoSearch} onChange={e=>setUoSearch(e.target.value)} placeholder="Filtrera på namn"/></label>
-  <label>Status<select aria-label="Filtrera UO-status" value={uoFilter} onChange={e=>setUoFilter(e.target.value as 'all'|'configured'|'missing')}><option value="all">Alla UO</option><option value="configured">Med sparad regel</option><option value="missing">Utan sparad regel</option></select></label></div>
-  {units.filter(u=>{const configured=data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id);return label(u.id).toLocaleLowerCase('sv-SE').includes(uoSearch.trim().toLocaleLowerCase('sv-SE'))&&(uoFilter==='all'||configured===(uoFilter==='configured'))}).map(u=>{
-  const configured=data.rules.some(r=>r.dimensionId===dimension?.id&&(r.year===year||year!==0&&r.year===0)&&r.scope.uoId===u.id);
+  <label>Status<select aria-label="Filtrera UO-status" value={uoFilter} onChange={e=>setUoFilter(e.target.value as 'all'|'configured'|'missing')}><option value="all">Alla UO</option><option value="configured">Fullständigt fördelade</option><option value="missing">Med ofördelade värden</option></select></label></div>
+  {units.filter(u=>{const stats=dimension&&canonicalData?allocationTypeOverview(canonicalData,gaps,data,dimension.id,year,[u.id]):null;const configured=Boolean(stats&&stats.total>0&&stats.unallocated<=Math.max(1e-7,stats.total*1e-7));return label(u.id).toLocaleLowerCase('sv-SE').includes(uoSearch.trim().toLocaleLowerCase('sv-SE'))&&(uoFilter==='all'||configured===(uoFilter==='configured'))}).map(u=>{
+  const stats=dimension&&canonicalData?allocationTypeOverview(canonicalData,gaps,data,dimension.id,year,[u.id]):null;
+  const configured=Boolean(stats&&stats.total>0&&stats.unallocated<=Math.max(1e-7,stats.total*1e-7));
   const open=selectedUo===u.id;
   const scope:OptionalAllocationScope={kind:'uo',uoId:u.id},base=findRule(scope);
   const detailsOpen=expanded.includes(u.id);
   return <div key={u.id} className="panel" style={{marginTop:8}}>
-   <div className="actions" style={{justifyContent:'space-between'}}><div><strong>{label(u.id)}</strong><p>{u.los.length} LO · {configured?'Sparad regel finns':'Ingen sparad regel'}</p></div><button type="button" className="secondary" aria-expanded={open} onClick={()=>setSelectedUo(open?null:u.id)}>{open?'Stäng':'Redigera'} {label(u.id)}</button></div>
+   <button type="button" aria-expanded={open} className="secondary" onClick={()=>setSelectedUo(open?null:u.id)} style={{display:'block',width:'100%',textAlign:'left',padding:12}}>
+    <strong>{label(u.id)} {open?'▾':'›'}</strong>
+    <p>{u.los.length} LO · {stats?.total?configured?'Fullständigt fördelat':'Saknar helt eller delvis fördelning':'Inga tillämpliga värden'}</p>
+    {stats&&stats.allocated>0&&dimension&&<><div role="img" aria-label={dimension.categories.map(c=>c.name+' '+stats.percentages[c.id].toFixed(1)+' procent').join(', ')} style={{display:'flex',width:'100%',height:10,borderRadius:6,overflow:'hidden',background:'#e2e8f0'}}>{dimension.categories.map((c,i)=><span key={c.id} style={{width:stats.percentages[c.id]+'%',background:['#2563eb','#0d9488','#b45309','#9333ea','#be123c','#64748b'][i%6]}}/>)}</div><p>{dimension.categories.map(c=>c.name+': '+stats.percentages[c.id].toLocaleString('sv-SE',{maximumFractionDigits:1})+' %').join(' · ')}</p></>}
+    {stats&&stats.unallocated>0&&<p>Ofördelat: {stats.unallocated.toLocaleString('sv-SE',{maximumFractionDigits:1})} {dimension?.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</p>}
+   </button>
    {open&&(dimension?.categories.length===2&&canonicalData?<WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>:<div><button type="button" className="secondary" aria-expanded={detailsOpen} onClick={()=>setExpanded(prev=>detailsOpen?prev.filter(id=>id!==u.id):[...prev,u.id])}>{detailsOpen?'Dölj LO':'Visa LO'}</button>{renderRule(scope)}{detailsOpen&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}</div>)}
   </div>;
   })}
