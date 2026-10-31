@@ -78,3 +78,6 @@ Analytiker/importör och lokal projektägare. Ingen inloggning i första version
 
 ## Utanför första leverans
 Samarbetsredigering i realtid, serverlagring, godtyckligt användarskript/formelspråk, automatisk effektattribuering, avancerad kausal effekthemtagning.
+
+## Målbild: gemensam hantering av fördelningar (CHANGE-175)
+Den beslutade målbilden och acceptanskriterierna finns i [change-175-unified-allocations.md](change-175-unified-allocations.md). De kompletterar FR-009–FR-012 och gäller specifikt de inbyggda fördelningarna Utveckling/Förvaltning och IT-timmar/Verksamhetstimmar utan att ändra regler för användardefinierade dimensioner. Importerade UO-aktivitetsvärden ska vara låsta och styra balanseringen av justerbara LO; importerade LO-aktivitetsvärden ska vara låsta och inte rubbas vid omfördelning.
