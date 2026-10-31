@@ -31,6 +31,17 @@ describe('DEV-149 fördelningstyper',()=>{
   const reduced=updateDimension(before,'d',{name:'Ny',names:['A','B'],metrics:['it_hours'],activities:['development']},()=> 'x',true);
   expect(reduced.rules).toHaveLength(0);
  });
+ it('bevarar kategori-ID vid omordning och kräver bekräftelse när en annan kategori tas bort',()=>{
+  const before=original();
+  const reordered=updateDimension(before,'d',{name:'Ny',names:['B ny','A ny'],categoryIds:['b','a'],metrics:['it_hours'],activities:['development']},()=> 'x');
+  expect(reordered.dimensions[0].categories.map(c=>c.id)).toEqual(['b','a']);
+  expect(reordered.rules).toEqual(before.rules);
+  const removed={...before,dimensions:[{...before.dimensions[0],categories:[...before.dimensions[0].categories,{id:'c',name:'C'}]}]};
+  const input={name:'Ny',names:['B','C'],categoryIds:['b','c'],metrics:['it_hours'] as Array<'it_hours'>,activities:['development'] as Array<'development'>};
+  expect(dimensionChangeImpact(removed,'d',input).removedCategories).toBe(true);
+  expect(()=>updateDimension(removed,'d',input,()=> 'x')).toThrow('bekräftelse');
+  expect(updateDimension(removed,'d',input,()=> 'x',true).rules).toHaveLength(0);
+ });
  it('tar bort typ och tillhörande regler utan att ändra andra typer',()=>{
   const before=original();before.dimensions.push({id:'other',name:'Annat',categories:[{id:'x',name:'X'},{id:'y',name:'Y'}],appliesTo:{metrics:['it_hours'],activities:'all'}});
   const next=deleteDimension(before,'d');

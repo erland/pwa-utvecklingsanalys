@@ -19,7 +19,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(view.getByLabel('Namn på fördelningstyp')).toHaveCount(0);
  await view.getByRole('button',{name:'Ny fördelningstyp'}).click();
  await view.getByLabel('Namn på fördelningstyp').fill('Effekt');
- await view.getByLabel('Fördelningskategorier').fill('Förutsättningsskapande; Direkt effekt');
+ await view.getByLabel('Kategori 1',{exact:true}).fill('Förutsättningsskapande');
+ await view.getByLabel('Kategori 2',{exact:true}).fill('Direkt effekt');
  await view.getByRole('button',{name:'Skapa fördelningstyp'}).click();
  await expect(view.getByRole('status')).toContainText('Fördelningen sparades');
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();

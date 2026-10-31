@@ -1,7 +1,7 @@
 import type {Metric} from '../domain/canonical';
 import type {OptionalAllocations,OptionalAllocationDimension} from './optionalModel';
 const allMetrics:Metric[]=['it_hours','business_hours','consultant_cost','other_cost'];
-export type DimensionInput={name:string;names:string[];metrics:Metric[];activities:'all'|Array<'development'|'maintenance'>};
+export type DimensionInput={name:string;names:string[];categoryIds?:Array<string|null>;metrics:Metric[];activities:'all'|Array<'development'|'maintenance'>};
 export function dimensionChangeImpact(data:OptionalAllocations,id:string,input:DimensionInput){
  const d=data.dimensions.find(item=>item.id===id);
  if(!d)throw new Error('Fördelningstypen finns inte.');
@@ -9,7 +9,8 @@ export function dimensionChangeImpact(data:OptionalAllocations,id:string,input:D
  const oldActivities=d.appliesTo.activities==='all'?'all':[...d.appliesTo.activities].sort().join('|');
  const newActivities=input.activities==='all'?'all':[...input.activities].sort().join('|');
  const changesScope=oldMetrics!==newMetrics||oldActivities!==newActivities;
- const removedCategories=input.names.length<d.categories.length;
+ const kept=input.categoryIds?new Set(input.categoryIds.filter((v):v is string=>v!==null)):new Set(d.categories.slice(0,input.names.length).map(c=>c.id));
+ const removedCategories=d.categories.some(c=>!kept.has(c.id));
  const affectedRules=data.rules.filter(rule=>rule.dimensionId===id).length;
  return {requiresConfirmation:changesScope||removedCategories,changesScope,removedCategories,affectedRules};
 }
@@ -23,7 +24,9 @@ export function updateDimension(data:OptionalAllocations,id:string,input:Dimensi
  if(input.activities!=='all'&&input.activities.length===0)throw new Error('Välj minst en aktivitet.');
  const impact=dimensionChangeImpact(data,id,input);
  if(impact.requiresConfirmation&&!confirmReset)throw new Error('Ändringen påverkar fördelningsregler och kräver bekräftelse.');
- const categories=names.map((n,i)=>({id:previous.categories[i]?.id??newId(),name:n}));
+ const ids=input.categoryIds??names.map((_,i)=>previous.categories[i]?.id??null);
+ if(ids.length!==names.length||ids.some(id=>id!==null&&!previous.categories.some(c=>c.id===id))||new Set(ids.filter(id=>id!==null)).size!==ids.filter(id=>id!==null).length)throw new Error('Ogiltiga kategoriidentiteter.');
+ const categories=names.map((n,i)=>({id:ids[i]??newId(),name:n}));
  const dimension:OptionalAllocationDimension={...previous,name,categories,appliesTo:{metrics:input.metrics,activities:input.activities}};
  return {...data,dimensions:data.dimensions.map(d=>d.id===id?dimension:d),rules:impact.requiresConfirmation?data.rules.filter(r=>r.dimensionId!==id):data.rules};
 }
