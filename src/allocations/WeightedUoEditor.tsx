@@ -58,14 +58,14 @@ export default function WeightedUoEditor({data,gaps,config,dimension,year,uoId,o
   return {rows:[...totals.values()],annualRows,unknownCount,coverage};
  },[data,gaps,dimension,year,uoId]);
  const parts:WeightedPart[]=detail.rows.filter(r=>r.value>0).map(r=>({scope:r.key==='uo-overhead:'+uoId||r.key===uoId?{kind:'uo-overhead',uoId}: {kind:'lo',uoId,loId:r.key},hours:r.value}));
- const base=useMemo(()=>new Map(parts.map(p=>{
+ const base=new Map(parts.map(p=>{
   const key=p.scope.kind==='lo'?p.scope.loId:'uo-overhead:'+uoId;
   const rows=detail.annualRows.filter(r=>r.key===key||(p.scope.kind==='uo-overhead'&&r.key===uoId));
   const total=rows.reduce((n,r)=>n+r.value,0);
   const allocated=rows.reduce((n,r)=>n+r.value*(percentagesFor(config,dimension.id,r.year,p.scope,[first,second])[first]??0),0);
   const proportion=total?allocated/total:0;
-  return [partKey(p.scope),{[first]:proportion,[second]:total?rows.reduce((n,r)=>n+r.value*(percentagesFor(config,dimension.id,r.year,p.scope,[first,second])[second]??0),0)/total:0}];
- })),[config,dimension,first,second,detail,parts.length,uoId]);
+  return [partKey(p.scope),{[first]:proportion,[second]:total?rows.reduce((n,r)=>n+r.value*(percentagesFor(config,dimension.id,r.year,p.scope,[first,second])[second]??0),0)/total:0}] as const;
+ }));
  const values=pending??base;
  const rollup=weightedSummary(parts,values,[first,second]);
  const change=(next:Map<string,Record<string,number>>)=>{pendingRef.current=next;setPending(next);setError('')};
