@@ -48,7 +48,7 @@ describe('v2 approved activity allocations',()=>{
   const data=fixture();data.records[3].value=290;
   expect(previewActivityAllocation(data,rule).uo.development).toBeCloseTo(594);
   const prior=fixture();prior.records.push({...base('F26',500,'development','lo1'),granularity:'activity-part',workloadId:'other'});
-  expect(()=>previewActivityAllocation(prior,rule)).toThrow('EXISTING_LO_ACTIVITY_DATA');
+  expect(()=>previewActivityAllocation(prior,rule)).toThrow('INCOMPLETE_IMPORTED_LO_ACTIVITY');
  });
  it('aggregates month-only LO inputs into annual allocation without mutating originals',()=>{
   const data=fixture();
@@ -121,6 +121,32 @@ describe('v2 approved activity allocations',()=>{
   expect(decisions.every(d=>d.sharedPercentages!==true)).toBe(true);
   expect(decisions.map(d=>d.ruleId)).toEqual([rule.id,'business-rule']);
   expect(()=>approveBalancedActivityGroup([itPreview,itPreview],'Group',[])).toThrow('DUPLICATE_ACTIVITY_RULE');
+ });
+
+ it('preserves complete imported LO while distributing remaining hours and excludes duplicated derivations',()=>{
+  const data=fixture();
+  data.records.push({...base('IMP1',300,'development','lo1'),granularity:'activity-part'});
+  data.records.push({...base('IMP2',400,'maintenance','lo1'),granularity:'activity-part'});
+  const before=JSON.stringify(data);
+  const proposal=previewActivityAllocation(data,rule);
+  expect(proposal.lockedLo).toEqual([{loId:'lo1',development:300,maintenance:400}]);
+  expect(proposal.items.find(i=>i.loId==='lo2')?.development).toBe(300);
+  expect(()=>approveActivityAllocation(proposal,'Otillåtet',[{loId:'lo1',developmentPercent:50}])).toThrow('LOCKED_LO_OVERRIDE');
+  const approved=approveActivityAllocation(proposal,'Godkänt');
+  const derived=approvedActivityParts(data,rule,approved);
+  expect(derived).toHaveLength(2);
+  expect(derived.every(r=>r.scope.axis==='work'&&r.scope.loId==='lo2')).toBe(true);
+  expect(derived.filter(r=>r.activity==='development')[0].value).toBe(300);
+  expect(JSON.stringify(data)).toBe(before);
+  const changed=fixture();
+  changed.records.push({...base('IMP1',250,'development','lo1'),granularity:'activity-part'});
+  changed.records.push({...base('IMP2',450,'maintenance','lo1'),granularity:'activity-part'});
+  expect(approvedActivityParts(changed,rule,approved)).toEqual([]);
+ });
+ it('rejects incomplete imported LO activities rather than silently overwriting originals',()=>{
+  const data=fixture();
+  data.records.push({...base('IMP1',200,'development','lo1'),granularity:'activity-part'});
+  expect(()=>previewActivityAllocation(data,rule)).toThrow('INCOMPLETE_IMPORTED_LO_ACTIVITY');
  });
 
 });
