@@ -11,6 +11,16 @@ type Values={first:number;second:number};
 type Row={key:string;title:string;values:Values;status:string};
 const name=(id:string)=>{try{return decodeURIComponent(id.split(':').at(-1)??id)}catch{return id}};
 const format=(value:number)=>value.toLocaleString('sv-SE',{maximumFractionDigits:1});
+function DistributionIndicator({first,second,labels}:{first:number;second:number;labels:[string,string]}){
+ const total=first+second;
+ const percent=total>0?100*first/total:0;
+ return <div role="img" aria-label={labels[0]+': '+format(first)+' timmar, '+labels[1]+': '+format(second)+' timmar'}>
+  <div style={{display:'flex',width:'100%',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}>
+   <span style={{width:percent+'%',background:'#2563eb'}}/><span style={{width:(100-percent)+'%',background:'#0d9488'}}/>
+  </div>
+  <p>{labels[0]}: {format(first)} h ({format(percent)} %) · {labels[1]}: {format(second)} h ({format(total>0?100-percent:0)} %)</p>
+ </div>;
+}
 const approved=(r:AnalysisRecord)=>r.authority==='original'&&r.approval==='reported';
 const annual=(records:AnalysisRecord[],metric:Metric,year:number)=>{
  const all=records.filter(r=>approved(r)&&r.metric===metric&&r.granularity==='total'&&(year===0||r.year===year));
@@ -117,10 +127,26 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);setEditing(null)}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
+      <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Detaljperiod '+title}/>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);setEditing(null)}}>← Alla UO</button>}
       <h4>{title} per UO</h4>
       {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
-      {kind==='activity'&&selectedUo&&approvedRows.some(r=>r.uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar"><h4>Godkända LO-kompletteringar</h4><p>Härledda värden från godkända beslut. Du kan justera godkända LO-fördelningar nedan.</p><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>UO</th><th>LO</th><th>År</th><th>Mått</th><th>Utveckling (h)</th><th>Förvaltning (h)</th><th>Källa</th></tr></thead><tbody>{approvedRows.filter(r=>r.uoId===selectedUo).map(r=><tr key={r.key}><td>{name(r.uoId)}</td><td>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)}</td><td>{r.year}</td><td>{r.metric==='it_hours'?'IT':'Verksamhet'}</td><td>{format(r.development)}</td><td>{format(r.maintenance)}</td><td>{r.source}</td></tr>)}</tbody></table></div></section>}
+      {kind==='activity'&&selectedUo&&approvedRows.some(r=>r.uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar" className="panel">
+       <h4>LO-fördelningar</h4><p>Godkända, kompletterade timmar. IT- och verksamhetstimmar visas sammanräknade som timmar.</p>
+       {(()=>{
+        const groups=new Map<string,{loId:string;year:number;development:number;maintenance:number}>();
+        for(const r of approvedRows.filter(r=>r.uoId===selectedUo)){
+         const key=JSON.stringify([r.loId,r.year]);
+         const current=groups.get(key)??{loId:r.loId,year:r.year,development:0,maintenance:0};
+         current.development+=r.development;current.maintenance+=r.maintenance;groups.set(key,current);
+        }
+        return [...groups.values()].map(r=><div key={JSON.stringify([r.loId,r.year])} className="panel" style={{marginTop:8}}>
+         <strong>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)} · {r.year}</strong>
+         <DistributionIndicator first={r.development} second={r.maintenance} labels={['Utveckling','Förvaltning']}/>
+         <small>Godkänd LO-komplettering</small>
+        </div>);
+       })()}
+      </section>}
       {kind==='activity'&&selectedUo&&[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo).map(([key,group])=>{
        const firstRule=group.rules[0];
        const items=new Map<string,AllocationPreview['items'][number]>();
@@ -141,12 +167,13 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
         <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);setEditing(null)}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
-         <p>{first}: {format(r.values.first)} h · {second}: {format(r.values.second)} h</p>
+         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
         </button>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
-         <p>{first}: {format(r.values.first)} h · {second}: {format(r.values.second)} h. Importerade originalvärden är skrivskyddade.</p>
+         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
+         <p>Importerade originalvärden är skrivskyddade.</p>
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
          {kind==='activity'&&<p>Godkända LO-kompletteringar och möjligheten att ändra redigerbara LO visas ovan.</p>}
         </section>}
