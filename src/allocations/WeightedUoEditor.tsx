@@ -12,7 +12,7 @@ const partScope=(uoId:string,key:string):OptionalAllocationScope=>key===uoId||ke
 const activity=(dimension:OptionalAllocationDimension)=>dimension.appliesTo.activities==='all'||dimension.appliesTo.activities.length===2?'all' as const:dimension.appliesTo.activities[0];
 type Props={data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;uoId:string;onSave:(next:OptionalAllocations)=>Promise<void>};
 
-function PeriodSlider({data,gaps,config,dimension,uoId,scope,years,onSave}:{data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;uoId:string;scope:OptionalAllocationScope;years:number[];onSave:Props['onSave']}){
+export function PeriodSlider({data,gaps,config,dimension,uoId,scope,years,onSave}:{data:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;uoId:string;scope:OptionalAllocationScope;years:number[];onSave:Props['onSave']}){
  const [selected,setSelected]=useState(0),[pending,setPending]=useState<number|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pendingRef=useRef<number|null>(null),saving=useRef(false);
  const first=dimension.categories[0].id;
