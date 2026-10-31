@@ -20,7 +20,7 @@ export function readLoActivitySheet(workbook:ExcelJS.Workbook):LoActivitySheetRe
   const area=cells[0].value,year=cells[1].value,metric=cells[2].value;
   const development=cells[3].value,maintenance=cells[4].value;
   const issue=(col:number,message:string)=>issues.push({cell:cells[col].address,message});
-  if(typeof area!=='string'||!/^LO(?:\\s+)?[^\\s]+(?:\\s.*)?$/i.test(area.trim()))issue(0,'Ogiltigt LO-namn');
+  if(typeof area!=='string'||!/^LO(?:\s+)?[^\s]+(?:\s.*)?$/i.test(area.trim()))issue(0,'Ogiltigt LO-namn');
   if(typeof year!=='number'||!Number.isInteger(year)||year<2027||year>2030)issue(1,'År måste vara 2027–2030');
   if(metric!=='it_hours'&&metric!=='business_hours')issue(2,'Mått måste vara it_hours eller business_hours');
   if(typeof development!=='number'||!Number.isFinite(development)||development<0)issue(3,'Utveckling måste vara ett icke-negativt tal');
