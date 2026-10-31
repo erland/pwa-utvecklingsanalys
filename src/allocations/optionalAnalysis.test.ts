@@ -57,6 +57,19 @@ describe('DEV-132 optional allocation calculations',()=>{
   expect(analyzeOptionalAllocation(second,gaps,config,'d',{year:2027,uoIds:['another'],partId:'a'}).total).toBe(300);
   expect(analyzeOptionalAllocation(second,gaps,config,'d',{year:2027,uoIds:['another'],partId:'a'}).visible).toBe(false);
  });
+ it('prioriterar UO-årsregel över LO-grundregel men inte över LO-årsregel',()=>{
+  const before:OptionalAllocations={...config,rules:[
+   {dimensionId:'d',year:0,scope:{kind:'uo',uoId:'uo'},percentages:{direct:100,enable:0}},
+   {dimensionId:'d',year:0,scope:{kind:'lo',uoId:'uo',loId:'a'},percentages:{direct:20,enable:80}},
+   {dimensionId:'d',year:2027,scope:{kind:'uo',uoId:'uo'},percentages:{direct:60,enable:40}},
+   {dimensionId:'d',year:2027,scope:{kind:'lo',uoId:'uo',loId:'b'},percentages:{direct:90,enable:10}}
+  ]};
+  expect(effectiveOptionalRule(before,'d',2027,{kind:'lo',uoId:'uo',loId:'a'}).rule?.percentages.direct).toBe(60);
+  expect(effectiveOptionalRule(before,'d',2027,{kind:'lo',uoId:'uo',loId:'b'}).rule?.percentages.direct).toBe(90);
+  expect(effectiveOptionalRule(before,'d',2028,{kind:'lo',uoId:'uo',loId:'a'}).rule?.percentages.direct).toBe(20);
+  const withoutYear={...before,rules:before.rules.filter(r=>!(r.year===2027&&r.scope.kind==='uo'))};
+  expect(effectiveOptionalRule(withoutYear,'d',2027,{kind:'lo',uoId:'uo',loId:'a'}).rule?.percentages.direct).toBe(20);
+ });
  it('never mutates canonical records or adds original volume',()=>{
   const before=JSON.stringify(data);
   analyzeOptionalAllocation(data,gaps,config,'d');
