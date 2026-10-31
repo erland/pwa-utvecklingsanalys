@@ -26,6 +26,7 @@ for(const device of [
   await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
   const rules=page.getByRole('region',{name:'Valfria fördelningar'});
   await expect(rules.getByRole('region',{name:'Översikt fördelningstyper'})).toContainText('Effekt');
+  await rules.getByRole('region',{name:'Översikt fördelningstyper'}).getByRole('button',{name:/Effekt/}).click();
   await rules.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/Test UO.*LO/}).click();
   await expect(rules.getByRole('region',{name:'Timviktad fördelning Test UO'})).toBeVisible();
   await rules.getByRole('slider',{name:'Massfördelning procent'}).fill('65');
