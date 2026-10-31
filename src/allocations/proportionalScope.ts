@@ -1,7 +1,7 @@
 import type {CanonicalDataset} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {analyzeCanonical} from '../analytics/canonicalQuery';
-import type {OptionalAllocations,OptionalAllocationDimension,OptionalAllocationScope,OptionalAllocationRule} from './optionalModel';
+import type {OptionalAllocations,OptionalAllocationDimension,OptionalAllocationRule} from './optionalModel';
 import {optionalAllocationKey} from './optionalModel';
 import {percentagesFor,shiftBinaryUo,partKey,type WeightedPart} from './weightedSync';
 
