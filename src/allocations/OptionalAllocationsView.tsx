@@ -1,5 +1,7 @@
 import {allocationTypeOverview} from './typeOverview';
-import {useEffect,useState} from 'react';
+import {analyzeOptionalAllocation} from './optionalAnalysis';
+import {applyProportionalScope} from './proportionalScope';
+import {useEffect,useRef,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
@@ -16,6 +18,27 @@ const allMetrics=Object.keys(metricLabels) as Metric[];
 const label=(id:string)=>decodeURIComponent(id.split(':').at(-1)??id);
 
 type Unit={id:string;los:string[];hasOverhead:boolean};
+
+function UoQuickSlider({canonical,gaps,config,dimension,uoId,year,onSave}:{canonical:CanonicalDataset;gaps:GapState;config:OptionalAllocations;dimension:OptionalAllocationDimension;uoId:string;year:number;onSave:(next:OptionalAllocations)=>Promise<void>}){
+ const overview=analyzeOptionalAllocation(canonical,gaps,config,dimension.id,{uoIds:[uoId],...(year?{year}:{})});
+ const initial=overview.total?overview.amounts[dimension.categories[0].id]*100/overview.total:0;
+ const [value,setValue]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const current=useRef(initial),saving=useRef(false),dirty=useRef(false);
+ const save=async()=>{
+  if(!dirty.current||saving.current)return;
+  saving.current=true;setBusy(true);dirty.current=false;setError('');
+  try{await onSave(applyProportionalScope(canonical,gaps,config,dimension,{uoId,year},current.current))}
+  catch(e){dirty.current=true;setError(String(e))}finally{saving.current=false;setBusy(false)}
+ };
+ const finish=(key:string)=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(key))void save()};
+ return <div className="panel" aria-label={'Snabbjustera UO '+label(uoId)} style={{marginTop:8,padding:10}}>
+  <label>UO – {dimension.categories[0].name}: {value.toLocaleString('sv-SE',{maximumFractionDigits:1})} % / {dimension.categories[1].name}: {(100-value).toLocaleString('sv-SE',{maximumFractionDigits:1})} %
+   <input type="range" aria-label={'Snabbjustera UO '+label(uoId)} min="0" max="100" step="0.1" disabled={busy||overview.total<=0} value={value} onChange={e=>{current.current=Number(e.target.value);dirty.current=true;setValue(current.current)}} onPointerUp={()=>void save()} onKeyUp={e=>finish(e.key)} onBlur={()=>void save()} style={{width:'100%',display:'block'}}/>
+  </label>
+  {error&&<p role="alert">{error}</p>}
+ </div>;
+}
+
 const scopeLabel=(scope:OptionalAllocationScope)=>scope.kind==='uo'?'UO-förslag':scope.kind==='uo-overhead'?'UO Övergripande':label(scope.loId);
 function PercentEditor({dimension,scope,year,own,base,onSave,onRemove}:{dimension:OptionalAllocationDimension;scope:OptionalAllocationScope;year:number;own?:OptionalAllocationRule;base?:OptionalAllocationRule;onSave:(rule:OptionalAllocationRule)=>Promise<void>;onRemove:(rule:OptionalAllocationRule)=>Promise<void>}){
  const [values,setValues]=useState<Record<string,string>>(()=>Object.fromEntries(dimension.categories.map(c=>[c.id,String(own?.percentages[c.id]??base?.percentages[c.id]??0)])));
@@ -111,10 +134,10 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  {dimension&&bulkOpen&&<div role="dialog" aria-modal="true" aria-label="Massfördelning för samtliga UO" className="panel" style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(0,0,0,.45)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
   <div className="panel" style={{background:'var(--surface, white)',color:'var(--text, #111)',width:'min(100%,540px)',maxHeight:'90vh',overflowY:'auto',padding:20}}>
    <h4>Massfördelning för samtliga UO</h4>
-   <p>{dimension.name} · {year===0?'Samtliga år (grundfördelning)':year} · {units.length} UO. Årsundantag för andra perioder påverkas inte.</p>
+   <p>{dimension.name} · {year===0?'Samtliga år (grundfördelning)':year} · {units.length} UO. {year===0?'Tidigare årsundantag för berörda UO ersätts.':'Andra år påverkas inte.'}</p>
    {!bulkAction?<><label>100 % till kategori<select aria-label="Kategori för 100 procent" value={bulkCategory??dimension.categories[0].id} onChange={e=>setBulkCategory(e.target.value)}>{dimension.categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
     <div className="actions"><button type="button" className="secondary" onClick={()=>setBulkAction('set')}>Fördela 100 %</button><button type="button" className="secondary" onClick={()=>setBulkAction('equal')}>Fördela jämnt</button><button type="button" className="secondary" onClick={()=>setBulkAction('clear')}>Rensa nuvarande</button></div></>:null}
-   {bulkAction&&<div role="group" aria-label="Bekräfta massändring">{(()=>{const impact=previewBulkChange(data,dimension.id,year,units.map(u=>u.id));return <p>{bulkAction==='clear'?'Rensa regler':bulkAction==='equal'?'Fördela lika mellan alla kategorier':'Fördela 100 % till '+dimension.categories.find(c=>c.id===bulkCategory)?.name} för {impact.uos} UO. {impact.removedRules} befintliga regler ersätts eller tas bort, varav {impact.loRules} LO och {impact.overheadRules} UO Övergripande. {impact.annualExceptions} årsundantag behålls. En revision sparas.</p>})()}<div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta massändring</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkAction(null)}>Tillbaka</button></div></div>}
+   {bulkAction&&<div role="group" aria-label="Bekräfta massändring">{(()=>{const impact=previewBulkChange(data,dimension.id,year,units.map(u=>u.id));return <p>{bulkAction==='clear'?'Rensa regler':bulkAction==='equal'?'Fördela lika mellan alla kategorier':'Fördela 100 % till '+dimension.categories.find(c=>c.id===bulkCategory)?.name} för {impact.uos} UO. {impact.removedRules} befintliga regler ersätts eller tas bort, varav {impact.loRules} LO och {impact.overheadRules} UO Övergripande. {year===0?'Tidigare årsundantag ersätts.': 'Andra år påverkas inte.'} En revision sparas.</p>})()}<div className="actions"><button type="button" className="primary" disabled={bulkBusy} onClick={()=>void runBulk()}>Bekräfta massändring</button><button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkAction(null)}>Tillbaka</button></div></div>}
    <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkOpen(false);setBulkAction(null)}}>Stäng</button>
   </div>
  </div>}
@@ -136,6 +159,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
     {stats&&stats.allocated>0&&dimension&&<><div role="img" aria-label={dimension.categories.map(c=>c.name+' '+stats.percentages[c.id].toFixed(1)+' procent').join(', ')} style={{display:'flex',width:'100%',height:10,borderRadius:6,overflow:'hidden',background:'#e2e8f0'}}>{dimension.categories.map((c,i)=><span key={c.id} style={{width:stats.percentages[c.id]+'%',background:['#2563eb','#0d9488','#b45309','#9333ea','#be123c','#64748b'][i%6]}}/>)}</div><p>{dimension.categories.map(c=>c.name+': '+stats.percentages[c.id].toLocaleString('sv-SE',{maximumFractionDigits:1})+' %').join(' · ')}</p></>}
     {stats&&stats.unallocated>0&&<p>Ofördelat: {stats.unallocated.toLocaleString('sv-SE',{maximumFractionDigits:1})} {dimension?.appliesTo.metrics[0].endsWith('_hours')?'h':'SEK'}</p>}
    </button>
+   {!open&&dimension?.categories.length===2&&canonicalData&&<UoQuickSlider key={JSON.stringify([dimension.id,year,u.id,revision])} canonical={canonicalData} gaps={gaps} config={data} dimension={dimension} uoId={u.id} year={year} onSave={persist}/>}
    {open&&(dimension?.categories.length===2&&canonicalData?<WeightedUoEditor key={JSON.stringify([dimension.id,year,u.id])} data={canonicalData} gaps={gaps} config={data} dimension={dimension} year={year} uoId={u.id} onSave={persist}/>:<div><button type="button" className="secondary" aria-expanded={detailsOpen} onClick={()=>setExpanded(prev=>detailsOpen?prev.filter(id=>id!==u.id):[...prev,u.id])}>{detailsOpen?'Dölj LO':'Visa LO'}</button>{renderRule(scope)}{detailsOpen&&<div style={{paddingLeft:12}}>{u.los.map(loId=><div key={loId}>{renderRule({kind:'lo',uoId:u.id,loId},base)}</div>)}{u.hasOverhead&&renderRule({kind:'uo-overhead',uoId:u.id},base)}</div>}</div>)}
   </div>;
   })}
