@@ -52,12 +52,9 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  const [selectedUo,setSelectedUo]=useState<string|null>(null),[uoSearch,setUoSearch]=useState(''),[uoFilter,setUoFilter]=useState<'all'|'configured'|'missing'>('all');
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
-  // Imported allocations do not depend on optional allocation configuration.
-  if(!live)return;
-  setCanonicalData(canonical);setGaps(gapState);
   const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
   if(!live)return;
-  setData(readOptionalAllocations(config?.sections.optionalAllocations));
+  setData(readOptionalAllocations(config?.sections.optionalAllocations));setCanonicalData(canonical);setGaps(gapState);
   const map=new Map<string,Unit>(),dateSet=new Set<number>();
   for(const record of canonical.records){dateSet.add(record.year);if(record.scope.axis!=='work')continue;
    const {uoId,loId}=record.scope;
