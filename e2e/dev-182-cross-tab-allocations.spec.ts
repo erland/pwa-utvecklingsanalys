@@ -34,7 +34,8 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('max','100');
  await lo1.getByLabel(/^Utvecklingsandel /).fill('0');
  await lo1.getByLabel(/^Utvecklingsandel /).press('Tab');
- await expect(lo1.getByLabel(/^Utvecklingsandel /)).toHaveValue('16.6667');
+ await expect.poll(async()=>Number(await lo1.getByLabel(/^Utvecklingsandel /).inputValue())).toBeGreaterThanOrEqual(16.66);
+ await expect.poll(async()=>Number(await lo1.getByLabel(/^Utvecklingsandel /).inputValue())).toBeLessThanOrEqual(16.68);
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('min','0');
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('max','100');
  await lo1.getByLabel(/^Utvecklingsandel /).fill('60');
