@@ -38,7 +38,7 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
- await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
  const lockedLo=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
  const editableLo=builtIn.getByRole('region',{name:'LO-fördelning LO 2'});
