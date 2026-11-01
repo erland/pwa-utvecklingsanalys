@@ -1,0 +1,33 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('DEV-205: built-in overview indicators and mass distribute LO to UO target',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=60;
+ sheet.getCell('B31').value='LO 2';sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=40;
+ sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.05;sheet.getCell('E5').value=0.05;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'dev-205.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
+ await expect(page.getByRole('status').filter({hasText:'dev-205.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await expect(builtIn.getByRole('img',{name:/Utveckling: .*Förvaltning:/}).first()).toBeVisible();
+ await expect(builtIn.getByRole('img',{name:/IT-timmar: .*Verksamhetstimmar:/}).first()).toBeVisible();
+ await expect(page.getByText('Fördelningstyper – viktade andelar')).toHaveCount(0);
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
+ const lo=builtIn.getByRole('region',{name:'LO-detaljer UO A'});
+ const l1=lo.getByRole('region',{name:'LO-fördelning LO 1'});
+ await l1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'}).focus();
+ await l1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'}).press('ArrowRight');
+ await expect(l1).toContainText('Utveckling:');
+ await builtIn.getByRole('button',{name:'Massändra LO till UO-fördelningen'}).click();
+ await builtIn.getByRole('group',{name:'Bekräfta massändring av LO'}).getByRole('button',{name:'Bekräfta massändring'}).click();
+ await expect(builtIn.getByRole('group',{name:'Bekräfta massändring av LO'})).toHaveCount(0);
+ await expect(l1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveValue('50');
+ await expect(lo.getByRole('region',{name:'LO-fördelning LO 2'}).getByRole('slider',{name:'Reglage utvecklingsandel LO 2'})).toHaveValue('50');
+});
