@@ -225,7 +225,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
 
-         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={selectedYear===0?undefined:(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={selectedYear===0?undefined:(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
