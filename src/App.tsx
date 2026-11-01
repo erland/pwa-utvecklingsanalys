@@ -57,7 +57,7 @@ export default function App(){
 
  {view==='gaps'&&<GapView/>}
  {view==='analysis'&&(analysisAvailable?<AnalyticsView refreshKey={analysisRefresh} onOpenCompletions={()=>setView(legacyNav?'gaps':'import')}/>:<section className="panel"><h2>Importera analysuppgifter först</h2><p>Det finns ännu inga importerade analysvärden i projektet.</p><button className="primary" onClick={()=>setView('import')}>Gå till importen</button></section>)}
- {view==='import'&&<ImportGuide replaceId={replaceSourceId} setReplaceId={setReplaceSourceId} onAnalyze={()=>{void openAnalysis()}} project={project} onProject={p=>{setProject(p);setAnalysisRefresh(v=>v+1)}}/>}
+ {view==='import'&&<ImportGuide replaceId={replaceSourceId} setReplaceId={setReplaceSourceId} onAnalyze={()=>{void openAnalysis()}} onAllocations={()=>setView('allocations')} project={project} onProject={p=>{setProject(p);setAnalysisRefresh(v=>v+1)}}/>}
  {view==='relations'&&<RelationsView/>}
  {view==='allocations'&&(legacyNav?<AllocationsView/>:<><div className="eyebrow">ARBETSFÖRDELNING</div><h1>Fördelningar</h1><OptionalAllocationsView mode="rules"/></>)}
  {view==='planning'&&<PlanningView/>}
