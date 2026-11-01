@@ -30,6 +30,8 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await expect(lo2.getByLabel('LO-period LO 2')).toContainText('2027');
  // LO 1 holds 60h, LO 2 holds 40h, and UO development is fixed at 50h.
  // The lowest feasible LO 1 development share is (50-40)/60 = 16.6667%.
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('min','0');
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('max','100');
  await lo1.getByLabel(/^Utvecklingsandel /).fill('0');
  await expect(lo1.getByLabel(/^Utvecklingsandel /)).toHaveValue('16.6667');
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('min','0');
