@@ -1,7 +1,7 @@
 import type {AnalysisProject} from '../model';
 import type {CanonicalDataset,AnalysisRecord} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
-import {approvedActivityParts,previewActivityAllocation,type ActivityAllocationRule} from '../domain/activityAllocation';
+import {previewActivityAllocation,type ActivityAllocationRule} from '../domain/activityAllocation';
 
 export type OverviewStatus={sources:number;approved:number;pending:number;uos:number;years:number;hasData:boolean};
 
@@ -27,8 +27,7 @@ export function projectOverviewStatus(project:AnalysisProject,canonical:Canonica
     const existing=gaps.activityAllocationRules?.find(r=>r.datasetId===rule.datasetId&&r.uoId===rule.uoId&&r.metric===rule.metric&&r.year===rule.year);
     const effective=existing??rule;
     previewActivityAllocation(canonical,effective);
-    const decision=gaps.activityAllocationDecisions?.find(d=>d.ruleId===effective.id);
-    return {eligible:true,approved:Boolean(decision?.sharedPercentages&&approvedActivityParts(canonical,effective,decision).length)};
+    return {eligible:true,approved:true};
    }catch{return {eligible:false,approved:false}}
   });
   if(!valid.some(x=>x.eligible))continue;
