@@ -187,12 +187,12 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
              if(id!==loId)continue;
              totals[metric==='it_hours'?'first':'second']+=original.value;
             }
-            return <div key={loId} className="panel" aria-label={'LO-värden '+name(loId)} style={{marginTop:8}}>
+            return <section key={loId} className="panel" aria-label={'LO-värden '+name(loId)} style={{marginTop:8}}>
              <strong>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</strong>
              <PeriodButtons years={years} selected={selected} onSelect={next=>setMetricLoYears(prev=>({...prev,[key]:next}))} label={'LO-period '+name(loId)}/>
              <DistributionIndicator first={totals.first} second={totals.second} labels={['IT-timmar','Verksamhetstimmar']}/>
              <small>Importerad · skrivskyddad</small>
-            </div>;
+            </section>;
            })}
           </section>;
          })()}
