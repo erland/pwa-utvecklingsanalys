@@ -12,7 +12,7 @@ export function allocationLabel(id:string):string{
 }
 
 /** Adjustments are persisted only when explicitly approved. */
-export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean}){
+export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string}){
  const [changes,setChanges]=useState<Record<string,string>>(()=>Object.fromEntries((decision?.overrides??[]).map(o=>[o.loId,String(o.developmentPercent)])));
  const [reason,setReason]=useState('');
  const [busy,setBusy]=useState(false);
@@ -46,7 +46,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
  return <div>
   <p>Justera utvecklingsandelen med reglaget eller ange procenten direkt. Förvaltningen är återstående andel. Övriga delområden balanseras automatiskt mot UO:s totalsumma.</p>
   {!cards?<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>LO / UO Övergripande</th><th>Totalt</th><th>Utveckling %</th><th>Utveckling (h)</th><th>Förvaltning (h)</th></tr></thead>
-  <tbody>{shown.items.map(item=>{
+  <tbody>{shown.items.filter(item=>!onlyLoId||item.loId===onlyLoId).map(item=>{
    const original=preview.items.find(x=>x.loId===item.loId)!;
    const isLocked=Boolean(balancedPreviews?.some(p=>p.lockedLo?.some(lock=>lock.loId===item.loId))||preview.lockedLo?.some(lock=>lock.loId===item.loId));
    const pct=changes[item.loId]??String(original.total?Number((100*item.development/item.total).toFixed(2)):0);
