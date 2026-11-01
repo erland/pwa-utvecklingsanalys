@@ -79,6 +79,6 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
   {!quick&&<label>Godkännandemotivering<input aria-label={'godkännandemotivering '+preview.ruleId} value={reason} onChange={e=>setReason(e.target.value)}/></label>}
   {!autoSave&&<button className="secondary" disabled={busy||!aligned||(!quick&&!reason.trim())} onClick={()=>{setBusy(true);setApprovalError('');void onApprove(sharedMode&&!balancedPreviews?.length?shown.items.map(item=>({loId:item.loId,developmentPercent:item.total?100*item.development/item.total:0})):overrides,quick?'Automatiskt avstämd LO-fördelning från importflödet':reason).then(()=>{setReason('');onApproved?.()}).catch(e=>setApprovalError(String(e))).finally(()=>setBusy(false))}}>{quick?(onApproved?'Spara fördelning och analysera':'Spara LO-fördelning'):'Godkänn '+(adjusted?'justerad':'föreslagen')+' fördelning'}</button>}
   {approvalError&&<p role="alert">Kunde inte godkänna: {approvalError}</p>}
-  {decision?.overrides?.length?<p role="status">En manuellt justerad fördelning är sparad. Den gäller bara så länge källvärdena är oförändrade.</p>:null}
+  {!autoSave&&decision?.overrides?.length?<p role="status">En manuellt justerad fördelning är sparad. Den gäller bara så länge källvärdena är oförändrade.</p>:null}
  </div>;
 }

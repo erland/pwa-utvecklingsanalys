@@ -24,7 +24,11 @@ test('DEV-197: unapproved LO has a slider and all-years choice, without redundan
  const lo1=uo.getByRole('region',{name:'LO-fördelning LO 1'});
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toBeVisible();
  await expect(uo.getByRole('region',{name:'LO-fördelning LO 2'})).toBeVisible();
+ await lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'2027'}).click();
+ await expect(uo.getByRole('region',{name:'LO-fördelning LO 2'}).getByLabel('LO-period LO 2').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
+ await expect(builtIn.getByLabel('UO-år UO A').getByRole('button',{name:'2027'})).toHaveAttribute('aria-pressed','true');
  await lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'}).click();
+ await expect(uo.getByRole('region',{name:'LO-fördelning LO 2'}).getByLabel('LO-period LO 2').getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveValue('50');
  await expect(lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await lo1.getByLabel('Utvecklingsandel lo:UO%20A:LO%201').fill('60');
