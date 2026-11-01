@@ -86,8 +86,8 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  const candidateRules=new Map<string,ActivityAllocationRule>();
  for(const record of data.records){
-  if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
-  const match={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
+  if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours','other_cost'].includes(record.metric))continue;
+  const match={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours'|'other_cost',year:record.year};
   const key=JSON.stringify(match);
   const existing=(gaps.activityAllocationRules??[]).find(r=>r.datasetId===match.datasetId&&r.uoId===match.uoId&&r.metric===match.metric&&r.year===match.year);
   candidateRules.set(key,existing??{...match,id:key,reason:'Komplettering från UO-budgetformat'});
@@ -98,7 +98,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
   if(decision&&decision.fingerprint&&!approvedActivityParts(data,rule,decision).length)continue;
   let preview:AllocationPreview;
   try{preview=previewActivityAllocation(data,rule)}catch{continue}
-  const key=JSON.stringify([rule.datasetId,rule.uoId,rule.year]);
+  const key=JSON.stringify([rule.datasetId,rule.uoId,rule.year,rule.metric==='other_cost'?'cost':'hours']);
   const group=editorGroups.get(key)??{rules:[],previews:[]};
   group.rules.push(rule);group.previews.push(preview);editorGroups.set(key,group);
  }
@@ -140,7 +140,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
   await saveGapState(next);onSaved(next);
  };
  const bulkMatchUo=async(uoId:string)=>{
-  const targets=[...editorGroups.values()].filter(g=>g.rules[0].uoId===uoId&&(year===0||g.rules[0].year===year));
+  const targets=[...editorGroups.values()].filter(g=>g.rules[0].uoId===uoId&&(selected==='activity-cost'?g.rules[0].metric==='other_cost':g.rules[0].metric!=='other_cost')&&(year===0||g.rules[0].year===year));
   if(!targets.length)throw new Error('Inga redigerbara LO-fördelningar finns för vald period.');
   // Each imported UO matrix supplies its own target; all LO for that matrix get its percentage.
   const decisions=targets.flatMap(group=>group.previews.flatMap(preview=>{
@@ -192,16 +192,16 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         </button>
         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
-        {selectedUo===r.key&&kind==='activity'&&<div className="actions">
+        {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&<div className="actions">
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkError('');setBulkConfirm(true)}}>Massändra LO till UO-fördelningen</button>
         </div>}
-        {selectedUo===r.key&&kind==='activity'&&bulkConfirm&&<div className="panel" role="group" aria-label="Bekräfta massändring av LO">
+        {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&bulkConfirm&&<div className="panel" role="group" aria-label="Bekräfta massändring av LO">
          <p>Alla redigerbara LO under {r.title} sätts till UO-fördelningen för {year===0?'samtliga tillgängliga år':year}. Importerade LO-värden ändras inte.</p>
          <button type="button" className="primary" disabled={bulkBusy} onClick={()=>{setBulkBusy(true);setBulkError('');void bulkMatchUo(r.key).then(()=>setBulkConfirm(false)).catch(e=>setBulkError(String(e))).finally(()=>setBulkBusy(false))}}>Bekräfta massändring</button>
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkConfirm(false)}>Avbryt</button>
          {bulkError&&<p role="alert">{bulkError}</p>}
         </div>}
-        {selectedUo===r.key&&kind!=='activity-cost'&&<section aria-label={'LO-detaljer '+r.title}>
+        {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
 
          {kind==='metric'&&(()=>{
           const loValues=new Map<string,Values>();
@@ -233,9 +233,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
           </section>;
          })()}
 
-         {kind==='activity'&&(()=>{
+         {(kind==='activity'||kind==='activity-cost')&&(()=>{
        // One persistent LO card across years. Each card selects the annual approval independently.
-       const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===r.key);
+       const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===r.key&&(kind==='activity-cost'?group.rules[0].metric==='other_cost':group.rules[0].metric!=='other_cost'));
        const loIds=[...new Set(groupEntries.flatMap(([,group])=>group.previews.flatMap(p=>p.items.map(i=>i.loId))))].sort((a,b)=>name(a).localeCompare(name(b),'sv'));
        return loIds.map(loId=>{
         const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
@@ -261,7 +261,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={setYear} label={'LO-period '+name(loId)}/>
 
-         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave unit={kind==='activity-cost'?'kr':'h'} onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
