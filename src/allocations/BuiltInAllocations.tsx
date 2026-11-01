@@ -185,7 +185,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next===0?yearsForLo[0]:next}))} label={'LO-period '+name(loId)}/>
          {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
-         <LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')+loId} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
