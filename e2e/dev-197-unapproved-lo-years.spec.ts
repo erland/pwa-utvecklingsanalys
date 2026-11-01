@@ -25,6 +25,7 @@ test('DEV-197: unapproved LO has a slider and all-years choice, without redundan
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toBeVisible();
  await expect(uo.getByRole('region',{name:'LO-fördelning LO 2'})).toBeVisible();
  await lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'}).click();
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveValue('50');
  await expect(lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await lo1.getByLabel('Utvecklingsandel lo:UO%20A:LO%201').fill('60');
  await lo1.getByRole('button',{name:'Spara LO-fördelning'}).click();
