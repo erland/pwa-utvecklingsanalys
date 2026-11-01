@@ -21,11 +21,11 @@ test('CHANGE-048: v2 analysis opens completion and approval workflow using acces
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
- const open=v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'});
- await expect(open).toBeVisible();
- await open.click();
- await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Aktivitetsfördelning till LO'})).toBeVisible();
+ await expect(v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'})).toHaveCount(0);
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Fördelningar',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-result-head strong')).toContainText('42 h');
 });
