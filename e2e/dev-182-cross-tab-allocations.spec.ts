@@ -24,15 +24,16 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await expect(builtIn).toBeVisible();
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
- await expect(builtIn.getByLabel('LO-reglage')).toBeVisible();
-
- await builtIn.getByLabel(/^Utvecklingsandel /).first().fill('60');
- await expect(builtIn.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
- await expect(builtIn.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
- await builtIn.getByRole('button',{name:'Spara LO-fördelning'}).click();
+ const lo1=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
+ const lo2=builtIn.getByRole('region',{name:'LO-fördelning LO 2'});
+ await expect(lo1.getByLabel('LO-period LO 1')).toContainText('2027');
+ await expect(lo2.getByLabel('LO-period LO 2')).toContainText('2027');
+ await lo1.getByLabel(/^Utvecklingsandel /).fill('60');
+ await expect(lo1.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
+ await lo1.getByRole('button',{name:'Spara LO-fördelning'}).click();
  await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toHaveCount(0);
- await expect(builtIn.getByLabel('LO-reglage')).toContainText('36');
- await expect(builtIn.getByLabel('LO-reglage')).toContainText('14');
+ await expect(lo1).toContainText('36');
+ await expect(lo2).toContainText('14');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
