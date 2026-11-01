@@ -79,8 +79,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
- const [loYears,setLoYears]=useState<Record<string,number>>({});
- const [metricLoYears,setMetricLoYears]=useState<Record<string,number>>({});
+
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  const candidateRules=new Map<string,ActivityAllocationRule>();
  for(const record of data.records){
@@ -178,8 +177,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
           return <section aria-label={'LO-värden '+r.title}>
            <h4>LO-fördelningar</h4>
            {[...loValues].map(([loId])=>{
-            const key=r.key+'|'+loId;
-            const selected=metricLoYears[key]??year;
+            const selected=year;
             const totals={first:0,second:0};
             for(const metric of ['it_hours','business_hours'] as const)for(const original of annual(data.records,metric,selected)){
              if(original.scope.axis!=='work'||original.scope.uoId!==r.key)continue;
@@ -189,7 +187,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
             }
             return <section key={loId} className="panel" aria-label={'LO-värden '+name(loId)} style={{marginTop:8}}>
              <strong>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</strong>
-             <PeriodButtons years={years} selected={selected} onSelect={next=>setMetricLoYears(prev=>({...prev,[key]:next}))} label={'LO-period '+name(loId)}/>
+             <PeriodButtons years={years} selected={selected} onSelect={setYear} label={'LO-period '+name(loId)}/>
              <DistributionIndicator first={totals.first} second={totals.second} labels={['IT-timmar','Verksamhetstimmar']}/>
              <small>Importerad · skrivskyddad</small>
             </section>;
@@ -205,7 +203,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
         const yearsForLo=[...new Set(available.map(([,g])=>g.rules[0].year))];
         const selectionKey=r.key+'|'+loId;
-        const preferred=loYears[selectionKey]??(year!==0?year:0);
+        const preferred=year;
         const selectedYear=preferred===0?0:yearsForLo.includes(preferred)?preferred:yearsForLo[0];
         const selectedEntry=available.find(([,g])=>g.rules[0].year===(selectedYear===0?yearsForLo[0]:selectedYear));
         if(!selectedEntry)return null;
@@ -215,7 +213,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         for(const g of previewGroups)for(const p of g.previews){
          const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===p.ruleId&&d.fingerprint===p.fingerprint);
          let displayed=p;
-         if(selectedYear===0&&decision){
+         if(decision){
           try{displayed=decision.sharedPercentages?applySharedPercentages(p,decision.overrides??[]):rebalanceUoBudgetAllocation(p,decision.overrides??[],p.lockedLo??[])}catch{displayed=p}
          }
          for(const item of displayed.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
@@ -223,9 +221,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const combined:AllocationPreview={ruleId:key,fingerprint:previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)).join('|'),items:[...activeItems.values()],uo:{development:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.development,0),maintenance:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.maintenance,0)}};
         return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
-         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
+         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={setYear} label={'LO-period '+name(loId)}/>
 
-         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={selectedYear===0?undefined:(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
