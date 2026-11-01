@@ -24,5 +24,6 @@ test('DEV-213 keeps independent hour/cost tabs and respects cost selection',asyn
  await tabs.getByRole('tab',{name:'Timmar'}).click();
  await expect(tabs.getByRole('tab',{name:'Timmar'})).toHaveAttribute('aria-selected','true');
  await tabs.getByRole('tab',{name:'Kostnader'}).click();
+ await page.getByText('Välj kostnadsmått', {exact:false}).click();
  await expect(page.getByRole('checkbox',{name:'Konsultkostnader'})).toBeChecked();
 });
