@@ -23,6 +23,8 @@ describe('DEV-175 inbyggda läsmodeller',()=>{
    cost('development',70000000),cost('maintenance',30000000)
   ]};
   expect(builtInRows(data,'activity',2027)[0].values).toEqual({first:50,second:50});
+  expect(builtInRows(data,'activity-cost',2027)[0].values).toEqual({first:70000000,second:30000000});
+  expect(builtInRows(data,'activity-cost',2028)).toEqual([]);
  });
  it('does not show incomplete UO activity matrices as complete',()=>{
   const data:CanonicalDataset={schemaVersion:2,records:[record('a','it_hours',20,2027,'development')]};
