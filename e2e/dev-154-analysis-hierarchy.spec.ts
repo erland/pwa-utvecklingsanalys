@@ -16,7 +16,7 @@ test('DEV-154 analysis presents selection, summary and detail in order',async({p
  await expect(selection).toBeVisible();
  await expect(summary).toBeVisible();
  await expect(details).toBeVisible();
- await expect(selection.getByLabel('enhet')).toBeVisible();
+ await expect(selection.getByRole('tablist',{name:'Analysområde'})).toBeVisible();
  await expect(selection.getByLabel('period')).toBeVisible();
  await expect(summary).toContainText('Totalt i vald redovisning');
  await expect(details).toContainText('Fördjupning');
