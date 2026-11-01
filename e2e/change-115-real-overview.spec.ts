@@ -6,8 +6,8 @@ test('DEV-115 overview starts without demo data and reflects imported project af
  const overview=page.getByRole('main');
  await expect(overview.getByRole('heading',{name:'Börja här'})).toBeVisible();
  await expect(overview.getByText('Importerade källor')).toHaveCount(1);
- await expect(overview.getByText('Godkända fördelningar')).toHaveCount(1);
- await expect(overview.getByText('Återstår att fördela')).toHaveCount(1);
+ await expect(overview.getByText('Automatiska LO-fördelningar')).toHaveCount(1);
+ await expect(overview.getByText('Underlag att kontrollera')).toHaveCount(1);
  await expect(overview.getByText('Utvecklingsområden i demo')).toHaveCount(0);
  await expect(overview.getByText('Demo – totalt antal timmar')).toHaveCount(0);
  await expect(overview.getByRole('button',{name:'Gå till analysen'})).toHaveCount(0);
