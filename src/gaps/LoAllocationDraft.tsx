@@ -11,6 +11,23 @@ export function allocationLabel(id:string):string{
  try{return decodeURIComponent(encoded)}catch{return encoded}
 }
 
+/** Intersection of feasible shares across the selected years; imported LO shares remain fixed. */
+export function feasibleLoPercentRange(previews:readonly AllocationPreview[],loId:string):{min:number;max:number}{
+ let min=0,max=100;
+ for(const preview of previews){
+  const item=preview.items.find(i=>i.loId===loId);
+  if(!item||item.total<=0)continue;
+  const locks=new Map((preview.lockedLo??[]).map(lock=>[lock.loId,lock]));
+  if(locks.has(loId))continue;
+  const fixed=[...locks.values()].reduce((n,v)=>n+v.development,0);
+  const freeOthers=preview.items.filter(i=>i.loId!==loId&&!locks.has(i.loId)).reduce((n,i)=>n+i.total,0);
+  const target=preview.uo.development-fixed;
+  min=Math.max(min,100*Math.max(0,target-freeOthers)/item.total);
+  max=Math.min(max,100*Math.min(item.total,target)/item.total);
+ }
+ return {min:Math.max(0,Math.min(100,min)),max:Math.max(0,Math.min(100,max))};
+}
+
 /** Adjustments are persisted only when explicitly approved. */
 export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId,autoSave=false}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string;autoSave?:boolean}){
  const [changes,setChanges]=useState<Record<string,string>>(()=>autoSave?{}:Object.fromEntries((decision?.overrides??[]).map(o=>[o.loId,String(o.developmentPercent)])));
@@ -66,10 +83,12 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
   })}</tbody></table></div>:<div aria-label="LO-reglage" style={{display:'grid',gap:10}}>{shown.items.filter(item=>!onlyLoId||item.loId===onlyLoId).map(item=>{
    const isLocked=Boolean(balancedPreviews?.some(p=>p.lockedLo?.some(lock=>lock.loId===item.loId))||preview.lockedLo?.some(lock=>lock.loId===item.loId));
    const pct=changes[item.loId]??String(item.total?Number((100*item.development/item.total).toFixed(2)):0);
+   const limits=autoSave?feasibleLoPercentRange(balancedPreviews??[preview],item.loId):{min:0,max:100};
+   const clamp=(raw:string)=>String(Number(Math.min(limits.max,Math.max(limits.min,Number(raw))).toFixed(4)));
    return <div key={item.loId}>
     {!onlyLoId&&<strong>{allocationLabel(item.loId)}</strong>}
-    {isLocked?<div role="img" aria-label={'Låst fördelning '+allocationLabel(item.loId)} style={{display:'flex',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}><span style={{width:(item.total?100*item.development/item.total:0)+'%',background:'#2563eb'}}/><span style={{flex:1,background:'#0d9488'}}/></div>:<input type="range" min="0" max="100" step="0.1" style={{display:'block',width:'100%',marginTop:12}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} value={pct} disabled={busy} onChange={e=>{const value=e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onPointerUp={()=>void saveOnRelease()} onKeyUp={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(e.key))void saveOnRelease()}} onBlur={()=>void saveOnRelease()}/>}
-    {!isLocked&&<label>Utveckling (%) <input type="number" min="0" max="100" step="0.1" aria-label={'Utvecklingsandel '+item.loId} value={pct} onChange={e=>{const value=e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onBlur={()=>void saveOnRelease()} onKeyDown={e=>{if(e.key==='Enter')void saveOnRelease()}}/></label>}
+    {isLocked?<div role="img" aria-label={'Låst fördelning '+allocationLabel(item.loId)} style={{display:'flex',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}><span style={{width:(item.total?100*item.development/item.total:0)+'%',background:'#2563eb'}}/><span style={{flex:1,background:'#0d9488'}}/></div>:<input type="range" min="0" max="100" step="0.1" style={{display:'block',width:'100%',marginTop:12}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} value={pct} min={limits.min} max={limits.max} disabled={busy||limits.max<limits.min} onChange={e=>{const value=autoSave?clamp(e.target.value):e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onPointerUp={()=>void saveOnRelease()} onKeyUp={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(e.key))void saveOnRelease()}} onBlur={()=>void saveOnRelease()}/>}
+    {!isLocked&&<label>Utveckling (%) <input type="number" min="0" max="100" step="0.1" aria-label={'Utvecklingsandel '+item.loId} min={limits.min} max={limits.max} value={pct} onChange={e=>{const value=autoSave?clamp(e.target.value):e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onBlur={()=>void saveOnRelease()} onKeyDown={e=>{if(e.key==='Enter')void saveOnRelease()}}/></label>}
     <p>Utveckling: {format(item.development)} h · Förvaltning: {format(item.maintenance)} h</p>
    </div>;
   })}</div>}
