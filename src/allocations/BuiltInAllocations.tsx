@@ -79,6 +79,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const [loYears,setLoYears]=useState<Record<string,number>>({});
+ const [metricLoYears,setMetricLoYears]=useState<Record<string,number>>({});
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  const candidateRules=new Map<string,ActivityAllocationRule>();
  for(const record of data.records){
@@ -153,34 +154,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
-      {kind==='activity'&&selectedUo&&(()=>{
-       // One persistent LO card across years. Each card selects the annual approval independently.
-       const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo);
-       const loIds=[...new Set(groupEntries.flatMap(([,group])=>group.previews.flatMap(p=>p.items.map(i=>i.loId))))].sort((a,b)=>name(a).localeCompare(name(b),'sv'));
-       return loIds.map(loId=>{
-        const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
-        const yearsForLo=[...new Set(available.map(([,g])=>g.rules[0].year))];
-        const selectionKey=selectedUo+'|'+loId;
-        const preferred=loYears[selectionKey]??(year!==0?year:0);
-        const selectedYear=preferred===0?0:yearsForLo.includes(preferred)?preferred:yearsForLo[0];
-        const selectedEntry=available.find(([,g])=>g.rules[0].year===(selectedYear===0?yearsForLo[0]:selectedYear));
-        if(!selectedEntry)return null;
-        const [key,group]=selectedEntry;
-        const items=new Map<string,AllocationPreview['items'][number]>();
-        for(const preview of group.previews)for(const item of preview.items){
-         const prior=items.get(item.loId);
-         items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
-        }
-        const combined:AllocationPreview={ruleId:key,fingerprint:group.previews.map(p=>p.fingerprint).join('|'),items:[...items.values()],uo:{development:group.previews.reduce((v,p)=>v+p.uo.development,0),maintenance:group.previews.reduce((v,p)=>v+p.uo.maintenance,0)}};
-        const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
-        return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
-         <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
-         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
-         {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
-         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
-        </section>;
-       });
-      })()}
       {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
        <h4>UO-fördelningar</h4>
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
@@ -192,8 +165,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
-         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
-         <p>Importerade originalvärden är skrivskyddade.</p>
+         <p>Importerade UO-värden är skrivskyddade.</p>
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
          {kind==='metric'&&(()=>{
           const loValues=new Map<string,Values>();
@@ -206,15 +178,58 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
           }
           return <section aria-label={'LO-värden '+r.title}>
            <h4>LO-fördelningar</h4>
-           {[...loValues].map(([loId,values])=><div key={loId} className="panel" style={{marginTop:8}}>
-            <strong>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</strong>
-            <DistributionIndicator first={values.first} second={values.second} labels={['IT-timmar','Verksamhetstimmar']}/>
-            <small>Importerad · skrivskyddad</small>
-           </div>)}
+           {[...loValues].map(([loId])=>{
+            const key=r.key+'|'+loId;
+            const selected=metricLoYears[key]??year;
+            const totals={first:0,second:0};
+            for(const metric of ['it_hours','business_hours'] as const)for(const original of annual(data.records,metric,selected)){
+             if(original.scope.axis!=='work'||original.scope.uoId!==r.key)continue;
+             const id=original.scope.loId??(original.workPart==='uo-overhead'?'uo-overhead:'+r.key:null);
+             if(id!==loId)continue;
+             totals[metric==='it_hours'?'first':'second']+=original.value;
+            }
+            return <div key={loId} className="panel" aria-label={'LO-värden '+name(loId)} style={{marginTop:8}}>
+             <strong>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</strong>
+             <PeriodButtons years={years} selected={selected} onSelect={next=>setMetricLoYears(prev=>({...prev,[key]:next}))} label={'LO-period '+name(loId)}/>
+             <DistributionIndicator first={totals.first} second={totals.second} labels={['IT-timmar','Verksamhetstimmar']}/>
+             <small>Importerad · skrivskyddad</small>
+            </div>;
+           })}
           </section>;
          })()}
 
-         {kind==='activity'&&<p>Godkända LO-kompletteringar och möjligheten att ändra redigerbara LO visas ovan.</p>}
+         {kind==='activity'&&(()=>{
+       // One persistent LO card across years. Each card selects the annual approval independently.
+       const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===r.key);
+       const loIds=[...new Set(groupEntries.flatMap(([,group])=>group.previews.flatMap(p=>p.items.map(i=>i.loId))))].sort((a,b)=>name(a).localeCompare(name(b),'sv'));
+       return loIds.map(loId=>{
+        const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
+        const yearsForLo=[...new Set(available.map(([,g])=>g.rules[0].year))];
+        const selectionKey=r.key+'|'+loId;
+        const preferred=loYears[selectionKey]??(year!==0?year:0);
+        const selectedYear=preferred===0?0:yearsForLo.includes(preferred)?preferred:yearsForLo[0];
+        const selectedEntry=available.find(([,g])=>g.rules[0].year===(selectedYear===0?yearsForLo[0]:selectedYear));
+        if(!selectedEntry)return null;
+        const [key,group]=selectedEntry;
+        const items=new Map<string,AllocationPreview['items'][number]>();
+        for(const preview of group.previews)for(const item of preview.items){
+         const prior=items.get(item.loId);
+         items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
+        }
+        const previewGroups=selectedYear===0?available.map(([,g])=>g):[group];
+        const activeItems=new Map<string,AllocationPreview['items'][number]>();
+        for(const g of previewGroups)for(const p of g.previews)for(const item of p.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
+        const combined:AllocationPreview={ruleId:key,fingerprint:previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)).join('|'),items:[...activeItems.values()],uo:{development:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.development,0),maintenance:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.maintenance,0)}};
+        const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
+        return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
+         <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
+         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
+         {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
+         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+        </section>;
+       });
+      })()}
+
         </section>}
        </div>)}
       </section>}
