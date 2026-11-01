@@ -40,12 +40,11 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
- const loPanels=builtIn.getByLabel('LO-reglage');
- await expect(loPanels).toContainText('LO 1');
- await expect(loPanels).toContainText('LO 2');
- await expect(loPanels).toContainText('LO 3');
- await expect(loPanels.getByRole('img',{name:'Låst fördelning LO 1'})).toBeVisible();
- await expect(loPanels.getByRole('slider',{name:'Reglage utvecklingsandel LO 2'})).toBeVisible();
+ const lockedLo=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
+ const editableLo=builtIn.getByRole('region',{name:'LO-fördelning LO 2'});
+ await expect(lockedLo.getByRole('img',{name:'Låst fördelning LO 1'})).toBeVisible();
+ await expect(editableLo.getByRole('slider',{name:'Reglage utvecklingsandel LO 2'})).toBeVisible();
+ await expect(editableLo.getByLabel('LO-period LO 2')).toContainText('2027');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await analysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();

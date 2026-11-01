@@ -78,10 +78,10 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
+ const [loYears,setLoYears]=useState<Record<string,number>>({});
  const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  for(const rule of gaps.activityAllocationRules??[]){
-  if(year!==0&&rule.year!==year)continue;
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
   if(!decision||approvedActivityParts(data,rule,decision).length===0)continue;
   let preview:AllocationPreview;
@@ -161,21 +161,34 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         </div>);
        })()}
       </section>}
-      {kind==='activity'&&selectedUo&&[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo).map(([key,group])=>{
-       const firstRule=group.rules[0];
-       const items=new Map<string,AllocationPreview['items'][number]>();
-       for(const preview of group.previews)for(const item of preview.items){
-        const prior=items.get(item.loId);
-        items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
-       }
-       const combined:AllocationPreview={ruleId:key,fingerprint:group.previews.map(p=>p.fingerprint).join('|'),items:[...items.values()],uo:{development:group.previews.reduce((v,p)=>v+p.uo.development,0),maintenance:group.previews.reduce((v,p)=>v+p.uo.maintenance,0)}};
-       const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
-       return <section key={key} className="panel">
-        <h4>LO-fördelningar · {firstRule.year}</h4>
-        {legacy&&<p>Äldre beslut visas oförändrat tills du sparar en ny, balanserad fördelning.</p>}
-        <LoAllocationDraft key={key+group.previews.map(p=>p.fingerprint).join('|')} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===firstRule.id)} balancedPreviews={group.previews} cards quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
-       </section>;
-      })}
+      {kind==='activity'&&selectedUo&&(()=>{
+       // One persistent LO card across years. Each card selects the annual approval independently.
+       const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo);
+       const loIds=[...new Set(groupEntries.flatMap(([,group])=>group.previews.flatMap(p=>p.items.map(i=>i.loId))))].sort((a,b)=>name(a).localeCompare(name(b),'sv'));
+       return loIds.map(loId=>{
+        const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
+        const yearsForLo=[...new Set(available.map(([,g])=>g.rules[0].year))];
+        const selectionKey=selectedUo+'|'+loId;
+        const preferred=loYears[selectionKey]??(year!==0?year:yearsForLo[0]);
+        const selectedYear=yearsForLo.includes(preferred)?preferred:yearsForLo[0];
+        const selectedEntry=available.find(([,g])=>g.rules[0].year===selectedYear);
+        if(!selectedEntry)return null;
+        const [key,group]=selectedEntry;
+        const items=new Map<string,AllocationPreview['items'][number]>();
+        for(const preview of group.previews)for(const item of preview.items){
+         const prior=items.get(item.loId);
+         items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
+        }
+        const combined:AllocationPreview={ruleId:key,fingerprint:group.previews.map(p=>p.fingerprint).join('|'),items:[...items.values()],uo:{development:group.previews.reduce((v,p)=>v+p.uo.development,0),maintenance:group.previews.reduce((v,p)=>v+p.uo.maintenance,0)}};
+        const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
+        return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
+         <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
+         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next===0?yearsForLo[0]:next}))} label={'LO-period '+name(loId)}/>
+         {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
+         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
+        </section>;
+       });
+      })()}
       {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
        <h4>UO-fördelningar</h4>
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
@@ -184,9 +197,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
         </button>
+        <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
-         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-period '+r.title}/>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <p>Importerade originalvärden är skrivskyddade.</p>
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
