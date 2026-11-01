@@ -80,7 +80,15 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const [loYears,setLoYears]=useState<Record<string,number>>({});
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
- for(const rule of gaps.activityAllocationRules??[]){
+ const candidateRules=new Map<string,ActivityAllocationRule>();
+ for(const record of data.records){
+  if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
+  const match={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
+  const key=JSON.stringify(match);
+  const existing=(gaps.activityAllocationRules??[]).find(r=>r.datasetId===match.datasetId&&r.uoId===match.uoId&&r.metric===match.metric&&r.year===match.year);
+  candidateRules.set(key,existing??{...match,id:key,reason:'Komplettering från UO-budgetformat'});
+ }
+ for(const rule of candidateRules.values()){
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
   // Missing approval must not hide an editable LO; the source preview is sufficient.
   if(decision&&decision.fingerprint&&!approvedActivityParts(data,rule,decision).length)continue;
@@ -100,13 +108,15 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    if(JSON.stringify(shown)!==JSON.stringify(current))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
   }
   const decisions=[...(latest.activityAllocationDecisions??[])];
+  const rules=[...(latest.activityAllocationRules??[])];
+  for(const rule of group.rules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
   for(let i=0;i<group.rules.length;i++){
    const ruleId=group.rules[i].id;
    const index=decisions.findIndex(d=>d.ruleId===ruleId);
    if(index<0)decisions.push(approvals[i]);
    else decisions[index]=approvals[i];
   }
-  const next={...latest,activityAllocationDecisions:decisions};
+  const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
   await saveGapState(next);onSaved(next);
  };
  const saveAcrossYears=async(groups:{rules:ActivityAllocationRule[];previews:AllocationPreview[]}[],overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
@@ -120,7 +130,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    if(JSON.stringify(shown)!==JSON.stringify(latest))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
   }
   const ruleIds=new Set(selectedRules.map(rule=>rule.id));
-  const next={...current,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
+  const rules=[...(current.activityAllocationRules??[])];
+  for(const rule of selectedRules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
+  const next={...current,activityAllocationRules:rules,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
   await saveGapState(next);onSaved(next);
  };
  const kinds:[Kind,string,string,string][]=[
