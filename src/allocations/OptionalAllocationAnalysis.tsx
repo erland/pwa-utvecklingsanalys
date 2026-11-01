@@ -24,15 +24,21 @@ export default function OptionalAllocationAnalysis({data,state,config,metrics,ac
  };
  let error='';
  try{
-  if(metrics.some(m=>m.endsWith('_hours'))){
-   const resourceCategories=[{name:'IT-timmar',value:metrics.includes('it_hours')?scoped(['it_hours'],activity).total:0},{name:'Verksamhetstimmar',value:metrics.includes('business_hours')?scoped(['business_hours'],activity).total:0}].filter(x=>x.value>0);
-   const resourceTotal=resourceCategories.reduce((n,x)=>n+x.value,0);
-   visible.push({id:'resources',name:'IT-timmar / Verksamhetstimmar',categories:resourceCategories,total:resourceTotal,unallocated:0,unit:'h',coverage:'',unknownCount:0});
-   const dev=activity==='maintenance'?0:scoped(metrics,'development').total;
-   const maintenance=activity==='development'?0:scoped(metrics,'maintenance').total;
-   const all=scoped(metrics,activity);
-   const allocated=dev+maintenance;
-   visible.push({id:'activities',name:'Utveckling / Förvaltning',categories:[{name:'Utveckling',value:dev},{name:'Förvaltning',value:maintenance}].filter(x=>x.value>0),total:all.total,unallocated:Math.max(0,all.total-allocated),unit:'h',coverage:'',unknownCount:all.unknownCount});
+  // Built-in allocation types are independent: the hours filter must never hide the kronor type.
+  const hourMetrics:Metric[]=['it_hours','business_hours'];
+  const costMetrics:Metric[]=['consultant_cost','other_cost'];
+  const activeHourMetrics=metrics.some(m=>m.endsWith('_hours'))?metrics:hourMetrics;
+  const resourceCategories=[{name:'IT-timmar',value:activeHourMetrics.includes('it_hours')?scoped(['it_hours'],activity).total:0},{name:'Verksamhetstimmar',value:activeHourMetrics.includes('business_hours')?scoped(['business_hours'],activity).total:0}].filter(x=>x.value>0);
+  visible.push({id:'resources',name:'IT-timmar / Verksamhetstimmar',categories:resourceCategories,total:resourceCategories.reduce((n,x)=>n+x.value,0),unallocated:0,unit:'h',coverage:'',unknownCount:0});
+  for(const {id,name,selectedMetrics,unit} of [
+   {id:'activities-hours',name:'Utveckling / Förvaltning – timmar',selectedMetrics:activeHourMetrics,unit:'h'},
+   {id:'activities-costs',name:'Utveckling / Förvaltning – kronor',selectedMetrics:costMetrics,unit:'SEK'}
+  ]){
+   const dev=scoped(selectedMetrics,'development');
+   const maint=scoped(selectedMetrics,'maintenance');
+   const all=scoped(selectedMetrics,'all');
+   const allocated=dev.total+maint.total;
+   visible.push({id,name,categories:[{name:'Utveckling',value:dev.total},{name:'Förvaltning',value:maint.total}].filter(x=>x.value>0),total:all.total,unallocated:Math.max(0,all.total-allocated),unit,coverage:'',unknownCount:Math.max(dev.unknownCount,maint.unknownCount)});
   }
   for(const dimension of config.dimensions){
    const result=analyzeOptionalAllocation(data,state,config,dimension.id,{year,metrics,activity,uoIds:scope.uoIds.length?scope.uoIds:['uo:__none__'],...(organization.level==='part'&&organization.partId?{partId:organization.partId}:{})});
