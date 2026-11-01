@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
 test('CHANGE-048: v2 analysis opens completion and approval workflow using accessible navigation',async({page})=>{
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
  sheet.getCell('B1').value='UO: Test UO';
  sheet.getCell('D11').value=2027;
