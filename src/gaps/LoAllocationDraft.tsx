@@ -64,7 +64,6 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
    const pct=changes[item.loId]??String(original.total?Number((100*item.development/item.total).toFixed(2)):0);
    return <tr key={item.loId}><td>{allocationLabel(item.loId)}{isLocked?' · Importerad, låst':''}</td><td>{format(item.total)}</td><td><div style={{display:'flex',alignItems:'center',gap:8,minWidth:210}}><input type="range" min="0" max="100" step="0.1" style={{flex:1,minWidth:90}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} disabled={isLocked} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/><input type="number" min="0" max="100" step="0.1" style={{maxWidth:75}} aria-label={'Utvecklingsandel '+item.loId} disabled={isLocked} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/><span aria-hidden="true">%</span></div></td><td>{format(item.development)}</td><td>{format(item.maintenance)}</td></tr>;
   })}</tbody></table></div>:<div aria-label="LO-reglage" style={{display:'grid',gap:10}}>{shown.items.filter(item=>!onlyLoId||item.loId===onlyLoId).map(item=>{
-   const original=preview.items.find(x=>x.loId===item.loId)!;
    const isLocked=Boolean(balancedPreviews?.some(p=>p.lockedLo?.some(lock=>lock.loId===item.loId))||preview.lockedLo?.some(lock=>lock.loId===item.loId));
    const pct=changes[item.loId]??String(item.total?Number((100*item.development/item.total).toFixed(2)):0);
    return <div key={item.loId}>
