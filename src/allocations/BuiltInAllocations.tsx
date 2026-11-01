@@ -211,11 +211,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const selectedEntry=available.find(([,g])=>g.rules[0].year===(selectedYear===0?yearsForLo[0]:selectedYear));
         if(!selectedEntry)return null;
         const [key,group]=selectedEntry;
-        const items=new Map<string,AllocationPreview['items'][number]>();
-        for(const preview of group.previews)for(const item of preview.items){
-         const prior=items.get(item.loId);
-         items.set(item.loId,prior?{...prior,total:prior.total+item.total,development:prior.development+item.development,maintenance:prior.maintenance+item.maintenance}:item);
-        }
         const previewGroups=selectedYear===0?available.map(([,g])=>g):[group];
         const activeItems=new Map<string,AllocationPreview['items'][number]>();
         for(const g of previewGroups)for(const p of g.previews)for(const item of p.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
