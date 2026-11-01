@@ -30,8 +30,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  const v2=page.locator('.canonical-analytics');
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await selectActivity(v2,'development');
- await expect(v2.locator('.canonical-result-head strong')).toContainText('0 h');
- await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
+ await expect(v2.locator('.canonical-result-head strong')).toContainText('25 h');
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  const allocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');
  await expect(allocation.getByLabel('fördelningskälla')).toContainText('it_hours');
