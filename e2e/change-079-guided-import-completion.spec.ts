@@ -22,16 +22,8 @@ test('import directly offers LO completion and opens analysis after one approval
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'guided-budget.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer});
  await expect(page.getByRole('status').filter({hasText:'guided-budget.xlsx'})).toContainText('importerad');
- const completion=page.getByRole('region',{name:'Komplettera efter import'});
- await expect(completion.getByText('Fördela utveckling och förvaltning per LO')).toBeVisible();
- await completion.getByLabel(/^Utvecklingsandel /).first().fill('60');
- // Imported UO is 50/50: LO1 has 36 development hours, so LO2 must have 14/40 = 35%.
- await expect(completion.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
- await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
- await expect(completion.getByRole('group',{name:'Godkända fördelningar'})).toHaveCount(1);
- await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
- await completion.getByText('Godkända fördelningar (1)',{exact:false}).click();
- await expect(completion.getByText('Godkänd fördelning – kan justeras på nytt')).toBeVisible();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Komplettera efter import'})).toHaveCount(0);
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Analysera utvecklingsbehoven'})).toBeVisible();
  const analysis=page.locator('.canonical-analytics');
