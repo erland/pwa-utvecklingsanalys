@@ -38,8 +38,7 @@ test('CHANGE-050: v2 migration gate checks group-year totals and source records'
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await expect(matrix).toHaveCount(0);
  await v2.getByLabel('period',{exact:true}).selectOption('all');
- await v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'}).click();
- await expect(page.getByRole('heading',{name:'Informationsluckor och kompletteringar'})).toBeVisible();
+ await expect(v2.getByRole('button',{name:'Granska kompletteringar och godkännanden'})).toHaveCount(0);
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  await expect(page.locator('.canonical-analytics .canonical-result-head strong')).toContainText('60 h');
 });

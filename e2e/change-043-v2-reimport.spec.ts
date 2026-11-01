@@ -71,7 +71,7 @@ test('CHANGE-043: replacing approved source invalidates v2 allocation until reap
  await expect(staleV2.locator('.canonical-result-head strong')).toContainText('40 h');
  await selectActivity(staleV2,'development');
  await expect(staleV2.locator('.canonical-result-head strong')).toContainText('0 h');
- await expect(staleV2.getByText('godkännanden behöver omprövas',{exact:false})).toBeVisible();
+ await expect(staleV2.getByText('sparade LO-justeringar är inaktuella',{exact:false})).toBeVisible();
 
  await page.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  const changedAllocation=page.getByRole('heading',{name:'Aktivitetsfördelning till LO'}).locator('..');

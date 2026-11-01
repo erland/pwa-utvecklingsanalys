@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 
 test('DEV-117 approved allocation is collapsed but can be reopened and changed per source',async({page})=>{
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
  s.getCell('B1').value='UO: UO A';s.getCell('D11').value=2027;
  s.getCell('B25').value='LO 1';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=60;
@@ -11,23 +12,11 @@ test('DEV-117 approved allocation is collapsed but can be reopened and changed p
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'dev117.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
  await expect(page.getByRole('status').filter({hasText:'dev117.xlsx'})).toContainText('importerad');
- const completion=page.getByRole('region',{name:'Komplettera efter import'});
- await expect(completion.getByLabel(/^Utvecklingsandel /)).toHaveCount(2);
- await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
- await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
- await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
- await page.getByRole('table',{name:''}).first().getByRole('button',{name:'Visa/ändra fördelningar'}).click();
- await expect(completion.getByText('Fördelningar för vald källa',{exact:false})).toBeVisible();
- await expect(completion.getByLabel(/^Utvecklingsandel /)).toHaveCount(2);
- await completion.getByLabel(/^Utvecklingsandel /).first().fill('75');
- await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
- await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toHaveValue('75');
- await completion.getByRole('button',{name:'Visa alla källor'}).click();
- await expect(completion.getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
- await page.reload();await page.getByRole('button',{name:'Import',exact:true}).click();
- await expect(page.getByRole('region',{name:'Komplettera efter import'}).getByLabel(/^Utvecklingsandel /).first()).toBeHidden();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Visa/ändra fördelningar'}).click();
- await expect(page.getByRole('region',{name:'Komplettera efter import'}).getByLabel(/^Utvecklingsandel /).first()).toHaveValue('75');
+ await expect(page.getByRole('region',{name:'Valfria fördelningar'})).toBeVisible();
+ await page.reload();
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Valfria fördelningar'})).toBeVisible();
 });

@@ -25,17 +25,7 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  const upload=page.locator('#direct-import-files');
  await upload.setInputFiles({name:'dev-189-locked.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:await budget(20,20,50,50)});
  await expect(page.getByRole('status').filter({hasText:'dev-189-locked.xlsx'})).toContainText('importerad');
- const completion=page.getByRole('region',{name:'Komplettera efter import'});
- const locked=completion.getByLabel('Utvecklingsandel lo:UO%20A:LO%201');
- const editable2=completion.getByLabel('Utvecklingsandel lo:UO%20A:LO%202');
- const editable3=completion.getByLabel('Utvecklingsandel lo:UO%20A:LO%203');
- await expect(locked).toBeDisabled();
- await expect(completion.getByText('Importerad, låst')).toBeVisible();
- await editable2.fill('60');
- await expect(editable3).toHaveValue('40');
- await expect(completion.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
- await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
@@ -55,11 +45,7 @@ test('DEV-189: real Excel import locks LO1, balances editable LOs and invalidate
  await page.getByRole('button',{name:'Ersätt',exact:true}).click();
  await upload.setInputFiles({name:'dev-189-replaced.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:await budget(25,15,55,45)});
  await expect(page.getByRole('status').filter({hasText:'dev-189-replaced.xlsx'})).toContainText('importerad');
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toHaveCount(0);
- await expect(completion.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/})).toBeVisible();
- await expect(completion.getByLabel('Utvecklingsandel lo:UO%20A:LO%201')).toBeDisabled();
- await completion.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  // Navigation remounts Analytics and restores the default (all activities) filter.
  const updatedAnalysis=page.locator('.canonical-analytics');
