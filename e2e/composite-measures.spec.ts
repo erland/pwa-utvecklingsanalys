@@ -13,6 +13,6 @@ test('combined hours appear in analysis with explicit constituents and annual vi
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await expect(v2.getByRole('region',{name:'Årsvis utveckling för valt organisationsurval'})).toHaveCount(0);
  await expect(v2.getByRole('region',{name:'Årsvis utveckling per organisationsdel'})).toHaveCount(0);
- await v2.getByLabel('enhet').selectOption('costs');
+ await v2.getByRole('tab',{name:'Kostnader'}).click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
 });
