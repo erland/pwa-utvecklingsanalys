@@ -10,6 +10,8 @@ import {analyzeCanonical} from '../analytics/canonicalQuery';
 
 export default function OptionalAllocationAnalysis({data,state,config,metrics,activity,year,organization,groupModel}:{data:CanonicalDataset;state:GapState;config:OptionalAllocations;metrics:Metric[];activity:Activity|'all'|'allocated';year?:number;organization:OrganizationSelection;groupModel?:UoGroupModel}){
  const [active,setActive]=useState('resources');
+ const isHours=metrics.every(m=>m.endsWith('_hours'));
+ const isCosts=metrics.every(m=>m.endsWith('_cost'));
  const scope=organizationScope(data,organization,groupModel);
  const visible:{id:string;name:string;categories:{name:string;value:number}[];total:number;unallocated:number;unit:string;coverage:string;unknownCount:number}[]=[];
  const scopedUos=scope.uoIds.length?scope.uoIds:['uo:__none__'];
@@ -24,23 +26,22 @@ export default function OptionalAllocationAnalysis({data,state,config,metrics,ac
  };
  let error='';
  try{
-  // Built-in allocation types are independent: the hours filter must never hide the kronor type.
-  const hourMetrics:Metric[]=['it_hours','business_hours'];
-  const costMetrics:Metric[]=['consultant_cost','other_cost'];
-  const activeHourMetrics=metrics.some(m=>m.endsWith('_hours'))?metrics:hourMetrics;
-  const resourceCategories=[{name:'IT-timmar',value:activeHourMetrics.includes('it_hours')?scoped(['it_hours'],activity).total:0},{name:'Verksamhetstimmar',value:activeHourMetrics.includes('business_hours')?scoped(['business_hours'],activity).total:0}].filter(x=>x.value>0);
-  visible.push({id:'resources',name:'IT-timmar / Verksamhetstimmar',categories:resourceCategories,total:resourceCategories.reduce((n,x)=>n+x.value,0),unallocated:0,unit:'h',coverage:'',unknownCount:0});
-  for(const {id,name,selectedMetrics,unit} of [
-   {id:'activities-hours',name:'Utveckling / Förvaltning – timmar',selectedMetrics:activeHourMetrics,unit:'h'},
-   {id:'activities-costs',name:'Utveckling / Förvaltning – kronor',selectedMetrics:costMetrics,unit:'SEK'}
-  ]){
+  if(isHours){
+   const resourceCategories=[{name:'IT-timmar',value:metrics.includes('it_hours')?scoped(['it_hours'],activity).total:0},{name:'Verksamhetstimmar',value:metrics.includes('business_hours')?scoped(['business_hours'],activity).total:0}].filter(x=>x.value>0);
+   visible.push({id:'resources',name:'IT-timmar / Verksamhetstimmar',categories:resourceCategories,total:resourceCategories.reduce((n,x)=>n+x.value,0),unallocated:0,unit:'h',coverage:'',unknownCount:0});
+  }
+  if(isHours||isCosts){
+   const selectedMetrics=metrics;
+   const id=isHours?'activities-hours':'activities-costs';
+   const name=isHours?'Utveckling / Förvaltning – timmar':'Utveckling / Förvaltning – kronor';
    const dev=scoped(selectedMetrics,'development');
    const maint=scoped(selectedMetrics,'maintenance');
    const all=scoped(selectedMetrics,'all');
    const allocated=dev.total+maint.total;
-   visible.push({id,name,categories:[{name:'Utveckling',value:dev.total},{name:'Förvaltning',value:maint.total}].filter(x=>x.value>0),total:all.total,unallocated:Math.max(0,all.total-allocated),unit,coverage:'',unknownCount:Math.max(dev.unknownCount,maint.unknownCount)});
+   visible.push({id,name,categories:[{name:'Utveckling',value:dev.total},{name:'Förvaltning',value:maint.total}].filter(x=>x.value>0),total:all.total,unallocated:Math.max(0,all.total-allocated),unit:isHours?'h':'SEK',coverage:'',unknownCount:Math.max(dev.unknownCount,maint.unknownCount)});
   }
   for(const dimension of config.dimensions){
+   if(!dimension.appliesTo.metrics.some(m=>metrics.includes(m)))continue;
    const result=analyzeOptionalAllocation(data,state,config,dimension.id,{year,metrics,activity,uoIds:scope.uoIds.length?scope.uoIds:['uo:__none__'],...(organization.level==='part'&&organization.partId?{partId:organization.partId}:{})});
    if(!result.visible)continue;
    visible.push({id:dimension.id,name:dimension.name,categories:dimension.categories.map(category=>({name:category.name,value:result.amounts[category.id]??0})),total:result.total,unallocated:result.unallocated,unit:result.unit,coverage:result.coverage,unknownCount:result.unknownCount});

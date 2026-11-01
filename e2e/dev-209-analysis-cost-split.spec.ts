@@ -15,9 +15,12 @@ test('DEV-209 analysis offers separate hour and kronor activity distributions',a
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const selector=page.getByLabel('Analysera fördelningstyp');
  await expect(selector.locator('option',{hasText:'Utveckling / Förvaltning – timmar'})).toHaveCount(1);
- await expect(selector.locator('option',{hasText:'Utveckling / Förvaltning – kronor'})).toHaveCount(1);
+ await expect(selector.locator('option',{hasText:'Utveckling / Förvaltning – kronor'})).toHaveCount(0);
  await selector.selectOption('activities-hours');
  await expect(page.getByRole('table',{name:'Fördelning Utveckling / Förvaltning – timmar'})).toBeVisible();
+ await page.getByRole('tab',{name:'Kostnader'}).click();
+ await expect(selector.locator('option',{hasText:'Utveckling / Förvaltning – kronor'})).toHaveCount(1);
+ await expect(selector.locator('option',{hasText:'Utveckling / Förvaltning – timmar'})).toHaveCount(0);
  await selector.selectOption('activities-costs');
  await expect(page.getByRole('table',{name:'Fördelning Utveckling / Förvaltning – kronor'})).toBeVisible();
 });

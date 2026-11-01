@@ -74,9 +74,11 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(allocation.getByRole('img')).toHaveCount(1);
  await page.getByRole('tab',{name:'Kostnader'}).click();
  await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toBeVisible();
+ await expect(allocation.getByLabel('Analysera fördelningstyp').locator('option')).toHaveText(['Utveckling / Förvaltning – kronor']);
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning – kronor'});
  await page.getByRole('tab',{name:'Timmar'}).click();
  await expect(allocation).toBeVisible();
+ await expect(allocation.getByLabel('Analysera fördelningstyp').locator('option')).toHaveText(['IT-timmar / Verksamhetstimmar','Utveckling / Förvaltning – timmar','Effekt']);
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const reopened=page.getByRole('region',{name:'Valfria fördelningar'});
