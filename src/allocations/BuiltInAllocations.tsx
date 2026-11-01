@@ -79,6 +79,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
+ const [bulkBusy,setBulkBusy]=useState(false);
+ const [bulkError,setBulkError]=useState('');
+ const [bulkConfirm,setBulkConfirm]=useState(false);
 
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  const candidateRules=new Map<string,ActivityAllocationRule>();
@@ -136,6 +139,31 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
   const next={...current,activityAllocationRules:rules,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
   await saveGapState(next);onSaved(next);
  };
+ const bulkMatchUo=async(uoId:string)=>{
+  const targets=[...editorGroups.values()].filter(g=>g.rules[0].uoId===uoId&&(year===0||g.rules[0].year===year));
+  if(!targets.length)throw new Error('Inga redigerbara LO-fördelningar finns för vald period.');
+  // Each imported UO matrix supplies its own target; all LO for that matrix get its percentage.
+  const decisions=targets.flatMap(group=>group.previews.flatMap(preview=>{
+   const pct=100*preview.uo.development/(preview.uo.development+preview.uo.maintenance);
+   const locks=new Set((preview.lockedLo??[]).map(v=>v.loId));
+   if(locks.size===preview.items.length)return [];
+   if(locks.size>0)throw new Error('Det finns både låsta och redigerbara LO i samma UO. Massändringen avbröts.');
+   return approveBalancedActivityGroup([preview],'Massändring till importerad UO-fördelning',preview.items.map(item=>({loId:item.loId,developmentPercent:pct})));
+  }));
+  if(!decisions.length)throw new Error('Alla LO är importerade och låsta; ingen massändring är möjlig.');
+  const latest=await loadGapState();
+  const selectedRules=targets.flatMap(g=>g.rules);
+  for(const rule of selectedRules){
+   const shown=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   const actual=(latest.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   if(JSON.stringify(shown)!==JSON.stringify(actual))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
+  }
+  const ids=new Set(decisions.map(d=>d.ruleId));
+  const rules=[...(latest.activityAllocationRules??[])];
+  for(const rule of selectedRules)if(ids.has(rule.id)&&!rules.some(r=>r.id===rule.id))rules.push(rule);
+  const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:[...(latest.activityAllocationDecisions??[]).filter(d=>!ids.has(d.ruleId)),...decisions]};
+  await saveGapState(next);onSaved(next);
+ };
  const kinds:[Kind,string,string,string][]=[
   ['activity','Utveckling / Förvaltning','Utveckling','Förvaltning'],
   ['metric','IT-timmar / Verksamhetstimmar','IT-timmar','Verksamhetstimmar']
@@ -163,6 +191,15 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         </button>
         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
+        {selectedUo===r.key&&kind==='activity'&&<div className="actions">
+         <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkError('');setBulkConfirm(true)}}>Massändra LO till UO-fördelningen</button>
+        </div>}
+        {selectedUo===r.key&&kind==='activity'&&bulkConfirm&&<div className="panel" role="group" aria-label="Bekräfta massändring av LO">
+         <p>Alla redigerbara LO under {r.title} sätts till UO-fördelningen för {year===0?'samtliga tillgängliga år':year}. Importerade LO-värden ändras inte.</p>
+         <button type="button" className="primary" disabled={bulkBusy} onClick={()=>{setBulkBusy(true);setBulkError('');void bulkMatchUo(r.key).then(()=>setBulkConfirm(false)).catch(e=>setBulkError(String(e))).finally(()=>setBulkBusy(false))}}>Bekräfta massändring</button>
+         <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkConfirm(false)}>Avbryt</button>
+         {bulkError&&<p role="alert">{bulkError}</p>}
+        </div>}
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
 
          {kind==='metric'&&(()=>{
