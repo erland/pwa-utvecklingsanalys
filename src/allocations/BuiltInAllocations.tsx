@@ -58,6 +58,7 @@ export type ApprovedLoRow={key:string;uoId:string;loId:string;year:number;metric
 export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):ApprovedLoRow[]{
  const rows:ApprovedLoRow[]=[];
  for(const rule of gaps.activityAllocationRules??[]){
+  if(year!==0&&rule.year!==year)continue;
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
   if(!decision)continue;
   const parts=approvedActivityParts(data,rule,decision);
@@ -81,7 +82,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  for(const rule of gaps.activityAllocationRules??[]){
-  if(year!==0&&rule.year!==year)continue;
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
   if(!decision||approvedActivityParts(data,rule,decision).length===0)continue;
   let preview:AllocationPreview;
