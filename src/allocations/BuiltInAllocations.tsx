@@ -79,11 +79,19 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const [loYears,setLoYears]=useState<Record<string,number>>({});
- const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
- for(const rule of gaps.activityAllocationRules??[]){
+ const candidateRules=new Map<string,ActivityAllocationRule>();
+ for(const record of data.records){
+  if(record.authority!=='original'||record.granularity!=='activity-part'||record.scope.axis!=='work'||record.scope.loId||!record.source||!['it_hours','business_hours'].includes(record.metric))continue;
+  const match={datasetId:record.source.datasetId,uoId:record.scope.uoId,metric:record.metric as 'it_hours'|'business_hours',year:record.year};
+  const key=JSON.stringify(match);
+  const existing=(gaps.activityAllocationRules??[]).find(r=>r.datasetId===match.datasetId&&r.uoId===match.uoId&&r.metric===match.metric&&r.year===match.year);
+  candidateRules.set(key,existing??{...match,id:key,reason:'Komplettering från UO-budgetformat'});
+ }
+ for(const rule of candidateRules.values()){
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
-  if(!decision||approvedActivityParts(data,rule,decision).length===0)continue;
+  // Missing approval must not hide an editable LO; the source preview is sufficient.
+  if(decision&&decision.fingerprint&&!approvedActivityParts(data,rule,decision).length)continue;
   let preview:AllocationPreview;
   try{preview=previewActivityAllocation(data,rule)}catch{continue}
   const key=JSON.stringify([rule.datasetId,rule.uoId,rule.year]);
@@ -100,13 +108,31 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    if(JSON.stringify(shown)!==JSON.stringify(current))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
   }
   const decisions=[...(latest.activityAllocationDecisions??[])];
+  const rules=[...(latest.activityAllocationRules??[])];
+  for(const rule of group.rules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
   for(let i=0;i<group.rules.length;i++){
    const ruleId=group.rules[i].id;
    const index=decisions.findIndex(d=>d.ruleId===ruleId);
-   if(index<0)throw new Error('Fördelningsbeslut saknas. Ladda om sidan.');
-   decisions[index]=approvals[i];
+   if(index<0)decisions.push(approvals[i]);
+   else decisions[index]=approvals[i];
   }
-  const next={...latest,activityAllocationDecisions:decisions};
+  const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
+  await saveGapState(next);onSaved(next);
+ };
+ const saveAcrossYears=async(groups:{rules:ActivityAllocationRule[];previews:AllocationPreview[]}[],overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
+  // Validate all target years before persisting a single atomic state update.
+  const approvals=groups.flatMap(group=>approveBalancedActivityGroup(group.previews,reason,overrides));
+  const current=await loadGapState();
+  const selectedRules=groups.flatMap(group=>group.rules);
+  for(const rule of selectedRules){
+   const shown=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   const latest=(current.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
+   if(JSON.stringify(shown)!==JSON.stringify(latest))throw new Error('Fördelningen har ändrats. Ladda om sidan.');
+  }
+  const ruleIds=new Set(selectedRules.map(rule=>rule.id));
+  const rules=[...(current.activityAllocationRules??[])];
+  for(const rule of selectedRules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
+  const next={...current,activityAllocationRules:rules,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
   await saveGapState(next);onSaved(next);
  };
  const kinds:[Kind,string,string,string][]=[
@@ -126,41 +152,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
-      <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Detaljperiod '+title}/>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
-      <h4>{title} per UO</h4>
-      {kind==='activity'&&<p>Här visas enbart fullständiga importerade UO-matriser. Godkända LO-kompletteringar visas separat nedan när giltiga beslut finns.</p>}
-      {kind==='activity'&&selectedUo&&![...editorGroups.values()].some(g=>g.rules[0].uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar" className="panel">
-       <h4>LO-fördelningar</h4><p>Godkända, kompletterade timmar. IT- och verksamhetstimmar visas sammanräknade som timmar.</p>
-       {(()=>{
-        const groups=new Map<string,{loId:string;year:number;development:number;maintenance:number}>();
-        // Reported LO activity pairs are authoritative; approvals supply only missing LO pairs.
-        const originalGroups=new Set<string>();
-        const originals=data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===selectedUo&&r.scope.loId&&r.authority==='original'&&r.approval==='reported'&&r.granularity==='activity-part'&&r.month===undefined&&(year===0||r.year===year)&&['it_hours','business_hours'].includes(r.metric));
-        const originalPairs=new Map<string,typeof originals>();
-        for(const r of originals){const key=JSON.stringify([r.source?.datasetId,r.scope.axis==='work'?r.scope.loId:'',r.metric,r.year]);originalPairs.set(key,[...(originalPairs.get(key)??[]),r])}
-        for(const pair of originalPairs.values()){
-         if(pair.length!==2||!pair.some(r=>r.activity==='development')||!pair.some(r=>r.activity==='maintenance'))continue;
-         const first=pair[0];if(first.scope.axis!=='work'||!first.scope.loId)continue;
-         const loId=first.scope.loId,key=JSON.stringify([loId,first.year]);
-         const current=groups.get(key)??{loId,year:first.year,development:0,maintenance:0};
-         current.development+=pair.find(r=>r.activity==='development')!.value;
-         current.maintenance+=pair.find(r=>r.activity==='maintenance')!.value;groups.set(key,current);
-         originalGroups.add(JSON.stringify([first.source?.datasetId,loId,first.metric,first.year]));
-        }
-        for(const r of approvedRows.filter(r=>r.uoId===selectedUo)){
-         if(originalGroups.has(JSON.stringify([r.source,r.loId,r.metric,r.year])))continue;
-         const key=JSON.stringify([r.loId,r.year]);
-         const current=groups.get(key)??{loId:r.loId,year:r.year,development:0,maintenance:0};
-         current.development+=r.development;current.maintenance+=r.maintenance;groups.set(key,current);
-        }
-        return [...groups.values()].sort((a,b)=>a.year-b.year||name(a.loId).localeCompare(name(b.loId),'sv')).map(r=><div key={JSON.stringify([r.loId,r.year])} className="panel" style={{marginTop:8}}>
-         <strong>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)} · {r.year}</strong>
-         <DistributionIndicator first={r.development} second={r.maintenance} labels={['Utveckling','Förvaltning']}/>
-         <small>Importerade och godkända LO-värden</small>
-        </div>);
-       })()}
-      </section>}
       {kind==='activity'&&selectedUo&&(()=>{
        // One persistent LO card across years. Each card selects the annual approval independently.
        const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo);
@@ -169,9 +161,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const available=groupEntries.filter(([,group])=>group.previews.some(p=>p.items.some(i=>i.loId===loId))).sort((a,b)=>a[1].rules[0].year-b[1].rules[0].year);
         const yearsForLo=[...new Set(available.map(([,g])=>g.rules[0].year))];
         const selectionKey=selectedUo+'|'+loId;
-        const preferred=loYears[selectionKey]??(year!==0?year:yearsForLo[0]);
-        const selectedYear=yearsForLo.includes(preferred)?preferred:yearsForLo[0];
-        const selectedEntry=available.find(([,g])=>g.rules[0].year===selectedYear);
+        const preferred=loYears[selectionKey]??(year!==0?year:0);
+        const selectedYear=preferred===0?0:yearsForLo.includes(preferred)?preferred:yearsForLo[0];
+        const selectedEntry=available.find(([,g])=>g.rules[0].year===(selectedYear===0?yearsForLo[0]:selectedYear));
         if(!selectedEntry)return null;
         const [key,group]=selectedEntry;
         const items=new Map<string,AllocationPreview['items'][number]>();
@@ -183,9 +175,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
         return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
-         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next===0?yearsForLo[0]:next}))} label={'LO-period '+name(loId)}/>
+         <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
          {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
-         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={group.previews} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
@@ -194,10 +186,10 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
         <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);void 0}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
-         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
         </button>
         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
+        <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
