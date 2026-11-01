@@ -142,37 +142,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
-      {false&&kind==='activity'&&selectedUo&&![...editorGroups.values()].some(g=>g.rules[0].uoId===selectedUo)&&<section aria-label="Godkända LO-kompletteringar" className="panel">
-       <h4>LO-fördelningar</h4><p>Godkända, kompletterade timmar. IT- och verksamhetstimmar visas sammanräknade som timmar.</p>
-       {(()=>{
-        const groups=new Map<string,{loId:string;year:number;development:number;maintenance:number}>();
-        // Reported LO activity pairs are authoritative; approvals supply only missing LO pairs.
-        const originalGroups=new Set<string>();
-        const originals=data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===selectedUo&&r.scope.loId&&r.authority==='original'&&r.approval==='reported'&&r.granularity==='activity-part'&&r.month===undefined&&(year===0||r.year===year)&&['it_hours','business_hours'].includes(r.metric));
-        const originalPairs=new Map<string,typeof originals>();
-        for(const r of originals){const key=JSON.stringify([r.source?.datasetId,r.scope.axis==='work'?r.scope.loId:'',r.metric,r.year]);originalPairs.set(key,[...(originalPairs.get(key)??[]),r])}
-        for(const pair of originalPairs.values()){
-         if(pair.length!==2||!pair.some(r=>r.activity==='development')||!pair.some(r=>r.activity==='maintenance'))continue;
-         const first=pair[0];if(first.scope.axis!=='work'||!first.scope.loId)continue;
-         const loId=first.scope.loId,key=JSON.stringify([loId,first.year]);
-         const current=groups.get(key)??{loId,year:first.year,development:0,maintenance:0};
-         current.development+=pair.find(r=>r.activity==='development')!.value;
-         current.maintenance+=pair.find(r=>r.activity==='maintenance')!.value;groups.set(key,current);
-         originalGroups.add(JSON.stringify([first.source?.datasetId,loId,first.metric,first.year]));
-        }
-        for(const r of approvedRows.filter(r=>r.uoId===selectedUo)){
-         if(originalGroups.has(JSON.stringify([r.source,r.loId,r.metric,r.year])))continue;
-         const key=JSON.stringify([r.loId,r.year]);
-         const current=groups.get(key)??{loId:r.loId,year:r.year,development:0,maintenance:0};
-         current.development+=r.development;current.maintenance+=r.maintenance;groups.set(key,current);
-        }
-        return [...groups.values()].sort((a,b)=>a.year-b.year||name(a.loId).localeCompare(name(b.loId),'sv')).map(r=><div key={JSON.stringify([r.loId,r.year])} className="panel" style={{marginTop:8}}>
-         <strong>{r.loId.startsWith('uo-overhead:')?'UO Övergripande':name(r.loId)} · {r.year}</strong>
-         <DistributionIndicator first={r.development} second={r.maintenance} labels={['Utveckling','Förvaltning']}/>
-         <small>Importerade och godkända LO-värden</small>
-        </div>);
-       })()}
-      </section>}
       {kind==='activity'&&selectedUo&&(()=>{
        // One persistent LO card across years. Each card selects the annual approval independently.
        const groupEntries=[...editorGroups].filter(([,group])=>group.rules[0].uoId===selectedUo);
