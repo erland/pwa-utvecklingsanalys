@@ -169,7 +169,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          {kind==='metric'&&<p>IT- och verksamhetstimmar är importerade och kan inte redigeras.</p>}
          {kind==='metric'&&(()=>{
           const loValues=new Map<string,Values>();
-          for(const metric of ['it_hours','business_hours'] as const)for(const original of annual(data.records,metric,year)){
+          for(const metric of ['it_hours','business_hours'] as const)for(const original of annual(data.records,metric,0)){
            if(original.scope.axis!=='work'||original.scope.uoId!==r.key)continue;
            const loId=original.scope.loId??(original.workPart==='uo-overhead'?'uo-overhead:'+r.key:null);
            if(!loId)continue;
@@ -215,12 +215,12 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const activeItems=new Map<string,AllocationPreview['items'][number]>();
         for(const g of previewGroups)for(const p of g.previews)for(const item of p.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
         const combined:AllocationPreview={ruleId:key,fingerprint:previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)).join('|'),items:[...activeItems.values()],uo:{development:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.development,0),maintenance:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.maintenance,0)}};
-        const legacy=group.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages);
+        const legacy=previewGroups.some(g=>g.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages));
         return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={next=>setLoYears(prev=>({...prev,[selectionKey]:next}))} label={'LO-period '+name(loId)}/>
          {legacy&&<p>Äldre godkännande: välj en ny balanserad fördelning för att ändra värdet.</p>}
-         <LoAllocationDraft key={JSON.stringify([key,loId,group.previews.map(p=>p.fingerprint),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={selectedYear===0?undefined:(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===group.rules[0].id)} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
