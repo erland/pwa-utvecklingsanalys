@@ -46,7 +46,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
  const aligned=!problem&&(Boolean(balancedPreviews?.length)||sharedMode||Math.abs(totalDev-preview.uo.development)<1e-6&&Math.abs(totalMaint-preview.uo.maintenance)<1e-6);
  const format=(n:number)=>n.toLocaleString('sv-SE',{maximumFractionDigits:2});
  return <div>
-  <p>Justera utvecklingsandelen med reglaget eller ange procenten direkt. Förvaltningen är återstående andel. Övriga delområden balanseras automatiskt mot UO:s totalsumma.</p>
+  {!cards&&<p>Justera utvecklingsandelen med reglaget eller ange procenten direkt. Förvaltningen är återstående andel. Övriga delområden balanseras automatiskt mot UO:s totalsumma.</p>}
   {!cards?<div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>LO / UO Övergripande</th><th>Totalt</th><th>Utveckling %</th><th>Utveckling (h)</th><th>Förvaltning (h)</th></tr></thead>
   <tbody>{shown.items.filter(item=>!onlyLoId||item.loId===onlyLoId).map(item=>{
    const original=preview.items.find(x=>x.loId===item.loId)!;
@@ -57,8 +57,8 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
    const original=preview.items.find(x=>x.loId===item.loId)!;
    const isLocked=Boolean(balancedPreviews?.some(p=>p.lockedLo?.some(lock=>lock.loId===item.loId))||preview.lockedLo?.some(lock=>lock.loId===item.loId));
    const pct=changes[item.loId]??String(original.total?Number((100*item.development/item.total).toFixed(2)):0);
-   return <div key={item.loId} className="panel" style={{marginTop:8}}>
-    <strong>{allocationLabel(item.loId)}</strong> <small>{isLocked?'Importerad · låst':'Kompletterad · redigerbar'}</small>
+   return <div key={item.loId}>
+    {!onlyLoId&&<strong>{allocationLabel(item.loId)}</strong>}
     {isLocked?<div role="img" aria-label={'Låst fördelning '+allocationLabel(item.loId)} style={{display:'flex',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}><span style={{width:(item.total?100*item.development/item.total:0)+'%',background:'#2563eb'}}/><span style={{flex:1,background:'#0d9488'}}/></div>:<input type="range" min="0" max="100" step="0.1" style={{display:'block',width:'100%',marginTop:12}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/>}
     {!isLocked&&<label>Utveckling (%) <input type="number" min="0" max="100" step="0.1" aria-label={'Utvecklingsandel '+item.loId} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/></label>}
     <p>Utveckling: {format(item.development)} h · Förvaltning: {format(item.maintenance)} h</p>
