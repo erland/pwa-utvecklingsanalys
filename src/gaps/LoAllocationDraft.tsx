@@ -26,7 +26,9 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
    return {loId,developmentPercent:Number(value)};
   });
   const completion=uoBudget2027_30.kind==='budget'?uoBudget2027_30.completion:undefined;
-  if(completion){
+  // The built-in Alla card may already contain a validated, weighted snapshot of saved decisions.
+  // Do not replace it with an unedited source rebalance until the user moves the slider.
+  if(completion&&(!cards||!balancedPreviews?.length||Object.keys(changes).length>0)){
    shown=balancedPreviews?.length?(()=>{
     approveBalancedActivityGroup(balancedPreviews,'Förhandsgranskning',overrides);
     const results=balancedPreviews.map(p=>rebalanceUoBudgetAllocation(p,overrides,p.lockedLo??[]));

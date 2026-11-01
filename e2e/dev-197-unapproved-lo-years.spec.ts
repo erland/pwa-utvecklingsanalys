@@ -20,9 +20,12 @@ test('DEV-197: unapproved LO has a slider and all-years choice, without redundan
  await expect(builtIn.getByText('Här visas enbart fullständiga importerade UO-matriser.')).toHaveCount(0);
  await expect(builtIn.getByLabel('Detaljperiod Utveckling / Förvaltning')).toHaveCount(0);
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
- const lo1=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
+ const uo=builtIn.getByRole('region',{name:'LO-detaljer UO A'});
+ const lo1=uo.getByRole('region',{name:'LO-fördelning LO 1'});
  await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toBeVisible();
+ await expect(uo.getByRole('region',{name:'LO-fördelning LO 2'})).toBeVisible();
  await lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'}).click();
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveValue('50');
  await expect(lo1.getByLabel('LO-period LO 1').getByRole('button',{name:'Alla'})).toHaveAttribute('aria-pressed','true');
  await lo1.getByLabel('Utvecklingsandel lo:UO%20A:LO%201').fill('60');
  await lo1.getByRole('button',{name:'Spara LO-fördelning'}).click();
