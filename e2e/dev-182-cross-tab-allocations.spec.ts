@@ -32,7 +32,8 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  // The lowest feasible LO 1 development share is (50-40)/60 = 16.6667%.
  await lo1.getByLabel(/^Utvecklingsandel /).fill('0');
  await expect(lo1.getByLabel(/^Utvecklingsandel /)).toHaveValue('16.6667');
- await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('min',/16\.66/);
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('min','0');
+ await expect(lo1.getByRole('slider',{name:'Reglage utvecklingsandel LO 1'})).toHaveAttribute('max','100');
  await lo1.getByLabel(/^Utvecklingsandel /).fill('60');
  await lo1.getByLabel(/^Utvecklingsandel /).press('Tab');
  await expect(lo1.getByRole('button',{name:'Spara LO-fördelning'})).toHaveCount(0);
