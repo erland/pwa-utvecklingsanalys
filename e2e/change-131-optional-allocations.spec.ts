@@ -64,7 +64,7 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const allocation=page.getByRole('region',{name:'Fördelningsanalys'});
  await expect(allocation.getByLabel('Analysera fördelningstyp')).toHaveValue('resources');
- await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning'});
+ await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning – timmar'});
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await expect(allocation).toBeVisible();
  await expect(allocation.getByRole('table',{name:'Fördelning Effekt'})).toBeVisible();
@@ -73,7 +73,8 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(allocation.getByLabel('Presentera fördelning')).toHaveCount(0);
  await expect(allocation.getByRole('img')).toHaveCount(1);
  await page.getByRole('combobox',{name:'enhet'}).selectOption('costs');
- await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toBeVisible();
+ await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning – kronor'});
  await page.getByRole('combobox',{name:'enhet'}).selectOption('hours');
  await expect(allocation).toBeVisible();
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
