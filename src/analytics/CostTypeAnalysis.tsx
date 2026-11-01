@@ -4,16 +4,17 @@ import type {GapState} from '../gaps/store';
 import type {CanonicalAnalysisQuery} from './canonicalQuery';
 
 export default function CostTypeAnalysis({data,state,query,showTrend}:{data:CanonicalDataset;state:GapState;query:CanonicalAnalysisQuery;showTrend:boolean}){
- const rows=costTypeSummary(data,state,query);
+ const selected=costTypes.filter(type=>query.metrics.includes(type.metric));
+ const rows=costTypeSummary(data,state,query).filter(row=>query.metrics.includes(row.metric));
  const years=costTypeYears(data,state,query);
  const total=rows.reduce((sum,row)=>sum+row.value,0);
  const fmt=(n:number)=>new Intl.NumberFormat('sv-SE',{maximumFractionDigits:2}).format(n);
  const colors=['#2563eb','#0d9488'];
- const share=total>0?100*rows[0].value/total:0;
+ const share=total>0?100*(rows.find(row=>row.metric==='consultant_cost')?.value??0)/total:0;
  const max=Math.max(1,...years.flatMap(r=>r.values.filter((v):v is number=>v!==null)));
  const x=(index:number)=>40+(years.length<=1?180:index/(years.length-1)*360);
  const y=(value:number)=>170-value/max*130;
- const lines=costTypes.map((type,index)=>{
+ const lines=costTypes.filter(type=>selected.some(s=>s.metric===type.metric)).map(type=>{const index=costTypes.findIndex(t=>t.metric===type.metric);
   const fragments:string[]=[];let started=false;
   years.forEach((entry,i)=>{
    const value=entry.values[index];
@@ -39,9 +40,9 @@ export default function CostTypeAnalysis({data,state,query,showTrend}:{data:Cano
     {lines.map(line=><path key={line.type.metric} d={line.path} fill="none" stroke={line.color} strokeWidth="3"/>)}
     {years.map((row,i)=><text key={row.year} x={x(i)} y="192" textAnchor="middle" fill="currentColor" fontSize="12">{row.year}</text>)}
    </svg>
-   <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Årliga kostnader per kostnadsslag"><thead><tr><th>År</th>{costTypes.map(t=><th key={t.metric}>{t.label}</th>)}<th>Totalt</th><th>Förändring</th><th>Förändring %</th></tr></thead><tbody>{years.map((row,index)=>{
+   <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Årliga kostnader per kostnadsslag"><thead><tr><th>År</th>{selected.map(t=><th key={t.metric}>{t.label}</th>)}<th>Totalt</th><th>Förändring</th><th>Förändring %</th></tr></thead><tbody>{years.map((row,index)=>{
     const previous=years[index-1];const delta=row.total!==null&&previous?.total!==null&&previous?.total!==undefined&&previous.year===row.year-1?row.total-previous.total:null;
-    return <tr key={row.year}><th scope="row">{row.year}</th>{row.values.map((value,i)=><td key={costTypes[i].metric}>{value===null?'–':fmt(value)+' kr'}</td>)}<td>{row.total===null?'–':fmt(row.total)+' kr'}</td><td>{delta===null?'–':fmt(delta)+' kr'}</td><td>{delta===null||!previous?.total?'–':fmt(100*delta/previous.total)+' %'}</td></tr>;
+    return <tr key={row.year}><th scope="row">{row.year}</th>{row.values.map((value,i)=>({value,metric:costTypes[i].metric})).filter(item=>selected.some(t=>t.metric===item.metric)).map(item=><td key={item.metric}>{item.value===null?'–':fmt(item.value)+' kr'}</td>)}<td>{row.total===null?'–':fmt(row.total)+' kr'}</td><td>{delta===null?'–':fmt(delta)+' kr'}</td><td>{delta===null||!previous?.total?'–':fmt(100*delta/previous.total)+' %'}</td></tr>;
    })}</tbody></table></div>
   </section>}
  </section>;
