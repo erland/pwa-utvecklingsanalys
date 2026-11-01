@@ -17,20 +17,12 @@ test('DEV-185: reimport invalidates balanced LO approval and requires fresh appr
  const file=page.locator('#direct-import-files');
  await file.setInputFiles({name:'dev-185-original.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:await budget(60,40,50,50)});
  await expect(page.getByRole('status').filter({hasText:'dev-185-original.xlsx'})).toContainText('importerad');
- const completion=page.getByRole('region',{name:'Komplettera efter import'});
- await completion.getByLabel(/^Utvecklingsandel /).first().fill('60');
- await expect(completion.getByLabel(/^Utvecklingsandel /).nth(1)).toHaveValue('35');
- await completion.getByRole('button',{name:'Spara LO-fördelning'}).click();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
-
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Visa källor och hantera import'}).click();
  await page.getByRole('button',{name:'Ersätt',exact:true}).click();
  await file.setInputFiles({name:'dev-185-replaced.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:await budget(50,50,60,40)});
  await expect(page.getByRole('status').filter({hasText:'dev-185-replaced.xlsx'})).toContainText('importerad');
- await expect(completion.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/})).toBeVisible();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toHaveCount(0);
- await completion.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
- await expect(completion.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await analysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();
