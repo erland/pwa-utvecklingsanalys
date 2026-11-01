@@ -175,10 +175,10 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
         <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);void 0}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
-         <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
          <small>{r.status}</small>
         </button>
         <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
+        <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
          <h4>{r.title} – fördelning</h4>
          <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
