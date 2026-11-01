@@ -7,19 +7,19 @@ import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 import {PeriodButtons} from './WeightedUoEditor';
 
-type Kind='activity'|'metric';
+type Kind='activity'|'activity-cost'|'metric';
 type Values={first:number;second:number};
 type Row={key:string;title:string;values:Values;status:string};
 const name=(id:string)=>{try{return decodeURIComponent(id.split(':').at(-1)??id)}catch{return id}};
 const format=(value:number)=>value.toLocaleString('sv-SE',{maximumFractionDigits:1});
-function DistributionIndicator({first,second,labels}:{first:number;second:number;labels:[string,string]}){
+function DistributionIndicator({first,second,labels,unit='h'}:{first:number;second:number;labels:[string,string];unit?:'h'|'kr'}){
  const total=first+second;
  const percent=total>0?100*first/total:0;
- return <div role="img" aria-label={labels[0]+': '+format(first)+' timmar, '+labels[1]+': '+format(second)+' timmar'}>
+ return <div role="img" aria-label={labels[0]+': '+format(first)+' '+unit+', '+labels[1]+': '+format(second)+' '+unit}>
   <div style={{display:'flex',width:'100%',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}>
    <span style={{width:percent+'%',background:'#2563eb'}}/><span style={{width:(100-percent)+'%',background:'#0d9488'}}/>
   </div>
-  <p>{labels[0]}: {format(first)} h ({format(percent)} %) · {labels[1]}: {format(second)} h ({format(total>0?100-percent:0)} %)</p>
+  <p>{labels[0]}: {format(first)} {unit} ({format(percent)} %) · {labels[1]}: {format(second)} {unit} ({format(total>0?100-percent:0)} %)</p>
  </div>;
 }
 const approved=(r:AnalysisRecord)=>r.authority==='original'&&r.approval==='reported';
@@ -39,7 +39,7 @@ export function builtInRows(data:CanonicalDataset,kind:Kind,year:number):Row[]{
    entry[metric==='it_hours'?'first':'second']+=r.value;entry.hasData=true;byUo.set(r.scope.uoId,entry);
   }
  }else{
-  const matrix=work.filter(r=>approved(r)&&r.granularity==='activity-part'&&r.workPart==='uo-activity-matrix'&&(r.metric==='it_hours'||r.metric==='business_hours')&&r.month===undefined&&(year===0||r.year===year));
+  const matrix=work.filter(r=>approved(r)&&r.granularity==='activity-part'&&r.workPart==='uo-activity-matrix'&&(kind==='activity-cost'?r.metric==='other_cost':r.metric==='it_hours'||r.metric==='business_hours')&&r.month===undefined&&(year===0||r.year===year));
   // Only report complete imported UO matrices. A partial matrix is not zero.
   const groups=new Map<string,AnalysisRecord[]>();
   for(const r of matrix){const key=JSON.stringify([r.source?.datasetId,r.scope.axis==='work'?r.scope.uoId:'',r.metric,r.year]);groups.set(key,[...(groups.get(key)??[]),r])}
@@ -165,7 +165,8 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
   await saveGapState(next);onSaved(next);
  };
  const kinds:[Kind,string,string,string][]=[
-  ['activity','Utveckling / Förvaltning','Utveckling','Förvaltning'],
+  ['activity','Utveckling / Förvaltning – timmar','Utveckling','Förvaltning'],
+  ['activity-cost','Utveckling / Förvaltning – kronor','Utveckling','Förvaltning'],
   ['metric','IT-timmar / Verksamhetstimmar','IT-timmar','Verksamhetstimmar']
  ];
  return <section aria-label="Inbyggda fördelningstyper">
@@ -176,8 +177,8 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
    return <div key={kind} className="panel" style={{width:'100%',minWidth:0}}>
     <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);}}><strong>{title} ›</strong></button>
     <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Period '+title}/>
-    {total>0?<DistributionIndicator first={totals.first} second={totals.second} labels={[first,second]}/>:<p>Inga fullständiga importerade uppgifter för perioden.</p>}
-    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
+    {total>0?<DistributionIndicator first={totals.first} second={totals.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>:<p>Inga fullständiga importerade uppgifter för perioden.</p>}
+    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':kind==='activity-cost'?'Importerad kostnadsmatris · endast UO-nivå':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
@@ -200,7 +201,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkConfirm(false)}>Avbryt</button>
          {bulkError&&<p role="alert">{bulkError}</p>}
         </div>}
-        {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
+        {selectedUo===r.key&&kind!=='activity-cost'&&<section aria-label={'LO-detaljer '+r.title}>
 
          {kind==='metric'&&(()=>{
           const loValues=new Map<string,Values>();

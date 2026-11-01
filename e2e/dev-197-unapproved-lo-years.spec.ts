@@ -16,7 +16,7 @@ test('DEV-197: unapproved LO has a slider and all-years choice, without redundan
  // Deliberately do not approve anything on Import.
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
- await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
  await expect(builtIn.getByText('Här visas enbart fullständiga importerade UO-matriser.')).toHaveCount(0);
  await expect(builtIn.getByLabel('Detaljperiod Utveckling / Förvaltning')).toHaveCount(0);
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();

@@ -18,7 +18,7 @@ test('DEV-205: built-in overview indicators and mass distribute LO to UO target'
  await expect(builtIn.getByRole('img',{name:/Utveckling: .*Förvaltning:/}).first()).toBeVisible();
  await expect(builtIn.getByRole('img',{name:/IT-timmar: .*Verksamhetstimmar:/}).first()).toBeVisible();
  await expect(page.getByText('Fördelningstyper – viktade andelar')).toHaveCount(0);
- await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning/}).click();
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
  const lo=builtIn.getByRole('region',{name:'LO-detaljer UO A'});
  const l1=lo.getByRole('region',{name:'LO-fördelning LO 1'});
