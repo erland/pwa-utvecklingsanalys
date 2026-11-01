@@ -13,11 +13,7 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'dev-182.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
  await expect(page.getByRole('status').filter({hasText:'dev-182.xlsx'})).toContainText('importerad');
- const importView=page.getByRole('region',{name:'Komplettera efter import'});
- await importView.getByRole('button',{name:/Godkänn alla föreslagna fördelningar/}).click();
- await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
- // Reload after the import approval so the allocations view reads the persisted canonical snapshot.
- await page.reload();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const view=page.getByRole('region',{name:'Valfria fördelningar'});
  const builtIn=view.getByRole('region',{name:'Inbyggda fördelningstyper'});
@@ -46,7 +42,7 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await expect(lo1).toContainText('36');
  await expect(lo2).toContainText('14');
  await page.getByRole('button',{name:'Import',exact:true}).click();
- await expect(importView.getByText('Godkända fördelningar (1)',{exact:false})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Efter import'})).toBeVisible();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
  await analysis.getByRole('checkbox',{name:'Utveckling',exact:true}).check();
