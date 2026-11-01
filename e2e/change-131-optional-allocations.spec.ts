@@ -72,10 +72,10 @@ test('DEV-131 optional allocation is configured in Settings with LO override',as
  await expect(allocation.getByRole('rowheader',{name:'Direkt effekt'})).toBeVisible();
  await expect(allocation.getByLabel('Presentera fördelning')).toHaveCount(0);
  await expect(allocation.getByRole('img')).toHaveCount(1);
- await page.getByRole('combobox',{name:'enhet'}).selectOption('costs');
+ await page.getByRole('tab',{name:'Kostnader'}).click();
  await expect(page.getByRole('region',{name:'Fördelningsanalys'})).toBeVisible();
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Utveckling / Förvaltning – kronor'});
- await page.getByRole('combobox',{name:'enhet'}).selectOption('hours');
+ await page.getByRole('tab',{name:'Timmar'}).click();
  await expect(allocation).toBeVisible();
  await allocation.getByLabel('Analysera fördelningstyp').selectOption({label:'Effekt'});
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
