@@ -9,6 +9,29 @@ const base=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:str
 });
 const fixture=()=>({...emptyCanonical(),records:[base('D5',600,'development'),base('E5',400,'maintenance'),base('D26',700,'unknown','lo1'),base('D32',300,'unknown','lo2')]});
 describe('v2 approved activity allocations',()=>{
+ it('allocates kronor from both other costs and consultant costs, without mixing hours',()=>{
+  const costRule:ActivityAllocationRule={...rule,id:'cost-rule',metric:'other_cost'};
+  const costMatrix=[
+   {...base('D7',600000,'development'),metric:'other_cost' as const},
+   {...base('E7',400000,'maintenance'),metric:'other_cost' as const}
+  ];
+  const costLo=[
+   {...base('D28',100000,'unknown','lo1'),metric:'other_cost' as const},
+   {...base('D29',300000,'unknown','lo1'),metric:'consultant_cost' as const},
+   {...base('D34',200000,'unknown','lo2'),metric:'other_cost' as const},
+   {...base('D35',400000,'unknown','lo2'),metric:'consultant_cost' as const}
+  ];
+  const data={...emptyCanonical(),records:[...costMatrix,...costLo]};
+  const before=JSON.stringify(data);
+  const preview=previewActivityAllocation(data,costRule);
+  expect(preview.items.map(item=>item.total)).toEqual([400000,600000]);
+  expect(preview.uo).toEqual({development:600000,maintenance:400000});
+  const decision=approveActivityAllocation(preview,'Fördelade kronor',[{loId:'lo1',developmentPercent:50}]);
+  const rows=approvedActivityParts(data,costRule,decision);
+  expect(rows.filter(r=>r.activity==='development').map(r=>r.value)).toEqual([200000,400000]);
+  expect(rows.every(r=>r.metric==='other_cost')).toBe(true);
+  expect(JSON.stringify(data)).toBe(before);
+ });
  it('distributes development/maintenance by LO weights without increasing overall total',()=>{
   const data=fixture(),before=JSON.stringify(data);
   const preview=previewActivityAllocation(data,rule);

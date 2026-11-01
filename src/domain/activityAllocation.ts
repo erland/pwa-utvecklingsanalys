@@ -10,24 +10,32 @@ export type AllocationPreview={ruleId:string;fingerprint:string;lockedLo?:Locked
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
 export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAllocationRule):AllocationPreview{
  const errors=validateCanonical(data);if(errors.length)throw new Error(errors.join(','));
- if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!['it_hours','business_hours'].includes(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
- const original=data.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===rule.datasetId&&r.metric===rule.metric&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId);
+ if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!['it_hours','business_hours','other_cost'].includes(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
+ const original=data.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===rule.datasetId&&(r.metric===rule.metric||(rule.metric==='other_cost'&&r.metric==='consultant_cost'))&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId);
  // Use annual LO records when available; otherwise roll up monthly LO source values
  // into a virtual annual total for approval. Never mutate source records or add months
  // on top of an annual record for the same LO.
- const matrix=original.filter(r=>r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId&&r.workPart!=='uo-overhead');
+ const matrix=original.filter(r=>r.metric===rule.metric&&r.granularity==='activity-part'&&r.month===undefined&&r.scope.axis==='work'&&!r.scope.loId&&r.workPart!=='uo-overhead');
  const loSources=original.filter(r=>r.granularity==='total'&&r.scope.axis==='work'&&(Boolean(r.scope.loId)||r.workPart==='uo-overhead'));
  const overheadKey='uo-overhead:'+rule.uoId;
  const loIdsForYear=[...new Set(loSources.map(r=>r.scope.axis==='work'?(r.scope.loId??overheadKey):''))];
- const loTotals:AnalysisRecord[]=loIdsForYear.flatMap(loId=>{
+ const expandedLoTotals:AnalysisRecord[]=loIdsForYear.flatMap(loId=>{
   const items=loSources.filter(r=>r.scope.axis==='work'&&(r.scope.loId??overheadKey)===loId);
-  const annual=items.filter(r=>r.month===undefined);
-  const monthly=items.filter(r=>r.month!==undefined);
-  if(annual.length&&!(annual.length===1&&annual[0].value===0&&monthly.some(r=>r.value!==0)))return annual;
-  if(!monthly.length)return annual;
-  const representative=items[0];
-  return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:monthly.reduce((sum,r)=>sum+r.value,0)}];
+  return [...new Set(items.map(r=>r.metric))].flatMap(metric=>{
+   const metricItems=items.filter(r=>r.metric===metric);
+   const annual=metricItems.filter(r=>r.month===undefined);
+   const monthly=metricItems.filter(r=>r.month!==undefined);
+   if(annual.length&&!(annual.length===1&&annual[0].value===0&&monthly.some(r=>r.value!==0)))return annual;
+   if(!monthly.length)return annual;
+   const representative=metricItems[0];
+   return [{...representative,id:representative.id+'|annual-rollup',month:undefined,value:monthly.reduce((sum,r)=>sum+r.value,0)}];
+  });
  });
+ const loTotals=rule.metric==='other_cost'?loIdsForYear.map(loId=>{
+  const rows=expandedLoTotals.filter(r=>r.scope.axis==='work'&&(r.scope.loId??overheadKey)===loId);
+  const first=rows[0];
+  return {...first,id:first.id+'|combined-cost',value:rows.reduce((n,r)=>n+r.value,0)};
+ }):expandedLoTotals;
  if(matrix.length!==2||!loTotals.length||!matrix.some(r=>r.activity==='development')||!matrix.some(r=>r.activity==='maintenance'))throw new Error('INCOMPLETE_UO_OR_LO');
  const matrixDev=matrix.find(r=>r.activity==='development')!.value,matrixMaint=matrix.find(r=>r.activity==='maintenance')!.value,sourceTotal=matrixDev+matrixMaint;
  const loIds=new Set(loTotals.map(r=>r.scope.axis==='work'?r.scope.loId:''));
