@@ -60,6 +60,6 @@ test('CHANGE-040 v2 end-to-end: import, UO groups, filters, charts and CSV',asyn
  await expect(v2.locator('.canonical-result-head strong')).toContainText('42 h');
  await selectActivity(v2,'development');
  await expect(v2.getByText('Ofullständig täckning:',{exact:false})).toBeVisible();
- await v2.getByLabel('enhet').selectOption('costs');
+ await v2.getByRole('tab',{name:'Kostnader'}).click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
 });
