@@ -1,6 +1,7 @@
 import {useState} from 'react';
-import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
+import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
+import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
 import {loadGapState,saveGapState} from '../gaps/store';
 import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
@@ -213,7 +214,14 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
         const [key,group]=selectedEntry;
         const previewGroups=selectedYear===0?available.map(([,g])=>g):[group];
         const activeItems=new Map<string,AllocationPreview['items'][number]>();
-        for(const g of previewGroups)for(const p of g.previews)for(const item of p.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
+        for(const g of previewGroups)for(const p of g.previews){
+         const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===p.ruleId&&d.fingerprint===p.fingerprint);
+         let displayed=p;
+         if(selectedYear===0&&decision){
+          try{displayed=decision.sharedPercentages?applySharedPercentages(p,decision.overrides??[]):rebalanceUoBudgetAllocation(p,decision.overrides??[],p.lockedLo??[])}catch{displayed=p}
+         }
+         for(const item of displayed.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
+        }
         const combined:AllocationPreview={ruleId:key,fingerprint:previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)).join('|'),items:[...activeItems.values()],uo:{development:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.development,0),maintenance:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.maintenance,0)}};
         const legacy=previewGroups.some(g=>g.rules.some(rule=>(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id)?.sharedPercentages));
         return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
