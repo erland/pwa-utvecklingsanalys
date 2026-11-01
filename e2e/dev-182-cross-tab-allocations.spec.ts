@@ -29,8 +29,9 @@ test('DEV-182: approved LO edits from Fördelningar preserve UO targets and are 
  await expect(lo1.getByLabel('LO-period LO 1')).toContainText('2027');
  await expect(lo2.getByLabel('LO-period LO 2')).toContainText('2027');
  await lo1.getByLabel(/^Utvecklingsandel /).fill('60');
- await expect(lo1.getByText(/UO-avstämning: utveckling 50 \/ 50 h, förvaltning 50 \/ 50 h/)).toBeVisible();
- await lo1.getByRole('button',{name:'Spara LO-fördelning'}).click();
+ await lo1.getByLabel(/^Utvecklingsandel /).press('Tab');
+ await expect(lo1.getByRole('button',{name:'Spara LO-fördelning'})).toHaveCount(0);
+ await expect(lo1.getByText('UO-avstämning:',{exact:false})).toHaveCount(0);
  await expect(builtIn.getByRole('region',{name:'Godkända LO-kompletteringar'})).toHaveCount(0);
  await expect(lo1).toContainText('36');
  await expect(lo2).toContainText('14');
