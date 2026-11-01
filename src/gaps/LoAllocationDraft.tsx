@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {applySharedPercentages,approveBalancedActivityGroup,type AllocationPreview,type ActivityAllocationDecision} from '../domain/activityAllocation';
 import type {LoDevelopmentOverride} from '../import/formats/uoBudgetCompletion';
 import {uoBudget2027_30} from '../import/formats/uoBudget2027_30';
@@ -12,8 +12,18 @@ export function allocationLabel(id:string):string{
 }
 
 /** Adjustments are persisted only when explicitly approved. */
-export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string}){
- const [changes,setChanges]=useState<Record<string,string>>(()=>Object.fromEntries((decision?.overrides??[]).map(o=>[o.loId,String(o.developmentPercent)])));
+export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId,autoSave=false}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string;autoSave?:boolean}){
+ const [changes,setChanges]=useState<Record<string,string>>(()=>autoSave?{}:Object.fromEntries((decision?.overrides??[]).map(o=>[o.loId,String(o.developmentPercent)])));
+ const pending=useRef<Record<string,string>>({});
+ const saving=useRef(false);
+ const saveOnRelease=async()=>{
+  if(!autoSave||saving.current||!Object.keys(pending.current).length)return;
+  const requested=Object.entries(pending.current).map(([loId,value])=>({loId,developmentPercent:Number(value)}));
+  pending.current={};saving.current=true;setBusy(true);setApprovalError('');
+  try{await onApprove(requested,'Automatiskt avstämd LO-fördelning från Fördelningar');setChanges({})}
+  catch(e){setApprovalError(e instanceof Error?e.message:String(e))}
+  finally{saving.current=false;setBusy(false)}
+ };
  const [reason,setReason]=useState('');
  const [busy,setBusy]=useState(false);
  const [approvalError,setApprovalError]=useState('');
@@ -56,19 +66,19 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
   })}</tbody></table></div>:<div aria-label="LO-reglage" style={{display:'grid',gap:10}}>{shown.items.filter(item=>!onlyLoId||item.loId===onlyLoId).map(item=>{
    const original=preview.items.find(x=>x.loId===item.loId)!;
    const isLocked=Boolean(balancedPreviews?.some(p=>p.lockedLo?.some(lock=>lock.loId===item.loId))||preview.lockedLo?.some(lock=>lock.loId===item.loId));
-   const pct=changes[item.loId]??String(original.total?Number((100*item.development/item.total).toFixed(2)):0);
+   const pct=changes[item.loId]??String(item.total?Number((100*item.development/item.total).toFixed(2)):0);
    return <div key={item.loId}>
     {!onlyLoId&&<strong>{allocationLabel(item.loId)}</strong>}
-    {isLocked?<div role="img" aria-label={'Låst fördelning '+allocationLabel(item.loId)} style={{display:'flex',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}><span style={{width:(item.total?100*item.development/item.total:0)+'%',background:'#2563eb'}}/><span style={{flex:1,background:'#0d9488'}}/></div>:<input type="range" min="0" max="100" step="0.1" style={{display:'block',width:'100%',marginTop:12}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/>}
-    {!isLocked&&<label>Utveckling (%) <input type="number" min="0" max="100" step="0.1" aria-label={'Utvecklingsandel '+item.loId} value={pct} onChange={e=>setChanges(previous=>({...previous,[item.loId]:e.target.value}))}/></label>}
+    {isLocked?<div role="img" aria-label={'Låst fördelning '+allocationLabel(item.loId)} style={{display:'flex',height:14,overflow:'hidden',borderRadius:8,background:'#e2e8f0',marginTop:12}}><span style={{width:(item.total?100*item.development/item.total:0)+'%',background:'#2563eb'}}/><span style={{flex:1,background:'#0d9488'}}/></div>:<input type="range" min="0" max="100" step="0.1" style={{display:'block',width:'100%',marginTop:12}} aria-label={'Reglage utvecklingsandel '+allocationLabel(item.loId)} value={pct} disabled={busy} onChange={e=>{const value=e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onPointerUp={()=>void saveOnRelease()} onKeyUp={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(e.key))void saveOnRelease()}} onBlur={()=>void saveOnRelease()}/>}
+    {!isLocked&&<label>Utveckling (%) <input type="number" min="0" max="100" step="0.1" aria-label={'Utvecklingsandel '+item.loId} value={pct} onChange={e=>{const value=e.target.value;setChanges(previous=>({...previous,[item.loId]:value}));if(autoSave)pending.current={[item.loId]:value}}} onBlur={()=>void saveOnRelease()} onKeyDown={e=>{if(e.key==='Enter')void saveOnRelease()}}/></label>}
     <p>Utveckling: {format(item.development)} h · Förvaltning: {format(item.maintenance)} h</p>
    </div>;
   })}</div>}
-  {problem&&<p role="alert">Fördelningen kan inte balanseras: {problem}</p>}
-  <p role="status">UO-avstämning: utveckling {format(totalDev)} / {format(preview.uo.development)} h, förvaltning {format(totalMaint)} / {format(preview.uo.maintenance)} h – {aligned?'stämmer':'inte avstämd'}.</p>
-  {adjusted&&<button className="secondary" disabled={busy} onClick={()=>setChanges({})}>Återställ föreslagen fördelning</button>}
+  {problem&&!autoSave&&<p role="alert">Fördelningen kan inte balanseras: {problem}</p>}
+  {!cards&&<p role="status">UO-avstämning: utveckling {format(totalDev)} / {format(preview.uo.development)} h, förvaltning {format(totalMaint)} / {format(preview.uo.maintenance)} h – {aligned?'stämmer':'inte avstämd'}.</p>}
+  {adjusted&&!autoSave&&<button className="secondary" disabled={busy} onClick={()=>setChanges({})}>Återställ föreslagen fördelning</button>}
   {!quick&&<label>Godkännandemotivering<input aria-label={'godkännandemotivering '+preview.ruleId} value={reason} onChange={e=>setReason(e.target.value)}/></label>}
-  <button className="secondary" disabled={busy||!aligned||(!quick&&!reason.trim())} onClick={()=>{setBusy(true);setApprovalError('');void onApprove(sharedMode&&!balancedPreviews?.length?shown.items.map(item=>({loId:item.loId,developmentPercent:item.total?100*item.development/item.total:0})):overrides,quick?'Automatiskt avstämd LO-fördelning från importflödet':reason).then(()=>{setReason('');onApproved?.()}).catch(e=>setApprovalError(String(e))).finally(()=>setBusy(false))}}>{quick?(onApproved?'Spara fördelning och analysera':'Spara LO-fördelning'):'Godkänn '+(adjusted?'justerad':'föreslagen')+' fördelning'}</button>
+  {!autoSave&&<button className="secondary" disabled={busy||!aligned||(!quick&&!reason.trim())} onClick={()=>{setBusy(true);setApprovalError('');void onApprove(sharedMode&&!balancedPreviews?.length?shown.items.map(item=>({loId:item.loId,developmentPercent:item.total?100*item.development/item.total:0})):overrides,quick?'Automatiskt avstämd LO-fördelning från importflödet':reason).then(()=>{setReason('');onApproved?.()}).catch(e=>setApprovalError(String(e))).finally(()=>setBusy(false))}}>{quick?(onApproved?'Spara fördelning och analysera':'Spara LO-fördelning'):'Godkänn '+(adjusted?'justerad':'föreslagen')+' fördelning'}</button>}
   {approvalError&&<p role="alert">Kunde inte godkänna: {approvalError}</p>}
   {decision?.overrides?.length?<p role="status">En manuellt justerad fördelning är sparad. Den gäller bara så länge källvärdena är oförändrade.</p>:null}
  </div>;
