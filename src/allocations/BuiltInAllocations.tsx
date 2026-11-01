@@ -39,7 +39,7 @@ export function builtInRows(data:CanonicalDataset,kind:Kind,year:number):Row[]{
    entry[metric==='it_hours'?'first':'second']+=r.value;entry.hasData=true;byUo.set(r.scope.uoId,entry);
   }
  }else{
-  const matrix=work.filter(r=>approved(r)&&r.granularity==='activity-part'&&r.workPart==='uo-activity-matrix'&&r.month===undefined&&(year===0||r.year===year));
+  const matrix=work.filter(r=>approved(r)&&r.granularity==='activity-part'&&r.workPart==='uo-activity-matrix'&&(r.metric==='it_hours'||r.metric==='business_hours')&&r.month===undefined&&(year===0||r.year===year));
   // Only report complete imported UO matrices. A partial matrix is not zero.
   const groups=new Map<string,AnalysisRecord[]>();
   for(const r of matrix){const key=JSON.stringify([r.source?.datasetId,r.scope.axis==='work'?r.scope.uoId:'',r.metric,r.year]);groups.set(key,[...(groups.get(key)??[]),r])}
