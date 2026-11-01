@@ -178,7 +178,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     <button type="button" className="secondary" style={{display:'block',width:'100%',textAlign:'left'}} aria-expanded={selected===kind} onClick={()=>{setSelected(v=>v===kind?null:kind);setSelectedUo(null);}}><strong>{title} ›</strong></button>
     <PeriodButtons years={years} selected={year} onSelect={setYear} label={'Period '+title}/>
     {total>0?<DistributionIndicator first={totals.first} second={totals.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>:<p>Inga fullständiga importerade uppgifter för perioden.</p>}
-    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':kind==='activity-cost'?'Importerad kostnadsmatris · endast UO-nivå':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
+    <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':kind==='activity-cost'?'Importerad kostnadsmatris · LO kan justeras om det inte är importerat':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
