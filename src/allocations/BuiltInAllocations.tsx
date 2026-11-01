@@ -79,7 +79,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
  const [loYears,setLoYears]=useState<Record<string,number>>({});
- const approvedRows=approvedLoRows(data,gaps,year);
  const editorGroups=new Map<string,{rules:ActivityAllocationRule[];previews:AllocationPreview[]}>();
  for(const rule of gaps.activityAllocationRules??[]){
   const decision=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===rule.id);
