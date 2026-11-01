@@ -18,7 +18,8 @@ test('DEV-192 built-in allocation cards drill into UO and navigate back',async({
  const overview=builtIn.getByRole('region',{name:'Översikt UO-fördelningar'});
  await overview.getByRole('button',{name:/UO A/}).click();
  await expect(overview.getByRole('region',{name:'LO-detaljer UO A'})).toBeVisible();
- await expect(overview.getByText('IT- och verksamhetstimmar är importerade och kan inte redigeras.')).toBeVisible();
+ await expect(overview.getByRole('region',{name:'LO-värden LO 1'}).getByRole('img',{name:/IT-timmar: .*Verksamhetstimmar:/})).toBeVisible();
+ await expect(overview.getByText('IT- och verksamhetstimmar är importerade och kan inte redigeras.')).toHaveCount(0);
  await builtIn.getByRole('button',{name:'← Alla UO'}).click();
  await expect(overview.getByRole('region',{name:'LO-detaljer UO A'})).toHaveCount(0);
  await builtIn.getByRole('button',{name:'← Alla fördelningstyper'}).click();
