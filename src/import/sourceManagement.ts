@@ -1,4 +1,5 @@
 import {openDB} from 'idb';
+import {notifyWorkspaceChange} from '../storage/workspaceEvents';
 import {loadCanonical,saveCanonical} from '../domain/canonicalStore';
 import {canonicalFromTable} from '../domain/canonicalTable';
 import {importTableFacts,type Resolution} from './tabularAdapter';
@@ -36,7 +37,7 @@ function mutate<T>(operation:()=>Promise<T>):Promise<T>{
   await recoverSourceMutation();
   const db=await journal();const before=await capture();
   await db.put('snapshots',before,'pending');
-  try{const value=await operation();await db.delete('snapshots','pending');return value}
+  try{const value=await operation();await db.delete('snapshots','pending');notifyWorkspaceChange('sources-changed');return value}
   catch(e){try{await restore(before);await db.delete('snapshots','pending')}catch{throw new Error('SOURCE_MUTATION_ROLLBACK_FAILED')}throw e}
  });
  queued=run;return run;
