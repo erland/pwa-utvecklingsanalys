@@ -1,3 +1,4 @@
+import UoDepartmentDemand from './UoDepartmentDemand';
 import DepartmentDemandAnalysis from './DepartmentDemandAnalysis';
 import {loadSemantic} from '../domain/semanticStore';
 import type {DepartmentDemandObservation} from '../domain/semantic';
@@ -73,6 +74,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  </section>
  <section className="analysis-details" aria-label="Fördjupad analys"><h3>3. Fördjupning</h3><p>Utforska organisationen, fördelningarna och utvecklingen över tid.</p>
  {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} selection={organization} onSelectionChange={setOrganization} selectedModelId={activeGroupModelId}/>}
+ {unit==='hours'&&axis==='work'&&<UoDepartmentDemand records={departmentDemand} selection={organization} groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]} year={year==='all'?undefined:Number(year)} metrics={choices.filter((m):m is 'it_hours'|'business_hours'=>m==='it_hours'||m==='business_hours')}/>}
  {axis==='work'&&preparedData&&optionalAllocations&&<OptionalAllocationAnalysis data={preparedData} state={state} config={optionalAllocations} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} organization={organization} groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]}/>}
  {unit==='costs'&&axis==='work'&&preparedData&&costQuery&&<CostTypeAnalysis data={preparedData} state={state} query={costQuery} showTrend={year==='all'&&years.length>1}/>}
  {year==='all'&&years.length>1&&<><AnnualTrendReport trend={trend} metrics={choices}/>
