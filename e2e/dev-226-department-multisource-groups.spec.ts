@@ -40,7 +40,7 @@ test('multiple UO sources preserve distinct scopes and reciprocal drilldown with
  await analysis.getByLabel('organisation',{exact:true}).selectOption('work');
  const resourceNeed=page.getByRole('region',{name:'Resursbehov per avdelning för UO'});
  await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).toContainText('180 h');
- await page.getByRole('region',{name:'Utforska UO'}).getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'UO B',exact:true}).click();
+ await page.getByRole('region',{name:'Utforska UO'}).getByRole('region',{name:'UO i analys'}).getByRole('button',{name:'UO B',exact:true}).click();
  await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).toContainText('70 h');
  await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).not.toContainText('180 h');
 
