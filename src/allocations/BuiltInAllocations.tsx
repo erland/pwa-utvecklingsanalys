@@ -1,5 +1,4 @@
 import {useState} from 'react';
-import ManualUoEditor from './ManualUoEditor';
 import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
@@ -195,7 +194,6 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
          <small>{r.status}</small>
         </button>
         {selectedUo===r.key&&<PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>}
-        {selectedUo===r.key&&kind!=='metric'&&<ManualUoEditor data={data} gaps={gaps} onSaved={onSaved} year={year} kind={kind} uoId={r.key}/>}
         {r.values.first+r.values.second>0&&<DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>}
         {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&<div className="actions">
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkError('');setBulkConfirm(true)}}>Massändra LO till UO-fördelningen</button>
