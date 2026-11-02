@@ -26,7 +26,7 @@ test('multiple UO sources support overlapping group scope and reciprocal drilldo
   const open=(name:string)=>new Promise<IDBDatabase>((resolve,reject)=>{const req=indexedDB.open(name);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
   const db=await open('utvecklingsanalys-configuration');
   const read=db.transaction('current','readonly').objectStore('current').get('active');
-  const config=await new Promise<any>((resolve,reject)=>{read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error)});
+  const config=await new Promise<{sections:{groups:Array<{id:string;name:string;groups:Array<{id:string;name:string;uoIds:string[]}>}>};activeGroupModelId:string}|undefined>((resolve,reject)=>{read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error)});
   if(!config)throw new Error('Configuration missing after import');
   config.sections.groups=[{id:'testing',name:'Testgrupper',groups:[{id:'first',name:'Första gruppen',uoIds:['uo:UO%20A','uo:UO%20B']},{id:'second',name:'Överlappande grupp',uoIds:['uo:UO%20A']}]}];
   config.activeGroupModelId='testing';
