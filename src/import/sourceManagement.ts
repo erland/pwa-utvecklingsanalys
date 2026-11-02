@@ -32,12 +32,12 @@ export async function recoverSourceMutation():Promise<boolean>{
  await restore(before);await db.delete('snapshots','pending');return true;
 }
 let queued:Promise<unknown>=Promise.resolve();
-function mutate<T>(operation:()=>Promise<T>):Promise<T>{
+function mutate<T>(operation:()=>Promise<T>,warnOtherTabs=false):Promise<T>{
  const run=queued.catch(()=>{}).then(async()=>{
   await recoverSourceMutation();
   const db=await journal();const before=await capture();
   await db.put('snapshots',before,'pending');
-  try{const value=await operation();await db.delete('snapshots','pending');notifyWorkspaceChange('sources-changed');return value}
+  try{const value=await operation();await db.delete('snapshots','pending');if(warnOtherTabs)notifyWorkspaceChange('sources-changed');return value}
   catch(e){try{await restore(before);await db.delete('snapshots','pending')}catch{throw new Error('SOURCE_MUTATION_ROLLBACK_FAILED')}throw e}
  });
  queued=run;return run;
@@ -57,7 +57,7 @@ export async function deleteImportedSources(ids:string[]):Promise<AnalysisProjec
   const canonical=await loadCanonical();await saveCanonical({...canonical,records:canonical.records.filter(r=>!r.source||!ids.includes(r.source.datasetId))});
   await saveProject(next);
   return next;
- });
+ },true);
 }
 export async function replaceImportedSource(id:string,build:(before:SemanticDataset)=>SemanticDataset,source:Omit<DatasetSummary,'id'>,canonicalResult?:{result:ImportResult;includeMatrix:boolean}|{table:TableResult;resolutions:Resolution}):Promise<AnalysisProject>{
  return mutate(async()=>{
@@ -72,7 +72,7 @@ export async function replaceImportedSource(id:string,build:(before:SemanticData
   await saveCanonical(replaceCanonicalSource(canonical,canonicalResult?('table' in canonicalResult?canonicalFromTable(canonicalResult.table,id,canonicalResult.resolutions):canonicalFromBudget(canonicalResult.result,id,canonicalResult.includeMatrix)):[],id));
   await saveProject(next);
   return next;
- });
+ },true);
 }
 
 /** Commit a validated UO budget into both storage versions within one recovery journal. */
