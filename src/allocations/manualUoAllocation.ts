@@ -5,7 +5,7 @@ export type ManualUoSplit={uoId:string;year:number;metric:Metric;developmentPerc
 export const manualSplitKey=(s:Pick<ManualUoSplit,'uoId'|'year'|'metric'>)=>JSON.stringify([s.uoId,s.year,s.metric]);
 /** Fingerprints source observations so a replacement import invalidates stale manual decisions. */
 export function manualUoFingerprint(data:CanonicalDataset,uoId:string,year:number,metric:Metric):string{
- return JSON.stringify(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId&&r.year===year&&r.metric===metric&&r.authority==='original')
+ return JSON.stringify(data.records.filter(r=>r.scope.axis==='work'&&r.scope.uoId===uoId&&r.year===year&&(r.metric===metric||metric==='other_cost'&&r.metric==='consultant_cost')&&r.authority==='original')
   .map(r=>[r.id,r.value,r.activity,r.workPart,r.granularity,r.month,r.source?.datasetId,r.source?.cell]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));
 }
 export function saveManualUoSplit(data:CanonicalDataset,existing:readonly ManualUoSplit[],input:Pick<ManualUoSplit,'uoId'|'year'|'metric'|'developmentPercent'>):ManualUoSplit[]{
