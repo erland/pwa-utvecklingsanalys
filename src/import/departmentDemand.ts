@@ -16,7 +16,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
  const years=new Map<number,number>(),issues:DepartmentDemandIssue[]=[],facts:DepartmentDemand[]=[];
  for(let col=3;col<=sheet.columnCount;col++){
   const raw=sheet.getRow(4).getCell(col).value;
-  const year=typeof raw==='number'?raw:typeof raw==='string'?Number(raw.trim()):NaN;
+  const year=typeof raw==='number'?raw:typeof raw==='string'?Number(/^(?:Timmar\\s+)?(20\\d{2})$/i.exec(raw.trim())?.[1]??NaN):NaN;
   if(Number.isInteger(year)&&year>=2000&&year<=2100){
    if(years.has(year))issues.push({code:'DUPLICATE_YEAR',message:'Duplicerat år i avdelningsbladet',cell:sheet.getRow(4).getCell(col).address});
    else years.set(year,col);
