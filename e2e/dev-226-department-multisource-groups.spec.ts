@@ -1,4 +1,5 @@
-import {test,expect} from '@playwright/test';
+import {test,expect as baseExpect} from '@playwright/test';
+const expect=baseExpect.configure({timeout:4000});
 import ExcelJS from 'exceljs';
 
 async function file(uo:string,code:string,hours:number){
@@ -12,6 +13,8 @@ async function file(uo:string,code:string,hours:number){
 }
 
 test('multiple UO sources preserve distinct scopes and reciprocal drilldown without double count',async({page})=>{
+ page.setDefaultTimeout(4000);
+ page.setDefaultNavigationTimeout(4000);
 
  await page.goto('./');await page.evaluate(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
