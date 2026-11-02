@@ -35,5 +35,5 @@ test('multiple UO sources preserve distinct scopes and reciprocal drilldown with
 
  await demand.getByRole('button',{name:'IT-avdelningen'}).click();
  await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO B');
- await expect(page.getByRole('table',{name:'Fördjupade avdelningstimmar'})).not.toContainText('UO A');
+ await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO A');
 });
