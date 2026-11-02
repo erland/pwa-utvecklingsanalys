@@ -13,11 +13,11 @@ export default function ComparisonResults({rows,unit,title,totalLabel,onOpen}:{r
  const format=(n:number|null)=>n===null?'Ej beräkningsbar':n.toLocaleString('sv-SE',{maximumFractionDigits:2})+' '+unit;
  return <section aria-label={title}>
   <h3>{title}</h3>
-  {pieEligible?<div className="pie-layout" role="group" aria-label={'Cirkeldiagram: '+title}><div className="pie-chart" role="img" aria-label={'Andelar av totalt '+format(total)} style={{background:'conic-gradient('+pieGradient+')'}}/><ul className="pie-legend">{pieRows.map(({row,color,percent})=><li key={row.key}><span className="pie-swatch" style={{backgroundColor:color}} aria-hidden="true"/><span>{clickableLabel(row)}: {format(row.value)} ({percent.toLocaleString('sv-SE',{maximumFractionDigits:1})} %)</span></li>)}</ul></div>:<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
+  {pieEligible?<div className="pie-layout" role="group" aria-label={'Cirkeldiagram: '+title}><div className="pie-chart" role="img" aria-label={'Andelar av totalt '+format(total)} style={{background:'conic-gradient('+pieGradient+')'}}/><ul className="pie-legend">{pieRows.map(({row,color,percent})=><li key={row.key}><span className="pie-swatch" style={{backgroundColor:color}} aria-hidden="true"/><span>{clickableLabel(row)}: {format(row.value)} ({percent.toLocaleString('sv-SE',{maximumFractionDigits:1})} %)</span></li>)}</ul></div>:null}<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}>
    <thead><tr><th>Delområde</th><th>Värde</th><th>Andel</th></tr></thead>
    <tbody>{rows.map(row=><tr key={row.key}><th scope="row">{clickableLabel(row)}</th><td>{format(row.value)}</td><td>{total!==null&&total>0&&row.value!==null?(100*row.value/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td></tr>)}</tbody>
    <tfoot><tr><th scope="row">{totalLabel}</th><td>{format(total)}</td><td>{total!==null&&total>0?'100 %':'–'}</td></tr></tfoot>
-  </table></div>}
+  </table></div>
   {!rows.length&&<p>Inga delområden att visa för aktuellt urval.</p>}
  </section>;
 }
