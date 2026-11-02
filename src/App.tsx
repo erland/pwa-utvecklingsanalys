@@ -1,3 +1,4 @@
+import {onWorkspaceChange} from './storage/workspaceEvents';
 import {recoverSourceMutation} from './import/sourceManagement';
 import {recoverInterruptedRestore} from './portability/store';
 import ResetWorkspace from './reset/ResetWorkspace';
@@ -31,6 +32,8 @@ export default function App(){
  const[replaceSourceId,setReplaceSourceId]=useState<string|null>(null);
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
  const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'',items:['overview','import','allocations','analysis','settings'] as ViewId[]}];
+ const [otherTabChanged,setOtherTabChanged]=useState(false);
+ useEffect(()=>onWorkspaceChange(()=>{setOtherTabChanged(true);void loadProject().then(p=>{setProject(p);setAnalysisRefresh(v=>v+1)}).catch(()=>setStorageError('Projektet ändrades i annan flik. Ladda om sidan.'))}),[]);
  const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
  const[overview,setOverview]=useState<OverviewStatus|null>(null);const[overviewError,setOverviewError]=useState('');
  useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>recoverSourceMutation()).then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
@@ -49,6 +52,7 @@ export default function App(){
  const updateName=async(name:string)=>{if(!project)return;const p={...project,name};setProject(p);try{await saveProject(p);setStorageError('')}catch{setStorageError('Kunde inte spara projektet lokalt.')}};
  return <div className="shell"><a className="skip-link" href="#main-content">Hoppa till innehållet</a><aside className="sidebar"><div className="brand"><span className="brandmark"><BarChart3 size={24}/></span><div><strong>Utvecklingsanalys</strong><small>Analysarbetsyta</small></div></div><nav aria-label="Huvudmeny">{navigationGroups.map(group=><div className="nav-group" key={group.label}>{group.label&&<span className="nav-group-title">{group.label}</span>}{group.items.map(id=>{const n=nav.find(item=>item.id===id)!;return <button key={n.id} type="button" aria-current={view===n.id?'page':undefined} className={view===n.id?'nav-link active':'nav-link'} aria-disabled={n.id==='analysis'&&!analysisAvailable?'true':undefined} title={n.id==='analysis'&&!analysisAvailable?'Importera analysuppgifter för att aktivera Analys':undefined} onClick={()=>n.id==='analysis'?(analysisAvailable?void openAnalysis():undefined):setView(n.id)}><n.icon size={19} aria-hidden="true"/>{n.label}</button>})}</div>)}</nav><div className="sidebar-foot"><ShieldCheck size={16}/>Lokal data · ingen server</div></aside>
  <div className="content"><header className="topbar"><div><strong>{project?.name??'Mitt analysprojekt'}</strong><small>Projektbackup · DEV-011</small></div><span className="pill">Lokal analys</span></header><main id="main-content">
+ {otherTabChanged&&<div role="alert" className="alert"><strong>Arbetsytan har ändrats i en annan flik.</strong> Ladda om innan du fortsätter för att undvika att skriva tillbaka gamla data. <button type="button" className="primary" onClick={()=>window.location.reload()}>Ladda om nu</button></div>}
  {storageError&&<div role="alert" className="alert">{storageError}</div>}
  {view==='overview'&&<><div className="eyebrow">ÖVERSIKT</div><h1>Överblick över verksamhetsutvecklingen</h1><p className="lead">Samla Excelunderlag från olika källor, justera fördelningar och analysera utvecklingens inriktning. Alla värden hämtas från ditt lokala projekt.</p>
  {overviewError&&<p role="alert">{overviewError}</p>}
@@ -68,5 +72,6 @@ export default function App(){
  <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)} embedded/></section>
  <section aria-label="Administrera fördelningstyper" style={{marginTop:24}}><OptionalAllocationsView/></section>
  <section className="panel" aria-label="Backup och återställning" style={{marginTop:24}}><h2>Backup och återställning</h2><p>Exportera projektdata eller återställ en säkerhetskopia. Återställning av arbetsytan finns längst ner och bör användas med försiktighet.</p><PortabilityView/><ResetWorkspace/></section></>}
+
  </main><footer>Utvecklingsanalys · Lokal analysarbetsyta</footer></div></div>
 }

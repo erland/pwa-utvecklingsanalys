@@ -6,10 +6,10 @@ import {uoAllocationEligibility} from './uoAllocationEligibility';
 import {activeManualUoSplits,manualSplitKey,saveManualUoSplit} from './manualUoAllocation';
 const display=(s:string)=>{try{return decodeURIComponent(s.split(':').at(-1)??s)}catch{return s}};
 const metricNames:Partial<Record<Metric,string>>={it_hours:'IT-timmar',business_hours:'Verksamhetstimmar',other_cost:'Övriga kostnader'};
-export default function ManualUoEditor({data,gaps,onSaved,year,kind}:{data:CanonicalDataset;gaps:GapState;onSaved:(next:GapState)=>void;year:number;kind:'activity'|'activity-cost'}){
+export default function ManualUoEditor({data,gaps,onSaved,year,kind,uoId}:{data:CanonicalDataset;gaps:GapState;onSaved:(next:GapState)=>void;year:number;kind:'activity'|'activity-cost';uoId?:string}){
  const [values,setValues]=useState<Record<string,string>>({});
  const [error,setError]=useState(''),[busy,setBusy]=useState(false);
- const eligible=uoAllocationEligibility(data).filter(r=>(year===0||r.year===year)&&(kind==='activity-cost'?r.metric==='other_cost':r.metric==='it_hours'||r.metric==='business_hours'));
+ const eligible=uoAllocationEligibility(data).filter(r=>(!uoId||r.uoId===uoId)&&(year===0||r.year===year)&&(kind==='activity-cost'?r.metric==='other_cost':r.metric==='it_hours'||r.metric==='business_hours'));
  const active=activeManualUoSplits(data,gaps.manualUoSplits??[]);
  const save=async(row:typeof eligible[number])=>{
   const key=manualSplitKey(row),value=Number(values[key]??active.find(d=>manualSplitKey(d)===key)?.developmentPercent??50);

@@ -15,8 +15,8 @@ export default function ResetWorkspace(){
  };
  const reset=async()=>{
   if(confirmation!=='ÅTERSTÄLL'||busy)return;
-  setBusy(true);setMessage('');
-  try{await resetLocalWorkspace(scope);window.location.reload()}
+  setBusy(true);setMessage('Återställning pågår. Lokala databaser rensas en i taget …');
+  try{await resetLocalWorkspace(scope,setMessage);window.location.reload()}
   catch(e){setMessage('Återställningen kunde inte slutföras. Vissa lokala delar kan ha rensats. Ladda INTE in nya data förrän du kontrollerat läget eller återställt en säkerhetskopia. '+String(e));setBusy(false)}
  };
  return <section className="panel reset-workspace" aria-label="Återställ arbetsyta"><h2>Återställ lokal arbetsyta</h2>
@@ -29,6 +29,7 @@ export default function ResetWorkspace(){
  <button className="secondary" disabled={busy} onClick={()=>{void backup()}}>Ladda ner säkerhetskopia innan återställning</button>
  <label>Bekräfta med ÅTERSTÄLL<input aria-label="Bekräfta återställning" autoComplete="off" value={confirmation} onChange={e=>setConfirmation(e.target.value)}/></label>
  <button className="primary" disabled={busy||confirmation!=='ÅTERSTÄLL'} onClick={()=>{void reset()}}>Genomför vald återställning</button>
- {message&&<p role="status">{message}</p>}
+ {busy&&<p role="status" aria-live="polite">{message||'Arbetar med lokal lagring …'}</p>}
+ {!busy&&message&&<p role="alert">{message}</p>}
  </section>;
 }
