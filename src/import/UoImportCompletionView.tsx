@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,saveGapState} from '../gaps/store';
-import type {CanonicalDataset,Metric} from '../domain/canonical';
+import type {CanonicalDataset} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {uoAllocationEligibility} from '../allocations/uoAllocationEligibility';
 import {activeUoImportCompletions,completionKey,saveUoImportCompletion} from './uoImportCompletions';
