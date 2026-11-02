@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import ManualUoEditor from './ManualUoEditor';
 import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
@@ -180,6 +181,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     {total>0?<DistributionIndicator first={totals.first} second={totals.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>:<p>Inga fullständiga importerade uppgifter för perioden.</p>}
     <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':kind==='activity-cost'?'Importerad kostnadsmatris · LO kan justeras om det inte är importerat':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
+      {kind!=='metric'&&<ManualUoEditor data={data} gaps={gaps} onSaved={onSaved} year={year} kind={kind}/> }
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}

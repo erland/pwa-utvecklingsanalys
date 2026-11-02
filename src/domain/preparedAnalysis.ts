@@ -1,6 +1,10 @@
 import {approvedActivityParts,previewActivityAllocation,type ActivityAllocationRule} from './activityAllocation';
 import type {AnalysisRecord,CanonicalDataset} from './canonical';
 import type {GapState} from '../gaps/store';
+import {activeManualUoSplits} from '../allocations/manualUoAllocation';
+import {importedLoActivityLocks} from './importedLoLocks';
+import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
+import type {AllocationPreview} from './activityAllocation';
 
 /** Import/completion boundary. Resolve approved activity parts once before any analysis query.
  * Original imports and approvals are never overwritten.
@@ -65,6 +69,44 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
     }
    }
   }else calculated.push(...parts);
+ }
+ // Manual UO percentages are decisions, not synthetic imported matrix values.
+ // Materialize balanced, derived LO parts only when the source is still unchanged.
+ for(const split of activeManualUoSplits(original,state.manualUoSplits??[])){
+  // Cost decisions use one UO percentage across both cost metrics, but split each metric's LO totals separately.
+  const splitMetrics=split.metric==='other_cost'?(['other_cost','consultant_cost'] as const):[split.metric];
+  const sources=[...new Set(original.records.filter(r=>r.authority==='original'&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===split.metric&&r.granularity==='total').map(r=>r.source?.datasetId).filter((x):x is string=>Boolean(x)))];
+  for(const datasetId of sources){
+   for(const metric of splitMetrics){
+   const scope={datasetId,uoId:split.uoId,year:split.year,metric};
+   const {locks,incompleteLoIds}=importedLoActivityLocks(original,scope);
+   if(incompleteLoIds.length){staleApprovals++;continue}
+   const originals=original.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===datasetId&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===metric&&r.granularity==='total'&&(r.scope.loId||r.workPart==='uo-overhead'));
+   const groups=new Map<string,AnalysisRecord[]>();
+   for(const r of originals){const id=r.scope.axis==='work'?(r.scope.loId??'uo-overhead:'+split.uoId):'';groups.set(id,[...(groups.get(id)??[]),r])}
+   const items=[...groups].map(([loId,rows])=>{
+    const annual=rows.filter(r=>r.month===undefined);
+    const chosen=annual.length?annual:rows;
+    if(annual.length>1||(!annual.length&&new Set(chosen.map(r=>r.month)).size!==chosen.length))throw new Error('AMBIGUOUS_MANUAL_LO_TOTAL');
+    return {loId,total:chosen.reduce((n,r)=>n+r.value,0),workloadId:chosen[0].workloadId,development:0,maintenance:0};
+   });
+   if(!items.length)continue;
+   const total=items.reduce((n,i)=>n+i.total,0),development=total*split.developmentPercent/100;
+   const preview:AllocationPreview={ruleId:'manual:'+datasetId+':'+split.year+':'+metric,fingerprint:split.sourceFingerprint,items,uo:{development,maintenance:total-development},lockedLo:locks};
+   let balanced:AllocationPreview;
+   try{balanced=rebalanceUoBudgetAllocation(preview,[],locks)}catch{staleApprovals++;continue}
+   for(const item of balanced.items){
+    if(locks.some(l=>l.loId===item.loId))continue;
+    for(const activity of ['development','maintenance'] as const)calculated.push({
+     id:['manual-uo',datasetId,split.uoId,split.year,metric,item.loId,activity].join('|'),
+     metric,year:split.year,value:item[activity],activity,
+     scope:item.loId.startsWith('uo-overhead:')?{axis:'work',uoId:split.uoId}:{axis:'work',uoId:split.uoId,loId:item.loId},
+     ...(item.loId.startsWith('uo-overhead:')?{workPart:'uo-overhead' as const}:{}),
+     authority:'derived',approval:'approved',granularity:'activity-part',workloadId:item.workloadId
+    });
+   }
+   }
+  }
  }
  // The UO summary matrix is never volume. Older source records can omit workPart.
  const isMatrix=(r:AnalysisRecord)=>r.scope.axis==='work'&&!r.scope.loId&&r.granularity==='activity-part'&&(r.workPart==='uo-activity-matrix'||r.authority==='original');
