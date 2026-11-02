@@ -25,7 +25,7 @@ export default function OrganizationYearLines({matrix}:{matrix:GroupYearMatrix|n
  };
  return <section aria-label="Årsvis utveckling per organisationsdel">
   <h3>Utveckling per organisationsdel</h3>
-  <p>En linje per organisationsdel på vald nivå. Saknade år visas som avbrott, inte som noll. Tabellen med samma värden finns under Visa detaljerad organisation per år.</p>
+  <p>En linje per organisationsdel på vald nivå. Saknade år visas som avbrott, inte som noll. Tabellen nedan visar samma värden och årsindelning.</p>
   <svg className="annual-line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Linjediagram för utveckling per organisationsdel">
    <line x1={left} y1={height-bottom} x2={width-right} y2={height-bottom} stroke="#8295a2"/>
    <line x1={left} y1={top} x2={left} y2={height-bottom} stroke="#8295a2"/>
