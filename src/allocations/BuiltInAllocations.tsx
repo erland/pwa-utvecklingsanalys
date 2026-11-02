@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {withCompletedUoMatrices} from '../import/uoImportCompletions';
 import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
 import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
@@ -75,7 +76,8 @@ export function approvedLoRows(data:CanonicalDataset,gaps:GapState,year:number):
  }
  return rows.sort((a,b)=>a.year-b.year||name(a.uoId).localeCompare(name(b.uoId),'sv')||name(a.loId).localeCompare(name(b.loId),'sv')||a.metric.localeCompare(b.metric));
 }
-export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:CanonicalDataset;years:number[];gaps:GapState;onSaved:(next:GapState)=>void}){
+export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:{data:CanonicalDataset;years:number[];gaps:GapState;onSaved:(next:GapState)=>void}){
+ const data=withCompletedUoMatrices(sourceData,gaps.uoImportCompletions??[]);
  const [selected,setSelected]=useState<Kind|null>(null);
  const [year,setYear]=useState(0);
  const [selectedUo,setSelectedUo]=useState<string|null>(null);
@@ -171,9 +173,7 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  ];
  return <section aria-label="Inbyggda fördelningstyper">
   {kinds.map(([kind,title,first,second])=>{
-   const importedRows=builtInRows(data,kind,year);
-   const candidateIds=kind==='metric'?[]:[...new Set(data.records.filter(r=>r.authority==='original'&&r.scope.axis==='work'&&(year===0||r.year===year)&&(kind==='activity-cost'?r.metric==='other_cost':r.metric==='it_hours'||r.metric==='business_hours')).map(r=>r.scope.axis==='work'?r.scope.uoId:''))];
-   const rows=[...importedRows,...candidateIds.filter(id=>!importedRows.some(r=>r.key===id)).map(id=>({key:id,title:name(id),values:{first:0,second:0},status:'Komplettera UO-fördelning'}))].sort((a,b)=>a.title.localeCompare(b.title,'sv'));
+   const rows=builtInRows(data,kind,year);
    const totals=rows.reduce((v,r)=>({first:v.first+r.values.first,second:v.second+r.values.second}),{first:0,second:0});
    const total=totals.first+totals.second;
    return <div key={kind} className="panel" style={{width:'100%',minWidth:0}}>
