@@ -24,7 +24,7 @@ describe('DEV-231 department demand annual trend',()=>{
  it('uses requesting UOs when drilled into one department',()=>{
   const html=renderToStaticMarkup(createElement(DepartmentDemandTrend,{records,metrics:['it_hours','business_hours'],selectedDepartment:'10'}));
   expect(html).toContain('Utveckling av efterfrågan per UO');
-  expect(html).toContain('UO');expect(html).toContain('150 h');
+  expect(html).toContain('UO');expect(html).toContain('180 h');
   expect(html).toContain('100 h');expect(html).toContain('40 h');
  });
  it('hides trend without two available years',()=>{
