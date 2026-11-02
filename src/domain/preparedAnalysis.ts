@@ -2,7 +2,7 @@ import {approvedActivityParts,previewActivityAllocation,type ActivityAllocationR
 import type {AnalysisRecord,CanonicalDataset} from './canonical';
 import type {GapState} from '../gaps/store';
 import {activeManualUoSplits,manualSplitKey} from '../allocations/manualUoAllocation';
-import {activeUoImportCompletions} from '../import/uoImportCompletions';
+import {activeUoImportCompletions,withCompletedUoMatrices} from '../import/uoImportCompletions';
 import {importedLoActivityLocks} from './importedLoLocks';
 import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
 import type {AllocationPreview} from './activityAllocation';
@@ -14,7 +14,7 @@ export type PreparedDataset=CanonicalDataset & {preparedAnalysis:{staleApprovals
 export type PreparedAnalysis={dataset:PreparedDataset;staleApprovals:number;excludedMatrix:number};
 export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):PreparedAnalysis{
  const approvalSource=(source as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
- const original:CanonicalDataset=approvalSource?{...source,records:approvalSource}:source;
+ const original:CanonicalDataset=withCompletedUoMatrices(approvalSource?{...source,records:approvalSource}:source,state.uoImportCompletions??[]);
  const calculated:AnalysisRecord[]=[];
  let staleApprovals=0;
  // Imported UO matrix values drive automatic LO splits even before the user edits anything.
@@ -75,7 +75,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
  // Materialize balanced, derived LO parts only when the source is still unchanged.
  const completions=activeUoImportCompletions(original,state.uoImportCompletions??[]);
  const completedKeys=new Set(completions.map(manualSplitKey));
- const effectiveSplits=[...activeManualUoSplits(original,state.manualUoSplits??[]).filter(r=>!completedKeys.has(manualSplitKey(r))),...completions.map(c=>({uoId:c.uoId,year:c.year,metric:c.metric,sourceFingerprint:c.sourceFingerprint,developmentPercent:100*c.development/(c.development+c.maintenance)}))];
+ const effectiveSplits=activeManualUoSplits(approvalSource?{...source,records:approvalSource}:source,state.manualUoSplits??[]).filter(r=>!completedKeys.has(manualSplitKey(r)));
  for(const split of effectiveSplits){
   // Cost decisions use one UO percentage across both cost metrics, but split each metric's LO totals separately.
   const splitMetrics=split.metric==='other_cost'?(['other_cost','consultant_cost'] as const):[split.metric];
