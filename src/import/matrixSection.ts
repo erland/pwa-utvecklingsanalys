@@ -24,8 +24,8 @@ export function numericMatrixCell(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen
  if(typeof v==='number')return Number.isFinite(v)?v:null;
  if(!v||typeof v!=='object'||!('formula'in v)||seen.has(cell.address)||seen.size>=12)return null;
  const formula=String(v.formula??'').trim().replace(/^=/,'');
- const tokens=formula.match(/(?:\\$?[A-Z]{1,3}\\$?[1-9]\\d*|\\d+(?:[.,]\\d+)?|[+-])/gi);
- if(!tokens||tokens.join('')!==formula.replace(/\\s+/g,'')||tokens.length>20)return null;
+ const tokens=formula.match(/(?:\$?[A-Z]{1,3}\$?[1-9]\d*|\d+(?:[.,]\d+)?|[+-])/gi);
+ if(!tokens||tokens.join('')!==formula.replace(/\s+/g,'')||tokens.length>20)return null;
  seen.add(cell.address);
  let total=0,sign=1,expectValue=true;
  for(const token of tokens){
@@ -34,7 +34,7 @@ export function numericMatrixCell(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen
    sign=token==='+'?1:-1;expectValue=true;continue;
   }
   if(!expectValue)return null;
-  const number=/^\\d/.test(token)?Number(token.replace(',','.')):numericMatrixCell(sheet,sheet.getCell(token.replace(/\\$/g,'').toUpperCase()),new Set(seen));
+  const number=/^\d/.test(token)?Number(token.replace(',','.')):numericMatrixCell(sheet,sheet.getCell(token.replace(/\$/g,'').toUpperCase()),new Set(seen));
   if(number===null||!Number.isFinite(number))return null;
   total+=sign*number;sign=1;expectValue=false;
  }
