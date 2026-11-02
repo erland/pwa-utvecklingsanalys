@@ -77,7 +77,7 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
        </div>
       </div>;
      })}
-     <button className="primary" type="button" disabled={busy||!ready} onClick={()=>void saveUo(uoId,rows)}>Spara alla kompletteringar för {label(uoId)}</button>
+     <button className="primary" type="button" disabled={busy||!ready} onClick={()=>void saveUo(uoId,rows)}>Spara UO-värden för {label(uoId)}</button>
     </>}
    </section>;
   })}
