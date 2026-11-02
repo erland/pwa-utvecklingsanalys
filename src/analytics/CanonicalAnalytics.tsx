@@ -1,3 +1,6 @@
+import DepartmentDemandAnalysis from './DepartmentDemandAnalysis';
+import {loadSemantic} from '../domain/semanticStore';
+import type {DepartmentDemandObservation} from '../domain/semantic';
 import {useEffect,useMemo,useState} from 'react';
 import UoAnalysisNavigator from './UoAnalysisNavigator';
 import OptionalAllocationAnalysis from '../allocations/OptionalAllocationAnalysis';
@@ -17,6 +20,8 @@ import OrganizationYearLines from './OrganizationYearLines';
 import {canonicalCsv} from './canonicalCsv';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpenCompletions:()=>void}){
+ const [departmentDemand,setDepartmentDemand]=useState<DepartmentDemandObservation[]>([]);
+ useEffect(()=>{let active=true;void loadSemantic().then(d=>{if(active)setDepartmentDemand(d.departmentDemand??[])}).catch(()=>{if(active)setDepartmentDemand([])});return()=>{active=false}},[refreshKey]);
  const [data,setData]=useState<CanonicalDataset|null>(null),[state,setState]=useState<GapState>({requirements:[],resolutions:[]}),[error,setError]=useState('');
  const [axis,setAxis]=useState<ReportingAxis>('work'),[unit,setUnit]=useState<'hours'|'costs'>('hours'),[selectedActivities,setSelectedActivities]=useState<Array<'development'|'maintenance'>>(['development','maintenance']),[year,setYear]=useState('all'),[selected,setSelected]=useState<Metric[]>(['it_hours','business_hours','consultant_cost','other_cost']);
  useEffect(()=>{let alive=true;void Promise.all([loadCanonical(),loadGapState()]).then(([d,s])=>{if(alive){setData(d);setState(s);setError('')}}).catch(e=>{if(alive)setError(String(e))});return()=>{alive=false}},[refreshKey]);
@@ -62,7 +67,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  
  {axis==='work'&&activeGroupModelId&&<p className="notice">Varje UO tilldelas första matchande grupp i vald modell. UO utan grupp visas som Ej grupperad. Årssummor och jämförelser räknas fortfarande från källuppgifter.</p>}
  </div></section>
- {!data?<p>Hämtar analysdata…</p>:!data.records.length?<p>Inga data i analysmodellen. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><section className="analysis-summary" aria-label="Sammanfattning av analys"><h3>2. Sammanfattning</h3><p>Resultatet gäller valt urval och uppdateras när filtren ändras.</p><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong><small>{result.includedRecords} bidragande källposter i aktuellt urval</small></div></div><div className="actions"><button type="button" className="secondary" onClick={()=>{if(!result)return;const blob=new Blob([canonicalCsv(result,trend)],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='analys.csv';link.click();URL.revokeObjectURL(url)}}>Exportera analys som CSV</button></div>
+ {axis==='department'&&unit==='hours'?<DepartmentDemandAnalysis records={departmentDemand} year={year==='all'?undefined:Number(year)} metrics={choices.filter((m):m is 'it_hours'|'business_hours'=>m==='it_hours'||m==='business_hours')}/>:!data?<p>Hämtar analysdata…</p>:!data.records.length?<p>Inga data i analysmodellen. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><section className="analysis-summary" aria-label="Sammanfattning av analys"><h3>2. Sammanfattning</h3><p>Resultatet gäller valt urval och uppdateras när filtren ändras.</p><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong><small>{result.includedRecords} bidragande källposter i aktuellt urval</small></div></div><div className="actions"><button type="button" className="secondary" onClick={()=>{if(!result)return;const blob=new Blob([canonicalCsv(result,trend)],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='analys.csv';link.click();URL.revokeObjectURL(url)}}>Exportera analys som CSV</button></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} sparade LO-justeringar är inaktuella efter ändrat källunderlag. Kontrollera dem under Fördelningar.</p>}
  </section>
