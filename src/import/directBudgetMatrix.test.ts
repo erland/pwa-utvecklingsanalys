@@ -45,8 +45,11 @@ describe('fixed UO matrix through direct import',()=>{
   expect(replaceSource).toHaveBeenCalledOnce();
   expect(replaceSource.mock.calls[0][3]).toEqual(expect.objectContaining({includeMatrix:true}));
  });
- it('rejects unknown matrix headers rather than silently dropping entered values',async()=>{
+ it('imports valid LO rows while identifying an unknown matrix header by cell',async()=>{
   const input=await file(0.025,'Okänt 27');
-  await expect(prepareDirectImport(input)).rejects.toThrow('Aktivitetsmatrisen');
+  const prepared=await prepareDirectImport(input);
+  expect(prepared.result.facts.some(f=>f.value===42)).toBe(true);
+  expect(prepared.result.matrix?.issues.some(i=>i.cell==='D5')).toBe(true);
+  expect(prepared.result.matrix?.facts).toEqual([]);
  });
 });

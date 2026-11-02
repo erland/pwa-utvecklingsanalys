@@ -5,7 +5,8 @@ test('approve LO allocation and compare with source without double counting',asy
  s.getCell('B1').value='UO: UO A';s.getCell('D11').value=new Date(2027,0,1);
  s.getCell('B25').value='LO AUL';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=20;
  s.getCell('B31').value='LO IA';s.getCell('C32').value='IT timmar (h)';s.getCell('D32').value=30;
- s.getCell('D4').value='Utv. 27';s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=1;
+ s.getCell('D4').value='Utv. 27';s.getCell('E4').value='Förv. 27';
+ s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=1;s.getCell('E5').value=0;
  const bytes=Buffer.from(await book.xlsx.writeBuffer());
  await page.goto('./');await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'allocation.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:bytes});

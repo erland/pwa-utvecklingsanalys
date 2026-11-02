@@ -19,7 +19,7 @@ export async function prepareDirectImport(file:File):Promise<{result:ImportResul
  if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
  if(!result.uo.trim())throw new Error('UO-namn saknas i filen.');
  if(!result.facts.length)throw new Error('Inga importbara detaljvärden hittades.');
- if(result.matrix?.issues.length)throw new Error('Aktivitetsmatrisen innehåller ogiltiga värden: '+result.matrix.issues.slice(0,3).map(issue=>issue.cell+' '+issue.message).join('; '));
+ // Partial UO activity matrices do not block importing valid LO rows.\n // The matrix warning keeps the exact cell address for user correction.
  return {result,formatLabel:format.label};
 }
 
@@ -50,7 +50,7 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
      await replaceImportedSource(replaceId,before=>importBudgetFacts(before,result,replaceId,file.name,includeMatrix),{name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},{result,includeMatrix});
     }else await approveBudgetSource(result,crypto.randomUUID(),file.name,includeMatrix);
     await onCommitted?.();
-    results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:'Importerad'});
+    results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:result.matrix?.issues.length?'Importerad med varningar i UO-fördelning: '+result.matrix.issues.slice(0,5).map(i=>i.cell+' '+i.message).join('; '):'Importerad'});
    }
   }catch(error){
    results.push({fileName:file.name,status:'rejected',message:error instanceof Error?error.message:'Okänt importfel'});
