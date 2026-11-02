@@ -7,7 +7,8 @@ export interface Measure {id:string;label:string;unit:Unit;aggregation:Aggregati
 export interface SourceRef {datasetId:string;fileName:string;sheet:string;cell:string}
 export interface Observation {id:string;entityId:string;measureId:string;value:number;period:{year:number;month?:number};planningVersion:string;scenario:string;source:SourceRef;kind:'detail'|'subtotal'|'subset';sectionId?:string;activity?:string;quality:'reported'|'estimated';}
 export interface Relation {id:string;type:'contains'|'performs'|'supports'|'enables';fromId:string;toId:string;validFrom:string;validTo?:string;source?:SourceRef}
-export interface SemanticDataset {schemaVersion:1;entities:Entity[];measures:Measure[];observations:Observation[];relations:Relation[]}
+export interface DepartmentDemandObservation {id:string;uoId:string;departmentCodeRaw:string;departmentCode:string;departmentName:string;year:number;metric:'it_hours'|'business_hours';hours:number;anchoringStatus:string;comments:string[];source:SourceRef}
+export interface SemanticDataset {schemaVersion:1;entities:Entity[];measures:Measure[];observations:Observation[];relations:Relation[];departmentDemand?:DepartmentDemandObservation[]}
 export const DEFAULT_MEASURES:Measure[]=[
  {id:'it_hours',label:'IT-timmar',unit:'h',aggregation:'sum',description:'Tid nedlagd eller planerad för IT'},
  {id:'business_hours',label:'Verksamhetstimmar',unit:'h',aggregation:'sum',description:'Verksamhetstid'},
@@ -16,7 +17,7 @@ export const DEFAULT_MEASURES:Measure[]=[
  {id:'headcount',label:'Antal anställda',unit:'people',aggregation:'snapshot',description:'Antal personer vid en given tidpunkt'},
  {id:'fte',label:'Årsarbetskrafter',unit:'FTE',aggregation:'snapshot',description:'Heltidsekvivalenter'}
 ];
-export function emptySemantic():SemanticDataset{return {schemaVersion:1,entities:[],measures:DEFAULT_MEASURES.map(m=>({...m})),observations:[],relations:[]}}
+export function emptySemantic():SemanticDataset{return {schemaVersion:1,entities:[],measures:DEFAULT_MEASURES.map(m=>({...m})),observations:[],relations:[],departmentDemand:[]}}
 export function normalizedName(s:string){return s.trim().normalize('NFKC').toLocaleLowerCase('sv-SE').replace(/\s+/g,' ')}
 export type MatchResult={status:'exact'|'alias'|'ambiguous'|'missing';candidates:Entity[]};
 /** Never auto-resolve ambiguity; separate kind prevents collisions across domains. */
@@ -41,12 +42,18 @@ export function validateSemantic(data:SemanticDataset):string[]{
   if(o.period.month!==undefined&&(o.period.month<1||o.period.month>12))issues.push('INVALID_MONTH');
   if(!o.source.datasetId||!o.source.fileName||!o.source.sheet||!o.source.cell)issues.push('MISSING_SOURCE');
  }
+ const departmentIds=new Set<string>();
+ for(const d of data.departmentDemand??[]){
+  if(!d.id||departmentIds.has(d.id))issues.push('DUPLICATE_DEPARTMENT_DEMAND');departmentIds.add(d.id);
+  if(!d.uoId?.trim()||!d.departmentName?.trim()||!Number.isInteger(d.year)||d.year<2000||d.year>2100||!['it_hours','business_hours'].includes(d.metric)||!Number.isFinite(d.hours)||d.hours<0)issues.push('INVALID_DEPARTMENT_DEMAND');
+  if(!d.source?.datasetId||!d.source.fileName||!d.source.sheet||!d.source.cell||!Array.isArray(d.comments))issues.push('INVALID_DEPARTMENT_SOURCE');
+ }
  for(const r of data.relations){if(!entities.has(r.fromId)||!entities.has(r.toId))issues.push('UNKNOWN_RELATION_ENDPOINT');if(r.validTo&&r.validTo<r.validFrom)issues.push('INVALID_RELATION_PERIOD')}
  return [...new Set(issues)];
 }
 export function migrateSemantic(input:unknown):SemanticDataset{
  if(!input||typeof input!=='object'||!('schemaVersion'in input)||input.schemaVersion!==1)throw new Error('Unsupported semantic schema version');
  const v=input as SemanticDataset;
- if(!Array.isArray(v.entities)||!Array.isArray(v.measures)||!Array.isArray(v.observations)||!Array.isArray(v.relations))throw new Error('Invalid semantic dataset');
+ if(!Array.isArray(v.entities)||!Array.isArray(v.measures)||!Array.isArray(v.observations)||!Array.isArray(v.relations)||(v.departmentDemand!==undefined&&!Array.isArray(v.departmentDemand)))throw new Error('Invalid semantic dataset');
  const errors=validateSemantic(v);if(errors.length)throw new Error(errors.join(', '));return v;
 }

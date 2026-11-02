@@ -5,9 +5,11 @@ describe('source removal integrity',()=>{
  it('removes only selected source observations while preserving manually shared entities and relations',()=>{
   const d=emptySemantic();d.entities=[{id:'uo1',kind:'uo',name:'UO',aliases:[]}];
   d.observations=['a','b'].map((datasetId,i)=>({id:'o'+i,entityId:'uo1',measureId:'it_hours',value:i+1,kind:'detail' as const,period:{year:2027},planningVersion:'v1',scenario:'need',quality:'reported' as const,source:{datasetId,fileName:datasetId+'.xlsx',sheet:'S',cell:'A1'}}));
+  d.departmentDemand=['a','b'].map((datasetId,i)=>({id:'dept'+i,uoId:'uo1',departmentCodeRaw:'101*',departmentCode:'101',departmentName:'Avdelning',year:2027,metric:'it_hours' as const,hours:i+10,anchoringStatus:'',comments:[],source:{datasetId,fileName:datasetId+'.xlsx',sheet:'Timmar per avdelning',cell:'C6'}}));
   const before=JSON.stringify(d);
   const cleaned=withoutSources(d,['a']);
   expect(cleaned.observations.map(o=>o.source.datasetId)).toEqual(['b']);
+  expect(cleaned.departmentDemand?.map(d=>d.source.datasetId)).toEqual(['b']);
   expect(cleaned.entities).toEqual(d.entities);
   expect(cleaned.relations).toEqual(d.relations);
   expect(JSON.stringify(d)).toBe(before);
