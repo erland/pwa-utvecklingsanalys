@@ -172,7 +172,9 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
  ];
  return <section aria-label="Inbyggda fördelningstyper">
   {kinds.map(([kind,title,first,second])=>{
-   const rows=builtInRows(data,kind,year);
+   const importedRows=builtInRows(data,kind,year);
+   const candidateIds=kind==='metric'?[]:[...new Set(data.records.filter(r=>r.authority==='original'&&r.scope.axis==='work'&&(year===0||r.year===year)&&(kind==='activity-cost'?r.metric==='other_cost':r.metric==='it_hours'||r.metric==='business_hours')).map(r=>r.scope.axis==='work'?r.scope.uoId:''))];
+   const rows=[...importedRows,...candidateIds.filter(id=>!importedRows.some(r=>r.key===id)).map(id=>({key:id,title:name(id),values:{first:0,second:0},status:'Komplettera UO-fördelning'}))].sort((a,b)=>a.title.localeCompare(b.title,'sv'));
    const totals=rows.reduce((v,r)=>({first:v.first+r.values.first,second:v.second+r.values.second}),{first:0,second:0});
    const total=totals.first+totals.second;
    return <div key={kind} className="panel" style={{width:'100%',minWidth:0}}>
@@ -181,19 +183,20 @@ export default function BuiltInAllocations({data,years,gaps,onSaved}:{data:Canon
     {total>0?<DistributionIndicator first={totals.first} second={totals.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>:<p>Inga fullständiga importerade uppgifter för perioden.</p>}
     <p><small>{kind==='metric'?'Importerade originalvärden · endast visning':kind==='activity-cost'?'Importerad kostnadsmatris · LO kan justeras om det inte är importerat':'Importerad UO-matris · LO kan justeras om det inte är importerat'}</small></p>
     {selected===kind&&<section aria-label={'Detaljer '+title}>
-      {kind!=='metric'&&<ManualUoEditor data={data} gaps={gaps} onSaved={onSaved} year={year} kind={kind}/> }
+
       <button type="button" className="secondary" onClick={()=>{setSelected(null);setSelectedUo(null);void 0}}>← Alla fördelningstyper</button>
       <h3>{title} – Fördelning per UO och LO</h3>
       {selectedUo&&<button type="button" className="secondary" onClick={()=>{setSelectedUo(null);void 0}}>← Alla UO</button>}
-      {rows.length===0?<p>Inga importerade UO-matriser att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
+      {rows.length===0?<p>Inga UO-underlag att visa.</p>:<section className="panel" aria-label="Översikt UO-fördelningar">
        <h4>UO-fördelningar</h4>
        {rows.filter(r=>!selectedUo||r.key===selectedUo).map(r=><div className="panel" key={r.key} style={{marginTop:8}}>
         <button type="button" className="secondary" aria-expanded={selectedUo===r.key} style={{display:'block',width:'100%',textAlign:'left',padding:12}} onClick={()=>{setSelectedUo(v=>v===r.key?null:r.key);void 0}}>
          <strong>{r.title} {selectedUo===r.key?'▾':'›'}</strong>
          <small>{r.status}</small>
         </button>
-        <PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>
-        <DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]}/>
+        {selectedUo===r.key&&<PeriodButtons years={years} selected={year} onSelect={setYear} label={'UO-år '+r.title}/>}
+        {selectedUo===r.key&&kind!=='metric'&&<ManualUoEditor data={data} gaps={gaps} onSaved={onSaved} year={year} kind={kind} uoId={r.key}/>}
+        {r.values.first+r.values.second>0&&<DistributionIndicator first={r.values.first} second={r.values.second} labels={[first,second]} unit={kind==='activity-cost'?'kr':'h'}/>}
         {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&<div className="actions">
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkError('');setBulkConfirm(true)}}>Massändra LO till UO-fördelningen</button>
         </div>}
