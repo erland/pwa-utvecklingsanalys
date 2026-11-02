@@ -51,7 +51,17 @@ export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,d
    observations.push({id:cellId,entityId:uoId,measureId:fact.measureId,value:fact.value,period:{year:fact.year},planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'subset',sectionId:fact.sectionId,activity:fact.activity,quality:'reported'});
   }
  }
- const updated={...emptySemantic(),...existing,entities,observations};
+ const departmentDemand=[
+  ...(existing.departmentDemand??[]).filter(d=>d.source.datasetId!==datasetId),
+  ...(result.departmentDemand??[]).map(f=>({
+   id:[datasetId,f.source.sheet,f.source.cell,f.metric].map(identifier).join('|'),
+   uoId,departmentCodeRaw:f.departmentCodeRaw,departmentCode:f.departmentCode,
+   departmentName:f.departmentName,year:f.year,metric:f.metric,hours:f.hours,
+   anchoringStatus:f.anchoringStatus,comments:[...f.comments],
+   source:{datasetId,fileName,sheet:f.source.sheet,cell:f.source.cell}
+  }))
+ ];
+ const updated={...emptySemantic(),...existing,entities,observations,departmentDemand};
  const errors=validateSemantic(updated);if(errors.length)throw new Error(errors.join(', '));
  return updated;
 }
