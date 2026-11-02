@@ -17,6 +17,14 @@ describe('UO-to-department demand analysis',()=>{
   expect(result.total).toBe(130);
   expect(result.rows.map(r=>[r.id,r.total]).sort()).toEqual([['uo:A',100],['uo:B',30]]);
  });
+ it('uses first matching group and preserves independent UO selection',()=>{
+  const model={id:'m',name:'Grupper',groups:[{id:'g1',name:'Grupp 1',uoIds:['uo:A','uo:B']},{id:'g2',name:'Grupp 2',uoIds:['uo:A']}]};
+  const base={perspective:'department' as const,year:2027,metrics:['it_hours','business_hours'] as const,groupModel:model};
+  expect(analyzeDepartmentDemand(data,{...base,scope:{level:'group',id:'g1'}}).total).toBe(170);
+  expect(analyzeDepartmentDemand(data,{...base,scope:{level:'group',id:'g2'}}).total).toBe(0);
+  expect(analyzeDepartmentDemand(data,{...base,scope:{level:'uo',id:'uo:B'}}).total).toBe(70);
+  expect(analyzeDepartmentDemand(data,{...base,scope:{level:'all'}}).total).toBe(170);
+ });
  it('does not invent absent years or values',()=>{
   expect(analyzeDepartmentDemand(data,{perspective:'department',year:2030,metrics:['it_hours']}).total).toBe(0);
   expect(analyzeDepartmentDemand(data,{perspective:'department',year:2027,metrics:[]}).rows).toEqual([]);
