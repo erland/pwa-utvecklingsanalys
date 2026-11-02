@@ -24,7 +24,7 @@ export default function ManualUoEditor({data,gaps,onSaved,year,kind}:{data:Canon
  if(!eligible.length)return null;
  return <section className="panel" aria-label="Manuell UO-fördelning">
   <h4>UO-fördelningar per år och mått</h4>
-  <p>Importerade fullständiga fördelningar är låsta. För saknade fördelningar kan du ange en manuell andel. Beslut sparas separat från importerad data. De påverkar ännu inte LO-beräkningar eller Analys.</p>
+  <p>Importerade fullständiga fördelningar är låsta. För saknade fördelningar kan du ange en manuell andel. Beslut sparas separat från importerad data. Sparade andelar för timmar balanseras mot LO och används i Analys. Kostnadsfördelningar inväntar separat avstämning.</p>
   {eligible.map(row=>{
    const key=manualSplitKey(row),current=active.find(v=>manualSplitKey(v)===key),locked=row.status==='imported-locked';
    const value=Number(values[key]??current?.developmentPercent??50);
