@@ -36,4 +36,12 @@ test('multiple UO sources preserve distinct scopes and reciprocal drilldown with
  await demand.getByRole('button',{name:'IT-avdelningen'}).click();
  await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO B');
  await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO A');
+ // The UO/LO view must obey the existing organization navigator, not sum every UO.
+ await analysis.getByLabel('organisation',{exact:true}).selectOption('work');
+ const resourceNeed=page.getByRole('region',{name:'Resursbehov per avdelning för UO'});
+ await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).toContainText('180 h');
+ await page.getByRole('region',{name:'Utforska UO'}).getByRole('table',{name:'UO i analys'}).getByRole('button',{name:'UO B',exact:true}).click();
+ await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).toContainText('70 h');
+ await expect(resourceNeed.getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).not.toContainText('180 h');
+
 });
