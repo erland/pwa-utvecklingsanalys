@@ -1,4 +1,4 @@
-import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
+import type {CanonicalDataset,Metric} from '../domain/canonical';
 
 export type UoAllocationEligibility={
  uoId:string; year:number; metric:Metric; status:'imported-locked'|'manual-allowed';
