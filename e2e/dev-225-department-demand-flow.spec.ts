@@ -47,10 +47,9 @@ test('UO department demand survives import, discrepancy, reload and reciprocal d
  const demand=page.getByRole('region',{name:'Avdelningsbehov'});
  await expect(demand).toContainText('Avdelning Alfa');
  await expect(demand).toContainText('IT-avdelningen');
- await demand.getByRole('button',{name:/101.*Avdelning Alfa/}).click();
+ await demand.getByRole('button',{name:'Avdelning Alfa'}).click();
  await expect(page.getByRole('region',{name:'Fördjupning av avdelningsbehov'})).toContainText('UO A');
- await demand.getByLabel('Perspektiv för avdelningsbehov').selectOption('uo');
- await demand.getByRole('button',{name:'UO A',exact:true}).click();
- await expect(page.getByRole('table',{name:'Fördjupade avdelningstimmar'})).toContainText('Avdelning Alfa');
- await expect(page.getByRole('table',{name:'Fördjupade avdelningstimmar'})).toContainText('IT-avdelningen');
+ await expect(demand.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO A');
+ await analysis.getByLabel('organisation',{exact:true}).selectOption('work');
+ await expect(page.getByRole('region',{name:'Resursbehov per avdelning för UO'}).getByRole('table',{name:'Fördelning av efterfrågade avdelningstimmar'})).toContainText('Avdelning Alfa');
 });

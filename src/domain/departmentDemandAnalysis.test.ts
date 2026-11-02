@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {analyzeDepartmentDemand} from './departmentDemandAnalysis';
+import {analyzeDepartmentDemand,departmentDisplayName} from './departmentDemandAnalysis';
 import type {DepartmentDemandObservation} from './semantic';
 const entry=(uoId:string,code:string,year:number,metric:'it_hours'|'business_hours',hours:number):DepartmentDemandObservation=>({
  id:[uoId,code,year,metric].join('-'),uoId,departmentCodeRaw:code,departmentCode:code,departmentName:'Avdelning '+code,year,metric,hours,anchoringStatus:'',comments:[],
@@ -7,6 +7,12 @@ const entry=(uoId:string,code:string,year:number,metric:'it_hours'|'business_hou
 });
 describe('UO-to-department demand analysis',()=>{
  const data=[entry('uo:A','10',2027,'it_hours',100),entry('uo:B','10',2027,'business_hours',40),entry('uo:B','20',2027,'it_hours',30),entry('uo:A','10',2028,'it_hours',50)];
+ it('keeps code as ID but shows clean department names',()=>{
+  expect(departmentDisplayName(' - Avdelning Alfa')).toBe('Avdelning Alfa');
+  expect(departmentDisplayName(' ·  – Avdelning Beta')).toBe('Avdelning Beta');
+  const record={...entry('uo:A','101',2027,'it_hours',10),departmentName:'- Avdelning Alfa'};
+  expect(analyzeDepartmentDemand([record],{perspective:'department',metrics:['it_hours']}).rows[0]).toMatchObject({id:'101',label:'Avdelning Alfa',total:10});
+ });
  it('aggregates department demands from several UO without dropping UO identity',()=>{
   const result=analyzeDepartmentDemand(data,{perspective:'department',year:2027,metrics:['it_hours','business_hours']});
   expect(result).toMatchObject({total:170,itHours:130,businessHours:40});

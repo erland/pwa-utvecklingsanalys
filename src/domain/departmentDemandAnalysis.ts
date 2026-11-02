@@ -2,6 +2,10 @@ import type {UoGroupModel} from '../analytics/groupModels';
 import {groupForUo} from '../analytics/groupModels';
 import type {DepartmentDemandObservation} from './semantic';
 
+/** Presentation-only cleanup. Preserve the department code as its stable internal identity. */
+export function departmentDisplayName(value:string):string{
+ return value.trim().replace(/^[\s\u2022\u00b7\-–—]+/u,'').trim();
+}
 export type DepartmentDemandRow={id:string;label:string;itHours:number;businessHours:number;total:number};
 export type DepartmentDemandAnalysis={rows:DepartmentDemandRow[];total:number;itHours:number;businessHours:number};
 
@@ -13,7 +17,7 @@ export function analyzeDepartmentDemand(records:readonly DepartmentDemandObserva
   if(options.scope?.level==='uo'&&d.uoId!==options.scope.id)continue;
   if(options.scope?.level==='group'&&(groupForUo(options.groupModel??{id:'',name:'',groups:[]},d.uoId)?.id??'unassigned')!==options.scope.id)continue;
   const id=options.perspective==='uo'?d.uoId:(d.departmentCode||d.departmentName.trim().toLocaleLowerCase('sv-SE'));
-  const label=options.perspective==='uo'?decodeURIComponent(d.uoId.replace(/^uo:/,'')):(d.departmentCode?d.departmentCode+' – ':'')+d.departmentName;
+  const label=options.perspective==='uo'?decodeURIComponent(d.uoId.replace(/^uo:/,'')):departmentDisplayName(d.departmentName);
   const prior=groups.get(id)??{id,label,itHours:0,businessHours:0,total:0};
   if(d.metric==='it_hours')prior.itHours+=d.hours;else prior.businessHours+=d.hours;
   prior.total+=d.hours;groups.set(id,prior);
