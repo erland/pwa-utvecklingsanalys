@@ -4,7 +4,7 @@ import type {DepartmentDemandObservation} from './semantic';
 
 /** Presentation-only cleanup. Preserve the department code as its stable internal identity. */
 export function departmentDisplayName(value:string):string{
- return value.trim().replace(/^[\\s\\u2022\\u00b7\\-–—]+/u,'').trim();
+ return value.trim().replace(/^[\s\u2022\u00b7\-–—]+/u,'').trim();
 }
 export type DepartmentDemandRow={id:string;label:string;itHours:number;businessHours:number;total:number};
 export type DepartmentDemandAnalysis={rows:DepartmentDemandRow[];total:number;itHours:number;businessHours:number};
