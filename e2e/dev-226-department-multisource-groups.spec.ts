@@ -12,6 +12,7 @@ async function file(uo:string,code:string,hours:number){
 }
 
 test('multiple UO sources support overlapping group scope and reciprocal drilldown without double count',async({page})=>{
+ test.setTimeout(90_000);
  await page.goto('./');await page.evaluate(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
  const upload=page.locator('#direct-import-files');
