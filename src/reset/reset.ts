@@ -19,14 +19,16 @@ export function storesForReset(scope:ResetScope):Record<string,readonly string[]
  return {...(scope==='configuration'?{}:DATA_STORES),...(scope==='data'?{}:CONFIG_STORES)};
 }
 /** Clears existing stores without upgrading schema; missing databases are not created. */
-export async function resetLocalWorkspace(scope:ResetScope):Promise<void>{
+export async function resetLocalWorkspace(scope:ResetScope,onProgress?:(message:string)=>void):Promise<void>{
  const targets=storesForReset(scope);
  const existing=new Set((await indexedDB.databases()).map(d=>d.name).filter((n):n is string=>Boolean(n)));
  for(const [name,names] of Object.entries(targets)){
   if(!existing.has(name))continue;
+  onProgress?.('Rensar '+name+' …');
   await new Promise<void>((resolve,reject)=>{
    const request=indexedDB.open(name);
    request.onerror=()=>reject(request.error??new Error('RESET_DB_OPEN_FAILED'));
+   request.onblocked=()=>reject(new Error('RESET_DB_BLOCKED: Stäng andra flikar med applikationen och försök igen.'));
    request.onupgradeneeded=()=>{request.transaction?.abort();reject(new Error('RESET_UNEXPECTED_SCHEMA'))};
    request.onsuccess=()=>{
     const db=request.result;
