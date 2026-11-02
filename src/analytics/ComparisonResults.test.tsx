@@ -11,10 +11,12 @@ describe('DEV-140 clickable analysis labels',()=>{
   expect(html).not.toContain('Fördjupning');
   expect(html).not.toContain('Visa LO');
  });
- it('makes legend names interactive in the default pie chart',()=>{
+ it('keeps pie legend informational and makes labels interactive in the table beneath',()=>{
   const html=renderToStaticMarkup(createElement(ComparisonResults,{title:'LO i analys',totalLabel:'Totalt',unit:'h',rows:[{key:'a',label:'LO A',value:50},{key:'b',label:'UO Övergripande',value:30}],onOpen:()=>{}}));
+  expect(html).toContain('Cirkeldiagram: LO i analys');
   expect(html).toContain('>LO A</button>');
   expect(html).toContain('>UO Övergripande</button>');
+  expect(html).toContain('<table');
   expect(html).not.toContain('Visa delpost');
  });
  it('keeps plain labels when a drilldown is unavailable',()=>{
