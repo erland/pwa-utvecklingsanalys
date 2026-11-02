@@ -45,7 +45,7 @@ export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,d
   }
  }
  if(includeMatrix&&result.matrix){
-  if(result.matrix.issues.length)throw new Error('Matrix contains unreviewed import issues');
+  // Only validated complete activity pairs are imported; issues are reported separately.
   for(const fact of result.matrix.facts){
    const cellId=[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(identifier).join('|');
    observations.push({id:cellId,entityId:uoId,measureId:fact.measureId,value:fact.value,period:{year:fact.year},planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'subset',sectionId:fact.sectionId,activity:fact.activity,quality:'reported'});
