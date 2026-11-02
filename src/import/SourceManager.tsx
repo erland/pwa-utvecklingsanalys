@@ -9,7 +9,7 @@ export default function SourceManager({project,onProject,replaceId,setReplaceId,
  const [message,setMessage]=useState('');
  const remove=async()=>{
   if(!project||confirmation!=='TA BORT'||busy)return;
-  setBusy(true);
+  setBusy(true);setMessage('Borttagning pågår. Lokala observationer och importuppgifter uppdateras …');
   try{
    const ids=pendingDelete==='all'?project.datasets.map(d=>d.id):pendingDelete?[pendingDelete]:[];
    const next=await deleteImportedSources(ids);
@@ -18,7 +18,7 @@ export default function SourceManager({project,onProject,replaceId,setReplaceId,
   }catch(e){setMessage('Borttagning misslyckades: '+String(e))}
   finally{setBusy(false)}
  };
- return <>{message&&<p role="status" className="notice">{message}</p>}
+ return <>{message&&<p role="status" aria-live="polite" className="notice">{message}</p>}
  {project&&<section className="panel" style={{marginTop:18}}><h2>Importerade källor</h2><p>Ta bort en importerad källa eller välj Ersätt för att automatiskt läsa in en ny Excel-fil. Befintliga värden behålls om importen misslyckas. Konfiguration och gruppmodeller bevaras.</p>
  {project.datasets.length===0?<p>Inga godkända källor.</p>:<><div style={{overflowX:'auto'}}><table className="analysis-table"><thead><tr><th>Källa</th><th>Importerad</th><th>Åtgärder</th></tr></thead><tbody>{project.datasets.map(d=><tr key={d.id}><td>{d.name}</td><td>{new Date(d.importedAt).toLocaleString('sv-SE')}</td><td><div className="actions"><button className="secondary" disabled={busy} onClick={()=>onEditAllocations(d.id)}>Visa/ändra fördelningar</button><button className="secondary" disabled={busy} onClick={()=>{setReplaceId(d.id);setPendingDelete(null);setMessage('Välj en ny XLSX-fil ovan för automatisk ersättning. Den gamla källan behålls om importen misslyckas.')}}>Ersätt</button><button className="secondary" disabled={busy} onClick={()=>{setPendingDelete(d.id);setConfirmation('')}}>Ta bort</button></div></td></tr>)}</tbody></table></div><button className="secondary" disabled={busy} onClick={()=>{setPendingDelete('all');setConfirmation('')}}>Töm importerade data</button></>}
  {replaceId&&<p role="status" className="notice">Ersätter: {project.datasets.find(d=>d.id===replaceId)?.name}. Välj en XLSX-fil i den automatiska importen ovan. <button className="secondary" onClick={()=>setReplaceId(null)}>Avbryt ersättning</button></p>}
