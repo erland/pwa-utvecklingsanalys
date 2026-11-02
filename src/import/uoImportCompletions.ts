@@ -1,4 +1,4 @@
-import type {CanonicalDataset,Metric} from '../domain/canonical';
+import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 import {manualUoFingerprint,manualSplitKey} from '../allocations/manualUoAllocation';
 import {uoAllocationEligibility} from '../allocations/uoAllocationEligibility';
 
@@ -19,4 +19,24 @@ export function saveUoImportCompletion(data:CanonicalDataset,previous:readonly U
  }
  if(input.development+input.maintenance<=0)throw new Error('EMPTY_UO_COMPLETION');
  return [...previous.filter(row=>completionKey(row)!==completionKey(input)),candidate];
+}
+
+/** Present approved source corrections to existing UO/LO allocation UI without mutating persisted imports. */
+export function withCompletedUoMatrices(data:CanonicalDataset,completions:readonly UoImportCompletion[]):CanonicalDataset{
+ const records=[...data.records];
+ for(const item of activeUoImportCompletions(data,completions)){
+  const group=records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.scope.axis==='work'&&r.scope.uoId===item.uoId&&r.year===item.year&&r.metric===item.metric&&r.workPart==='uo-activity-matrix');
+  const source=group[0]??records.find(r=>r.authority==='original'&&r.scope.axis==='work'&&r.scope.uoId===item.uoId&&r.year===item.year&&r.metric===item.metric&&r.source);
+  if(!source?.source)continue;
+  for(const activity of ['development','maintenance'] as const){
+   if(group.some(r=>r.activity===activity))continue;
+   const record:AnalysisRecord={id:['import-completion',source.source.datasetId,item.uoId,item.year,item.metric,activity].join('|'),
+    metric:item.metric,year:item.year,value:item[activity],activity,scope:{axis:'work',uoId:item.uoId},
+    authority:'original',approval:'reported',granularity:'activity-part',workPart:'uo-activity-matrix',
+    workloadId:group[0]?.workloadId??['completed-uo',source.source.datasetId,item.uoId,item.year,item.metric].join('|'),
+    source:{datasetId:source.source.datasetId,sheet:'Manuell importkomplettering',cell:source.source.cell}};
+   records.push(record);
+  }
+ }
+ return {...data,records};
 }
