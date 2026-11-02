@@ -1,3 +1,4 @@
+import DepartmentDemandTrend from './DepartmentDemandTrend';
 import {useState} from 'react';
 import type {UoGroupModel} from './groupModels';
 import type {DepartmentDemandObservation} from '../domain/semantic';
@@ -14,6 +15,7 @@ export default function DepartmentDemandAnalysis({records,year,metrics,groupMode
   <h3>Resursbehov per avdelning</h3>
   <p>Samtliga UO:s efterfrågade timmar från respektive avdelning. Avdelningarnas referenskoder visas inte. Dessa timmar är inte ett tillägg till UO-budgeten.</p>
   <DepartmentDemandBreakdown title="Efterfrågade timmar per avdelning" rows={result.rows} onSelect={id=>setSelectedId(old=>old===id?null:id)}/>
+  <DepartmentDemandTrend records={records} metrics={metrics} selectedDepartment={selected?.id}/>
   {selected&&<section className="panel" aria-label="Fördjupning av avdelningsbehov">
    <button type="button" className="secondary" onClick={()=>setSelectedId(null)}>Tillbaka till avdelningar</button>
    <DepartmentDemandBreakdown title={'Efterfrågande UO – '+selected.label} rows={detail}/>

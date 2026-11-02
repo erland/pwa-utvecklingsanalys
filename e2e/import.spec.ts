@@ -59,5 +59,8 @@ test('v2 analysis controls keep units separate and filter by year and activity',
  await v2.getByRole('tab',{name:'Kostnader'}).click();
  await expect(v2.locator('.canonical-result-head strong')).toContainText('SEK');
  await v2.getByLabel('organisation',{exact:true}).selectOption('department');
- await expect(v2.locator('.canonical-result-head strong')).toContainText('0 SEK');
+ await expect(v2.getByRole('tab',{name:'Kostnader'})).toHaveCount(0);
+ await expect(v2.getByRole('checkbox',{name:'Utveckling',exact:true})).toHaveCount(0);
+ await expect(v2.getByRole('checkbox',{name:'IT-timmar'})).toBeVisible();
+ await expect(v2.getByRole('region',{name:'Avdelningsbehov'})).toBeVisible();
 });
