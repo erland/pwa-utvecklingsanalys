@@ -26,6 +26,18 @@ describe('UO-linked department demand import',()=>{
   expect(result.facts.some(f=>f.source.cell==='C16'||f.source.cell==='C19')).toBe(false);
   expect(result.issues).toEqual([expect.objectContaining({code:'INVALID_DEPARTMENT_HOURS',cell:'E6'})]);
  });
+ it('reads real UO workbook year headers and ignores cached formula totals',()=>{
+  const wb=workbook(),sheet=wb.getWorksheet('Timmar per avdelning')!;
+  sheet.getCell('C4').value='Timmar 2027';
+  sheet.getCell('D4').value='Timmar 2028';
+  sheet.getCell('E4').value='Timmar 2029';
+  sheet.getCell('B6').value='·        Verksamhetsavdelning';
+  const result=readDepartmentDemand(wb,'UO Operativ');
+  expect(result.years).toEqual([2027,2028,2029]);
+  expect(result.facts.find(f=>f.source.cell==='C6')).toMatchObject({uo:'UO Operativ',metric:'business_hours',year:2027,hours:120});
+  expect(result.facts.find(f=>f.source.cell==='C18')).toMatchObject({metric:'it_hours',hours:50});
+  expect(result.facts.some(f=>f.source.cell==='C16'||f.source.cell==='C19')).toBe(false);
+ });
  it('does not invent values for absent cells or missing sheet',()=>{
   expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[]});
   expect(readDepartmentDemand(workbook(),'UO B').facts.some(f=>f.source.cell==='D18')).toBe(false);
