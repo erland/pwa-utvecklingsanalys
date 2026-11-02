@@ -67,7 +67,8 @@ export async function readMatrix(bytes:ArrayBuffer,mapping:MatrixMapping):Promis
  // for the same year and measure. Never interpret a missing half as zero.
  const groups=new Map<string,Set<string>>();
  for(const fact of facts){const key=JSON.stringify([fact.year,fact.measureId]);const set=groups.get(key)??new Set<string>();set.add(fact.activity);groups.set(key,set)}
- const complete=facts.filter(f=>{const activities=groups.get(JSON.stringify([f.year,f.measureId]));return activities?.has('development')&&activities.has('maintenance')});
+ const requiresPair=Object.values(mapping.activityNames).includes('development')&&Object.values(mapping.activityNames).includes('maintenance');
+ const complete=requiresPair?facts.filter(f=>{const activities=groups.get(JSON.stringify([f.year,f.measureId]));return activities?.has('development')&&activities.has('maintenance')}):facts;
  for(const fact of facts)if(!complete.includes(fact))issues.push({cell:fact.source.cell,message:'Ofullständig UO-fördelning: både Utveckling och Förvaltning krävs för import av fördelningen'});
  return {mapping,facts:complete,issues,excludedTotals};
 }
