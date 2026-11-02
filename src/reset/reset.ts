@@ -1,3 +1,4 @@
+import {notifyWorkspaceChange} from '../storage/workspaceEvents';
 /** Reset only this application's known stores; never clear arbitrary browser-origin storage. */
 export type ResetScope='data'|'configuration'|'all';
 export const DATA_STORES:Readonly<Record<string,readonly string[]>>={
@@ -44,4 +45,5 @@ export async function resetLocalWorkspace(scope:ResetScope,onProgress?:(message:
    };
   });
  }
+ notifyWorkspaceChange('workspace-reset');
 }
