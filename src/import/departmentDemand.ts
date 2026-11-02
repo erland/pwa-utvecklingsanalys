@@ -39,7 +39,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    if(cell.type===ExcelJS.ValueType.Formula||typeof raw!=='number'||!Number.isFinite(raw)||raw<0){
     issues.push({code:'INVALID_DEPARTMENT_HOURS',message:'Timmar måste vara ett icke-negativt numeriskt detaljvärde (inte formel)',cell:cell.address});continue;
    }
-   facts.push({uo,departmentCodeRaw:code,departmentCode:code.replace(/\\*/g,'').trim(),departmentName:name,year,metric,hours:raw,anchoringStatus,comments,source:{sheet:sheet.name,cell:cell.address}});
+   facts.push({uo,departmentCodeRaw:code,departmentCode:code.replaceAll('*','').trim(),departmentName:name,year,metric,hours:raw,anchoringStatus,comments,source:{sheet:sheet.name,cell:cell.address}});
   }
  }
  return {facts,issues,years:[...years.keys()].sort((a,b)=>a-b)};
