@@ -23,11 +23,15 @@ test('multiple UO sources support overlapping group scope and reciprocal drilldo
  await expect(page.getByRole('status').filter({hasText:'uo-b.xlsx'})).toContainText('importerad');
  // Store an overlapping model using the project's own existing configuration package.
  await page.evaluate(async()=>{
-  const open=(name:string)=>new Promise<IDBDatabase>((resolve,reject)=>{const req=indexedDB.open(name);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
-  const db=await open('utvecklingsanalys-configuration');
+  const db=await new Promise<IDBDatabase>((resolve,reject)=>{
+   const req=indexedDB.open('utvecklingsanalys-configuration',1);
+   req.onupgradeneeded=()=>{const database=req.result;if(!database.objectStoreNames.contains('current'))database.createObjectStore('current');if(!database.objectStoreNames.contains('history'))database.createObjectStore('history',{keyPath:'id'})};
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
   const read=db.transaction('current','readonly').objectStore('current').get('active');
-  const config=await new Promise<{sections:{groups:Array<{id:string;name:string;groups:Array<{id:string;name:string;uoIds:string[]}>}>};activeGroupModelId:string}|undefined>((resolve,reject)=>{read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error)});
-  if(!config)throw new Error('Configuration missing after import');
+  type TestConfig={format:'utvecklingsanalys-config';version:1;exportedAt:string;mode:'full-configuration';sections:{groups:Array<{id:string;name:string;groups:Array<{id:string;name:string;uoIds:string[]}>}>};activeGroupModelId:string};
+  const existing=await new Promise<TestConfig|undefined>((resolve,reject)=>{read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error)});
+  const config:TestConfig=existing??{format:'utvecklingsanalys-config',version:1,exportedAt:new Date().toISOString(),mode:'full-configuration',sections:{groups:[]},activeGroupModelId:''};
   config.sections.groups=[{id:'testing',name:'Testgrupper',groups:[{id:'first',name:'Första gruppen',uoIds:['uo:UO%20A','uo:UO%20B']},{id:'second',name:'Överlappande grupp',uoIds:['uo:UO%20A']}]}];
   config.activeGroupModelId='testing';
   const tx=db.transaction('current','readwrite');
