@@ -33,7 +33,7 @@ export default function App(){
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
  const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'',items:['overview','import','allocations','analysis','settings'] as ViewId[]}];
  const [otherTabChanged,setOtherTabChanged]=useState(false);
- useEffect(()=>onWorkspaceChange(()=>setOtherTabChanged(true)),[]);
+ useEffect(()=>onWorkspaceChange(()=>{setOtherTabChanged(true);void loadProject().then(p=>{setProject(p);setAnalysisRefresh(v=>v+1)}).catch(()=>setStorageError('Projektet ändrades i annan flik. Ladda om sidan.'))}),[]);
  const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
  const[overview,setOverview]=useState<OverviewStatus|null>(null);const[overviewError,setOverviewError]=useState('');
  useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>recoverSourceMutation()).then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
@@ -72,6 +72,6 @@ export default function App(){
  <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)} embedded/></section>
  <section aria-label="Administrera fördelningstyper" style={{marginTop:24}}><OptionalAllocationsView/></section>
  <section className="panel" aria-label="Backup och återställning" style={{marginTop:24}}><h2>Backup och återställning</h2><p>Exportera projektdata eller återställ en säkerhetskopia. Återställning av arbetsytan finns längst ner och bör användas med försiktighet.</p><PortabilityView/><ResetWorkspace/></section></>}
- {otherTabChanged&&<div style={{position:'fixed',inset:0,zIndex:900,background:'rgba(0,0,0,.15)'}} aria-label="Arbetsytan måste laddas om"><div role="alertdialog" aria-modal="true" aria-label="Ändring i annan flik" className="panel" style={{position:'absolute',top:'25%',left:'50%',transform:'translateX(-50%)',maxWidth:500,width:'90%',padding:24,background:'white'}}><h2>Arbetsytan har ändrats i en annan flik</h2><p>Ladda om sidan innan du fortsätter. Det skyddar dig från att skriva tillbaka borttagna uppgifter.</p><button type="button" className="primary" onClick={()=>window.location.reload()}>Ladda om nu</button></div></div>}
+
  </main><footer>Utvecklingsanalys · Lokal analysarbetsyta</footer></div></div>
 }
