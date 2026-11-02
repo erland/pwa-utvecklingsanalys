@@ -32,7 +32,7 @@ test('multiple UO sources preserve distinct scopes and reciprocal drilldown with
  await analysis.getByLabel('organisation',{exact:true}).selectOption('department');
  const demand=page.getByRole('region',{name:'Avdelningsbehov'});
  await expect(demand).toContainText('180 h');
- await demand.getByLabel('UO-urval för avdelningsbehov').selectOption('uo:UO%20B');
+ await demand.getByLabel('UO-urval för avdelningsbehov').selectOption({label:'UO: UO B'});
  await expect(demand).toContainText('70 h');
  await demand.getByRole('button',{name:/500.*IT-avdelningen/}).click();
  await expect(page.getByRole('table',{name:'Fördjupade avdelningstimmar'})).toContainText('UO B');
