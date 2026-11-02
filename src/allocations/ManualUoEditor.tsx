@@ -24,17 +24,17 @@ export default function ManualUoEditor({data,gaps,onSaved,year,kind}:{data:Canon
  if(!eligible.length)return null;
  return <section className="panel" aria-label="Manuell UO-fördelning">
   <h4>UO-fördelningar per år och mått</h4>
-  <p>Importerade fullständiga fördelningar är låsta. För saknade fördelningar kan du ange en manuell andel. Beslut sparas separat från importerad data. Sparade andelar för timmar balanseras mot LO och används i Analys. Kostnadsfördelningar inväntar separat avstämning.</p>
+  <p>Importerade fullständiga fördelningar är låsta. För saknade fördelningar kan du ange en manuell andel. Beslut sparas separat från importerad data. Sparade andelar för timmar balanseras mot LO och används i Analys. Kostnadsandelar fördelas separat på respektive kostnadsmått utan dubbelräkning.</p>
   {eligible.map(row=>{
    const key=manualSplitKey(row),current=active.find(v=>manualSplitKey(v)===key),locked=row.status==='imported-locked';
    const value=Number(values[key]??current?.developmentPercent??50);
    return <div className="panel" key={key} style={{marginTop:8}}>
     <strong>{display(row.uoId)} · {row.year} · {metricNames[row.metric]??row.metric}</strong>
-    <p>{locked?'Importerad · låst':kind==='activity-cost'?'Manuell kostnadsfördelning är ännu inte tillgänglig':current?'Manuellt sparad':'Saknar importerad UO-fördelning'}</p>
+    <p>{locked?'Importerad · låst':current?'Manuellt sparad':'Saknar importerad UO-fördelning'}</p>
     <label>Utveckling: {locked&&row.development!==undefined&&row.maintenance!==undefined? (row.development+row.maintenance>0?100*row.development/(row.development+row.maintenance):0).toLocaleString('sv-SE',{maximumFractionDigits:1}):value.toLocaleString('sv-SE',{maximumFractionDigits:1})} %
-     <input aria-label={'UO Utveckling '+display(row.uoId)+' '+row.year+' '+row.metric} type="range" min="0" max="100" step="1" disabled={locked||busy||kind==='activity-cost'} value={locked?(row.development!+row.maintenance!>0?100*row.development!/(row.development!+row.maintenance!):0):value} onChange={e=>setValues(old=>({...old,[key]:e.target.value}))}/>
+     <input aria-label={'UO Utveckling '+display(row.uoId)+' '+row.year+' '+row.metric} type="range" min="0" max="100" step="1" disabled={locked||busy} value={locked?(row.development!+row.maintenance!>0?100*row.development!/(row.development!+row.maintenance!):0):value} onChange={e=>setValues(old=>({...old,[key]:e.target.value}))}/>
     </label>
-    {!locked&&kind!=='activity-cost'&&<button className="primary" type="button" disabled={busy||!Number.isFinite(value)||value<0||value>100} onClick={()=>void save(row)}>Spara UO-fördelning</button>}
+    {!locked&&<button className="primary" type="button" disabled={busy||!Number.isFinite(value)||value<0||value>100} onClick={()=>void save(row)}>Spara UO-fördelning</button>}
    </div>;
   })}
   {error&&<p role="alert">{error}</p>}
