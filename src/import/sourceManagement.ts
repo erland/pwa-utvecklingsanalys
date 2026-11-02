@@ -44,7 +44,7 @@ function mutate<T>(operation:()=>Promise<T>):Promise<T>{
 /** Retain shared/manual entities and relationships, but never retain source observations. */
 export function withoutSources(semantic:SemanticDataset,ids:readonly string[]):SemanticDataset{
  const remove=new Set(ids);
- return {...semantic,observations:semantic.observations.filter(o=>!remove.has(o.source.datasetId))};
+ return {...semantic,observations:semantic.observations.filter(o=>!remove.has(o.source.datasetId)),departmentDemand:(semantic.departmentDemand??[]).filter(d=>!remove.has(d.source.datasetId))};
 }
 export async function deleteImportedSources(ids:string[]):Promise<AnalysisProject>{
  if(!ids.length)throw new Error('NO_SOURCE_SELECTED');
