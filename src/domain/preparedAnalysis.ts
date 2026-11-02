@@ -73,13 +73,15 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
  // Manual UO percentages are decisions, not synthetic imported matrix values.
  // Materialize balanced, derived LO parts only when the source is still unchanged.
  for(const split of activeManualUoSplits(original,state.manualUoSplits??[])){
-  if(split.metric==='other_cost')continue; // Cost split requires separate metric reconciliation.
+  // Cost decisions use one UO percentage across both cost metrics, but split each metric's LO totals separately.
+  const splitMetrics=split.metric==='other_cost'?(['other_cost','consultant_cost'] as const):[split.metric];
   const sources=[...new Set(original.records.filter(r=>r.authority==='original'&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===split.metric&&r.granularity==='total').map(r=>r.source?.datasetId).filter((x):x is string=>Boolean(x)))];
   for(const datasetId of sources){
-   const scope={datasetId,uoId:split.uoId,year:split.year,metric:split.metric};
+   for(const metric of splitMetrics){
+   const scope={datasetId,uoId:split.uoId,year:split.year,metric};
    const {locks,incompleteLoIds}=importedLoActivityLocks(original,scope);
    if(incompleteLoIds.length){staleApprovals++;continue}
-   const originals=original.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===datasetId&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===split.metric&&r.granularity==='total'&&(r.scope.loId||r.workPart==='uo-overhead'));
+   const originals=original.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===datasetId&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===metric&&r.granularity==='total'&&(r.scope.loId||r.workPart==='uo-overhead'));
    const groups=new Map<string,AnalysisRecord[]>();
    for(const r of originals){const id=r.scope.axis==='work'?(r.scope.loId??'uo-overhead:'+split.uoId):'';groups.set(id,[...(groups.get(id)??[]),r])}
    const items=[...groups].map(([loId,rows])=>{
@@ -90,18 +92,19 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
    });
    if(!items.length)continue;
    const total=items.reduce((n,i)=>n+i.total,0),development=total*split.developmentPercent/100;
-   const preview:AllocationPreview={ruleId:'manual:'+datasetId+':'+split.year+':'+split.metric,fingerprint:split.sourceFingerprint,items,uo:{development,maintenance:total-development},lockedLo:locks};
+   const preview:AllocationPreview={ruleId:'manual:'+datasetId+':'+split.year+':'+metric,fingerprint:split.sourceFingerprint,items,uo:{development,maintenance:total-development},lockedLo:locks};
    let balanced:AllocationPreview;
    try{balanced=rebalanceUoBudgetAllocation(preview,[],locks)}catch{staleApprovals++;continue}
    for(const item of balanced.items){
     if(locks.some(l=>l.loId===item.loId))continue;
     for(const activity of ['development','maintenance'] as const)calculated.push({
-     id:['manual-uo',datasetId,split.uoId,split.year,split.metric,item.loId,activity].join('|'),
-     metric:split.metric,year:split.year,value:item[activity],activity,
+     id:['manual-uo',datasetId,split.uoId,split.year,metric,item.loId,activity].join('|'),
+     metric,year:split.year,value:item[activity],activity,
      scope:item.loId.startsWith('uo-overhead:')?{axis:'work',uoId:split.uoId}:{axis:'work',uoId:split.uoId,loId:item.loId},
      ...(item.loId.startsWith('uo-overhead:')?{workPart:'uo-overhead' as const}:{}),
      authority:'derived',approval:'approved',granularity:'activity-part',workloadId:item.workloadId
     });
+   }
    }
   }
  }
