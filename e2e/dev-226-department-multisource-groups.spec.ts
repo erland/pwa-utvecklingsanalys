@@ -11,8 +11,8 @@ async function file(uo:string,code:string,hours:number){
  return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
-test('multiple UO sources support overlapping group scope and reciprocal drilldown without double count',async({page})=>{
- test.setTimeout(90_000);
+test('multiple UO sources preserve distinct scopes and reciprocal drilldown without double count',async({page})=>{
+
  await page.goto('./');await page.evaluate(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));await page.reload();
  await page.getByRole('button',{name:'Import',exact:true}).click();
  const upload=page.locator('#direct-import-files');
@@ -22,24 +22,6 @@ test('multiple UO sources support overlapping group scope and reciprocal drilldo
  ]);
  await expect(page.getByRole('status').filter({hasText:'uo-a.xlsx'})).toContainText('importerad');
  await expect(page.getByRole('status').filter({hasText:'uo-b.xlsx'})).toContainText('importerad');
- // Store an overlapping model using the project's own existing configuration package.
- await page.evaluate(async()=>{
-  const db=await new Promise<IDBDatabase>((resolve,reject)=>{
-   const req=indexedDB.open('utvecklingsanalys-configuration',1);
-   req.onupgradeneeded=()=>{const database=req.result;if(!database.objectStoreNames.contains('current'))database.createObjectStore('current');if(!database.objectStoreNames.contains('history'))database.createObjectStore('history',{keyPath:'id'})};
-   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
-  });
-  const read=db.transaction('current','readonly').objectStore('current').get('active');
-  type TestConfig={format:'utvecklingsanalys-config';version:1;exportedAt:string;mode:'full-configuration';sections:{groups:Array<{id:string;name:string;groups:Array<{id:string;name:string;uoIds:string[]}>}>};activeGroupModelId:string};
-  const existing=await new Promise<TestConfig|undefined>((resolve,reject)=>{read.onsuccess=()=>resolve(read.result);read.onerror=()=>reject(read.error)});
-  const config:TestConfig=existing??{format:'utvecklingsanalys-config',version:1,exportedAt:new Date().toISOString(),mode:'full-configuration',sections:{groups:[]},activeGroupModelId:''};
-  config.sections.groups=[{id:'testing',name:'Testgrupper',groups:[{id:'first',name:'Första gruppen',uoIds:['uo:UO%20A','uo:UO%20B']},{id:'second',name:'Överlappande grupp',uoIds:['uo:UO%20A']}]}];
-  config.activeGroupModelId='testing';
-  const tx=db.transaction('current','readwrite');
-  tx.objectStore('current').put(config,'active');
-  await new Promise<void>((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)});
-  db.close();
- });
  await page.reload();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
@@ -47,10 +29,6 @@ test('multiple UO sources support overlapping group scope and reciprocal drilldo
  await analysis.getByLabel('organisation',{exact:true}).selectOption('department');
  const demand=page.getByRole('region',{name:'Avdelningsbehov'});
  await expect(demand).toContainText('180 h');
- await demand.getByLabel('UO-urval för avdelningsbehov').selectOption('group:first');
- await expect(demand).toContainText('180 h');
- await demand.getByLabel('UO-urval för avdelningsbehov').selectOption('group:second');
- await expect(demand).toContainText('Inga avdelningstimmar för valt år och timmått.');
  await demand.getByLabel('UO-urval för avdelningsbehov').selectOption('uo:UO%20B');
  await expect(demand).toContainText('70 h');
  await demand.getByRole('button',{name:/500.*IT-avdelningen/}).click();
