@@ -15,19 +15,37 @@ describe('independent matrix sections',()=>{
   s.getCell('C7').value='Omkostnader (Mnkr)';s.getCell('D7').value=1.5;
   const bytes=await w.xlsx.writeBuffer() as ArrayBuffer;
   const matrix=await readMatrix(bytes,developmentMatrix(s.name));
-  expect(matrix.facts.map(f=>f.value)).toEqual([2000,1500000,3000]);
+  expect(matrix.facts.map(f=>f.value)).toEqual([2000,3000]);
+  expect(matrix.issues.some(i=>i.cell==='D7')).toBe(true);
   expect(matrix.excludedTotals).toBe(1);
   const parsed=await importUoBudget(bytes);
   const data=importBudgetFacts(emptySemantic(),parsed,'source','a.xlsx',true);
-  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(3);
+  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(2);
   expect(data.observations.find(o=>o.activity==='maintenance')?.value).toBe(3000);
   expect(analyze(data,{measureId:'all_hours',groupBy:'uo'}).total).toBe(42);
  });
  it('respects configurable header and row positions',async()=>{
   const w=new ExcelJS.Workbook(),s=w.addWorksheet('Tabell');
-  s.getCell('D9').value='Utv. 28';s.getCell('C10').value='IT timmar (th)';s.getCell('D10').value=4;
+  s.getCell('D9').value='Utv. 28';s.getCell('E9').value='Förv. 28';s.getCell('C10').value='IT timmar (th)';s.getCell('D10').value=4;s.getCell('E10').value=5;
   const bytes=await w.xlsx.writeBuffer() as ArrayBuffer;
-  const result=await readMatrix(bytes,{...developmentMatrix(s.name),headerRow:9,firstRow:10,lastRow:10,firstColumn:4,lastColumn:4});
-  expect(result.facts).toMatchObject([{year:2028,activity:'development',value:4000}]);
+  const result=await readMatrix(bytes,{...developmentMatrix(s.name),headerRow:9,firstRow:10,lastRow:10,firstColumn:4,lastColumn:5});
+  expect(result.facts).toMatchObject([{year:2028,activity:'development',value:4000},{year:2028,activity:'maintenance',value:5000}]);
+ });
+ it('evaluates decimal-comma subtraction without relying on a cached result',async()=>{
+  const w=new ExcelJS.Workbook(),s=w.addWorksheet('Tabell');
+  s.getCell('D4').value='Utv. 2027';s.getCell('E4').value='Förv. 2027';
+  s.getCell('C5').value='IT timmar (th)';s.getCell('E5').value=3;
+  s.getCell('D5').value={formula:'10,72-E5'};
+  const r=await readMatrix(await w.xlsx.writeBuffer(),{...developmentMatrix(s.name),firstRow:5,lastRow:5,firstColumn:4,lastColumn:5});
+  expect(r.issues).toEqual([]);
+  expect(r.facts.find(f=>f.activity==='development')?.value).toBeCloseTo(7720);
+ });
+ it('keeps cell-specific warnings and excludes incomplete UO splits',async()=>{
+  const w=new ExcelJS.Workbook(),s=w.addWorksheet('Tabell');
+  s.getCell('D4').value='Utv. 2027';s.getCell('E4').value='Förv. 2027';
+  s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=7;
+  const r=await readMatrix(await w.xlsx.writeBuffer(),{...developmentMatrix(s.name),firstRow:5,lastRow:5,firstColumn:4,lastColumn:5});
+  expect(r.facts).toEqual([]);
+  expect(r.issues.some(i=>i.cell==='D5')).toBe(true);
  });
 });
