@@ -1,5 +1,6 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import type {ProjectBackup} from './format';
+import {emptyAllocations} from '../allocations/model';
 
 // Fault injection focuses on the restore journal and write order. Backup schema
 // validation has separate tests in format.test.ts.
@@ -53,11 +54,11 @@ const backup=(id:string):ProjectBackup=>({
  semantic:{schemaVersion:1,entities:[],measures:[],observations:[],relations:[]},
  planning:{schemaVersion:1,scenarios:[]},
  configuration:null,
- legacyAllocations:{schemaVersion:1,allocations:[]},
+ legacyAllocations:emptyAllocations(),
  drafts:[],configurationHistory:[],
  gapState:{requirements:[],resolutions:[]},
  canonical:{schemaVersion:2,records:[]}
-}) as ProjectBackup;
+}) satisfies ProjectBackup;
 function setCurrent(b:ProjectBackup){
  mocks.values.project=b.project;
  mocks.values.semantic=b.semantic;
