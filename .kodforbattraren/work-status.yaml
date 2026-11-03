@@ -2,16 +2,17 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: 03509cd9bc94b1e582dddad01e3f616dfbffb51a
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-002-gapstate-cas
-active_step: KF-002
-step_state: awaiting_pr_ci
+base_sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
+work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-003-import-completion-logic
+active_step: KF-003
+step_state: verified_awaiting_merge
 completed_steps:
   - KF-001
+  - KF-002
 verification:
   baseline_main:
-    sha: 03509cd9bc94b1e582dddad01e3f616dfbffb51a
-    workflow_run: 41714169584
+    sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
+    workflow_run: 41718001644
     result: success
   kf_001:
     pr: 270
@@ -19,24 +20,27 @@ verification:
     implementation_sha: ac773a722bb1d30c15a3e339bd0fefda246f3bb0
     workflow_run: 41713591629
   kf_002:
-    tests:
-      - src/gaps/store.guarded-writes.test.ts
-      - e2e/kf-002-gapstate-concurrent-tabs.spec.ts
-    result: pending_pr_ci
-    source_code_changed: true
+    pr: 271
+    result: merged_and_pr_ci_passed
+    implementation_sha: d03e844ad82507be2cc8caa244959db07e3c7a57
+    workflow_run: 41715499310
+  kf_003:
+    test: src/import/uoImportCompletionForm.test.ts
+    result: verified_awaiting_merge
+    verified_commit: 7a50d64b4895f3b563869332ec8cb7e6a02e0cff
+    workflow_run: 41718558140
+    change_type: behavior_preserving_refactoring
 scope:
-  guarded_writers:
-    - src/gaps/GapView.tsx
-    - src/allocations/ManualUoEditor.tsx
-    - src/allocations/BuiltInAllocations.tsx
-  remaining_legacy_writers: "Unmigrated saveGapState(state) calls retain unguarded behavior; migrate separately with matching snapshot"
+  production_changed:
+    - src/import/UoImportCompletionView.tsx
+    - src/import/uoImportCompletionForm.ts
+  overlap_with_pr_256:
+    file: src/import/UoImportCompletionView.tsx
+    status: open_draft_requires_merge_review
 known_risks:
-  - "Ungarded legacy GapState writers can still silently overwrite changes"
+  - "Legacy saveGapState(next) in import completion view still lacks transactional revision guard"
+  - "PR #256 modifies the same view; resolve semantically before either PR is combined"
   - "Cross-database restore is journal-based, not atomic"
-related_open_prs:
-  - number: 256
-    subject: grouped_UO_import_completions
-    overlapping_code_changed: false
 next_step:
-  recommended: KF-002
-  reason: "Await full Verify PWA success and merge before KF-003"
+  recommended: KF-003
+  reason: "Review and merge KF-003 after latest PR-head CI; then proceed to KF-004"
