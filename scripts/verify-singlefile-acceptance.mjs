@@ -1,6 +1,7 @@
 import {chromium,expect} from '@playwright/test';
 import ExcelJS from 'exceljs';
 import {readFile} from 'node:fs/promises';
+import {Buffer} from 'node:buffer';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
@@ -59,6 +60,5 @@ try{
   await page.getByRole('button',{name:'Analys',exact:true}).click();
   await expect(page.locator('.canonical-result-head strong')).toHaveText('100 h');
   if(errors.length)throw new Error('Standalone browser runtime error: '+errors.join(' | '));
-  console.info('RG_STANDALONE_FILE PASS: import, years, CSV, backup, reload (Chromium file://)');
  }finally{await context.close()}
 }finally{await browser.close()}
