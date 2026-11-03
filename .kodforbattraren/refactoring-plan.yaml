@@ -1,0 +1,65 @@
+schema_version: 1
+plan_id: kf-pwa-utvecklingsanalys-2026-11
+repository: erland/pwa-utvecklingsanalys
+default_branch: main
+source_snapshot:
+  baseline_sha: 5686e3376ce4d80a3a29796fb3c457e8d239065c
+  baseline_ci_run: 41712022764
+  baseline_ci_result: success
+execution_policy:
+  one_step_per_pr: true
+  no_automatic_merge: true
+  prioritize_current_repository_state: true
+steps:
+  - id: KF-001
+    title: Baseline och samtidighetstester
+    change_type: tests_and_documentation
+    findings: [RR-03, GAPS-WHOLE-STATE-WRITE]
+    depends_on: []
+    acceptance:
+      - "Test visar nuvarande lost-update-beteende deterministiskt och tydligt som känd risk"
+      - "Baseline för main dokumenterad med käll-SHA och CI"
+      - "Ingen produktionslogik ändrad"
+      - "Grön Verify PWA på PR-head"
+  - id: KF-002
+    title: Skydda kritiska IndexedDB-uppdateringar
+    change_type: functional_change
+    findings: [RR-03, GAPS-WHOLE-STATE-WRITE]
+    depends_on: [KF-001]
+    acceptance:
+      - "Stale full-state-uppdatering avvisas eller förenas utan förlorade ändringar"
+      - "Två skrivare och samtidiga flikar testade"
+      - "Befintliga domän- och browsertester passerar"
+  - id: KF-003
+    title: Isolera validering från importkompletteringsvy
+    change_type: refactoring
+    findings: [IMPORT-UI-COUPLING]
+    depends_on: [KF-002]
+    acceptance:
+      - "Oförändrat observerbart beteende"
+      - "Fokuserade tests av validering och komplettering"
+      - "Undvik konflikt med öppen PR 256"
+  - id: KF-004
+    title: Förbättra meddelanden för ändringar mellan flikar
+    change_type: ux_change
+    findings: [RR-03]
+    depends_on: [KF-002]
+    acceptance:
+      - "Varning endast vid relevanta förändringar"
+      - "Konfliktfall och återhämtning verifierade med Playwright"
+  - id: KF-005
+    title: Renodla appens initiering och projektuppdateringar
+    change_type: refactoring
+    findings: [APP-COUPLING]
+    depends_on: [KF-002]
+    acceptance:
+      - "Inga förändringar i navigation eller projektdata"
+      - "Regressionstester och build passerar"
+  - id: KF-006
+    title: Samlad releaseverifiering
+    change_type: verification
+    findings: [RR-01, RR-02, RR-03, RR-04, RR-05, RR-06]
+    depends_on: [KF-002, KF-003, KF-004, KF-005]
+    acceptance:
+      - "Releasetesternas täckning och kvarvarande manuella krav redovisade"
+      - "Ingen release innan separata godkännanden"
