@@ -2,27 +2,41 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: 5686e3376ce4d80a3a29796fb3c457e8d239065c
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-001-concurrency-baseline
-active_step: KF-001
+base_sha: 03509cd9bc94b1e582dddad01e3f616dfbffb51a
+work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-002-gapstate-cas
+active_step: KF-002
 step_state: awaiting_pr_ci
-completed_steps: []
+completed_steps:
+  - KF-001
 verification:
   baseline_main:
-    sha: 5686e3376ce4d80a3a29796fb3c457e8d239065c
-    workflow_run: 41712022764
+    sha: 03509cd9bc94b1e582dddad01e3f616dfbffb51a
+    workflow_run: 41714169584
     result: success
   kf_001:
-    test: src/gaps/store.concurrency-baseline.test.ts
+    pr: 270
+    result: merged_and_ci_passed
+    implementation_sha: ac773a722bb1d30c15a3e339bd0fefda246f3bb0
+    workflow_run: 41713591629
+  kf_002:
+    tests:
+      - src/gaps/store.guarded-writes.test.ts
+      - e2e/kf-002-gapstate-concurrent-tabs.spec.ts
     result: pending_pr_ci
-    source_code_changed: false
+    source_code_changed: true
+scope:
+  guarded_writers:
+    - src/gaps/GapView.tsx
+    - src/allocations/ManualUoEditor.tsx
+    - src/allocations/BuiltInAllocations.tsx
+  remaining_legacy_writers: "Unmigrated saveGapState(state) calls retain unguarded behavior; migrate separately with matching snapshot"
 known_risks:
-  - "GapState full-snapshot writes can silently overwrite another editor's updates"
+  - "Ungarded legacy GapState writers can still silently overwrite changes"
   - "Cross-database restore is journal-based, not atomic"
 related_open_prs:
   - number: 256
     subject: grouped_UO_import_completions
     overlapping_code_changed: false
 next_step:
-  recommended: KF-001
-  reason: "Await PR-head Verify PWA success and merge before KF-002"
+  recommended: KF-002
+  reason: "Await full Verify PWA success and merge before KF-003"
