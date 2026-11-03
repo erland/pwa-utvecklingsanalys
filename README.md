@@ -42,15 +42,17 @@ Browser- och single-file-verifieringen förutsätter att Playwright Chromium är
 
 Workflowfilen `.github/workflows/release.yml` startar när en GitHub Release publiceras. Det kör hela verifieringen, publicerar PWA till GitHub Pages och bifogar en självständig `utvecklingsanalys-standalone.html` som releasefil. Den kan öppnas lokalt, men webbläsaren kan begränsa lagring och nätverksanrop från `file://`. Kontrollera funktionerna i målmiljön innan användning av verkliga data.
 
-För releasekandidat **v0.2.0**:
+För nästa release efter IP-001–IP-009 gäller [aktuell releaseberedskapsbedömning](docs/release-readiness-2026-11-03.md). Vid granskningen den 3 november 2026 var senaste publicerade release **v0.6.7**; `docs/releases/v0.2.0.md` är historiskt underlag, inte instruktion för nästa versionsnummer.
 
-1. Merga releaseförberedande PR efter grön CI.
-2. Skapa taggen `v0.2.0` från den då aktuella `main`-committen och publicera en GitHub Release med releaseanteckningarna i `docs/releases/v0.2.0.md`.
-3. Kontrollera att `Publish release (Pages + standalone HTML)` är grön och att HTML-filen bifogats releasen.
-4. Provöppna både Pages-versionen och HTML-filen, importera syntetiskt testunderlag och kontrollera analys och projektbackup.
+1. Kontrollera att `Verify PWA` är grön på exakt den `main`-commit som ska publiceras.
+2. Genomför de syntetiska manuella acceptansproven och dokumentera GO/NO-GO enligt releaseberedskapsrapporten. Ta projektbackup och prova separat återställning före uppgradering.
+3. Välj ett nytt versionsnummer enligt projektets releaseprocess, skapa taggen från den verifierade kandidaten och publicera en GitHub Release med korrekta versionsanteckningar.
+4. Kontrollera att `Publish release (Pages + standalone HTML)` lyckas, att `utvecklingsanalys-standalone.html` bifogas och att både Pages och standalone fungerar med syntetiskt testunderlag.
+
+Ingen ny release publiceras automatiskt av dokumentations- eller verifierings-PR:er.
 
 > Säkerhetsråd: exportera och spara projektbackup innan uppdatering av en befintlig installation. Lokala data får inte antas överföras automatiskt mellan GitHub Pages och `file://`, eftersom webbläsaren behandlar dem som olika ursprung.
 
 ## Dokumentation
 
-Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Aktuell samlad acceptanschecklista för analysvyn finns i `docs/dev-126-analysis-acceptance.md`; äldre kriterier från DEV-114 är historik. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
+Arkitekturbeslut: `docs/adr/001-v2-analysis-transition.md`. Migrerings- och återgångsplan: `docs/change-051-v2-rollout-and-rollback.md`. Aktuell samlad acceptanschecklista för analysvyn finns i `docs/dev-126-analysis-acceptance.md`; äldre kriterier från DEV-114 är historik. Aktuell releaseberedskap: `docs/release-readiness-2026-11-03.md`. Ytterligare planering och testunderlag finns i `docs/` och `.system-builder/`.
