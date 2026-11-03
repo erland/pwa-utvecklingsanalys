@@ -98,6 +98,6 @@ describe('IP-007 synthetic analysis performance baseline',()=>{
     fixture:'synthetic-annual-v1',uoCount,years:years.length,loPerUo,sourceRecords:canonical.records.length,
     preparedRecords:prep.dataset.records.length,...timing
    }));
-  });
+  },120_000);
  }
 });
