@@ -13,8 +13,16 @@ export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approve
 export type AllocationPreview={ruleId:string;fingerprint:string;lockedLo?:LockedLoActivity[];uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
 
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
+/** Reuse canonical validation only within one immutable preparation pass. */
+export function createActivityAllocationPreviewer(data:CanonicalDataset):(rule:ActivityAllocationRule)=>AllocationPreview{
+ const errors=validateCanonical(data);
+ return rule=>previewActivityAllocationChecked(data,rule,errors);
+}
 export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAllocationRule):AllocationPreview{
- const errors=validateCanonical(data);if(errors.length)throw new Error(errors.join(','));
+ return previewActivityAllocationChecked(data,rule,validateCanonical(data));
+}
+function previewActivityAllocationChecked(data:CanonicalDataset,rule:ActivityAllocationRule,errors:readonly string[]):AllocationPreview{
+ if(errors.length)throw new Error(errors.join(','));
  if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!isActivityAllocationRuleMetric(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
  const original=data.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===rule.datasetId&&(r.metric===rule.metric||(rule.metric==='other_cost'&&r.metric==='consultant_cost'))&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId);
  // Use annual LO records when available; otherwise roll up monthly LO source values
@@ -109,10 +117,13 @@ export function approveActivityAllocation(preview:AllocationPreview,reason:strin
  return {ruleId:preview.ruleId,fingerprint:preview.fingerprint,approvedAt:new Date().toISOString(),reason:reason.trim(),...(overrides.length?{overrides:overrides.map(o=>({...o}))}:{})};
 }
 /** Generate read-only approved completions; never write them into original source storage. */
-export function approvedActivityParts(data:CanonicalDataset,rule:ActivityAllocationRule,decision:ActivityAllocationDecision):AnalysisRecord[]{
+export function approvedActivityParts(
+ data:CanonicalDataset,rule:ActivityAllocationRule,decision:ActivityAllocationDecision,
+ previewForRule:(rule:ActivityAllocationRule)=>AllocationPreview=(r)=>previewActivityAllocation(data,r)
+):AnalysisRecord[]{
  if(decision.ruleId!==rule.id||!decision.approvedAt||!decision.reason?.trim())return [];
  let preview:AllocationPreview;
- try{preview=previewActivityAllocation(data,rule)}catch{return []}
+ try{preview=previewForRule(rule)}catch{return []}
  if(preview.fingerprint!==decision.fingerprint)return [];
  try{preview=decision.sharedPercentages?applySharedPercentages(preview,decision.overrides??[]):rebalanceUoBudgetAllocation(preview,decision.overrides??[],preview.lockedLo??[])}catch{return []}
  return preview.items.filter(item=>!preview.lockedLo?.some(lock=>lock.loId===item.loId)).flatMap(item=>['development','maintenance'].map(activity=>({
