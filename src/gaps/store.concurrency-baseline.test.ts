@@ -6,8 +6,8 @@ import {loadGapState,saveGapState} from './store';
 const storage=vi.hoisted(()=>({value:null as unknown}));
 vi.mock('idb',()=>({
  openDB:vi.fn(async()=>({
-  get:async(_store:string,_key:string)=>structuredClone(storage.value),
-  put:async(_store:string,value:unknown,_key:string)=>{storage.value=structuredClone(value)}
+  get:async()=>structuredClone(storage.value),
+  put:async(...args:unknown[])=>{storage.value=structuredClone(args[1])}
  }))
 }));
 
