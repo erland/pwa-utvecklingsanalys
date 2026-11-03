@@ -32,6 +32,7 @@ export default function App(){
  const[replaceSourceId,setReplaceSourceId]=useState<string|null>(null);
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
  const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'',items:['overview','import','allocations','analysis','settings'] as ViewId[]}];
+ const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
  const [otherTabChanged,setOtherTabChanged]=useState<WorkspaceChange|null>(null);
  // Source changes and resets can invalidate any view. Gap edits only affect
  // import, allocations and analyses; views opened later load fresh data.
@@ -40,7 +41,7 @@ export default function App(){
   // Never partially refresh project state while an existing editor is stale.
   setOtherTabChanged(type);
  }),[view]);
- const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
+
  const[overview,setOverview]=useState<OverviewStatus|null>(null);const[overviewError,setOverviewError]=useState('');
  useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>recoverSourceMutation()).then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
  useEffect(()=>{let active=true;if(!project){setOverview(null);return()=>{active=false}};void Promise.all([loadCanonical(),loadGapState()]).then(([canonical,gaps])=>{if(active){setOverview(projectOverviewStatus(project,canonical,gaps));setOverviewError('')}}).catch(()=>{if(active){setOverview(null);setOverviewError('Kunde inte läsa projektets analysstatus. Kontrollera lokal lagring.')}});return()=>{active=false}},[project,analysisRefresh,view]);
