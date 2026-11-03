@@ -16,9 +16,15 @@ describe('cross-tab workspace invalidation',()=>{
   const observed:string[]=[];
   const unsubscribe=onWorkspaceChange(type=>observed.push(type));
   notifyWorkspaceChange('sources-changed');
+  // Two BroadcastChannel objects in one tab must not trigger a self-invalidation.
+  expect(observed).toEqual([]);
+  const remote=new MockChannel('utvecklingsanalys-workspace-events');
+  remote.postMessage({type:'sources-changed',senderId:'another-tab'});
   expect(observed).toEqual(['sources-changed']);
+  remote.postMessage({type:'workspace-reset',senderId:'another-tab'});
+  expect(observed).toEqual(['sources-changed','workspace-reset']);
   unsubscribe();
-  notifyWorkspaceChange('workspace-reset');
-  expect(observed).toEqual(['sources-changed']);
+  remote.postMessage({type:'sources-changed',senderId:'another-tab'});
+  expect(observed).toEqual(['sources-changed','workspace-reset']);
  });
 });
