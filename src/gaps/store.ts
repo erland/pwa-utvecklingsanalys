@@ -12,4 +12,19 @@ export type GapState={requirements:InformationRequirement[];resolutions:GapResol
 const empty=():GapState=>({requirements:[],resolutions:[]});
 async function db(){return openDB(DB,1,{upgrade(d){d.createObjectStore('state')}})}
 export async function loadGapState():Promise<GapState>{return await (await db()).get('state','active')??empty()}
-export async function saveGapState(state:GapState):Promise<void>{await (await db()).put('state',state,'active')}
+/** Compare-and-swap within a single IndexedDB readwrite transaction.
+ * Existing callers without an expected snapshot keep legacy behavior until migrated.
+ * A stale writer must never commit its full-state replacement.
+ */
+export async function saveGapState(state:GapState,expected?:GapState):Promise<void>{
+ const database=await db();
+ if(!expected){await database.put('state',state,'active');return}
+ const tx=database.transaction('state','readwrite');
+ const current=await tx.store.get('active') as GapState|undefined;
+ if(JSON.stringify(current??empty())!==JSON.stringify(expected)){
+  await tx.done;
+  throw new Error('STALE_GAP_STATE');
+ }
+ await tx.store.put(state,'active');
+ await tx.done;
+}
