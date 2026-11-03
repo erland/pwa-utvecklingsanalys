@@ -1,6 +1,7 @@
 import {onWorkspaceChange,type WorkspaceChange} from './storage/workspaceEvents';
-import {recoverSourceMutation} from './import/sourceManagement';
-import {recoverInterruptedRestore} from './portability/store';
+import {useEffect,useState} from 'react';
+import type {ViewId} from './model';
+import {useProjectWorkspace} from './app/useProjectWorkspace';
 import ResetWorkspace from './reset/ResetWorkspace';
 import PortabilityView from './portability/PortabilityView';
 import GapView from './gaps/GapView';
@@ -12,13 +13,7 @@ import OptionalAllocationsView from './allocations/OptionalAllocationsView';
 import RelationsView from './domain/RelationsView';
 import AnalyticsView from './analytics/AnalyticsView';
 import ImportGuide from './import/ImportGuide';
-import {useEffect,useState} from 'react';
-import {loadCanonical} from './domain/canonicalStore';
-import {loadGapState} from './gaps/store';
-import {projectOverviewStatus,type OverviewStatus} from './overview/projectOverviewStatus';
 import {Activity,BarChart3,FileSpreadsheet,Settings2,ShieldCheck,Layers3,GitBranch,ChartPie,ClipboardCheck,PackageOpen} from 'lucide-react';
-import {type AnalysisProject,type ViewId} from './model';
-import{loadProject,saveProject}from './storage';
 const nav: {id:ViewId;label:string;icon:typeof Activity}[]=[{id:'overview',label:'Översikt',icon:Activity},{id:'import',label:'Import',icon:FileSpreadsheet},{id:'analysis',label:'Analys',icon:BarChart3},{id:'gaps',label:'Kompletteringar',icon:ClipboardCheck},{id:'groups',label:'Grupper',icon:Layers3},{id:'relations',label:'Relationer',icon:GitBranch},{id:'allocations',label:'Fördelningar',icon:ChartPie},{id:'planning',label:'Planering',icon:ClipboardCheck},{id:'configuration',label:'Konfiguration',icon:PackageOpen},{id:'settings',label:'Inställningar',icon:Settings2}];
 const legacyNavigationGroups: {label:string;items:ViewId[]}[]=[
  {label:'Analysera',items:['overview','analysis']},
@@ -32,31 +27,14 @@ export default function App(){
  const[replaceSourceId,setReplaceSourceId]=useState<string|null>(null);
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
  const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'',items:['overview','import','allocations','analysis','settings'] as ViewId[]}];
- const[analysisRefresh,setAnalysisRefresh]=useState(0);const[view,setView]=useState<ViewId>('overview');const[project,setProject]=useState<AnalysisProject|null>(null);const[storageError,setStorageError]=useState('');
+ const [view,setView]=useState<ViewId>('overview');
  const [otherTabChanged,setOtherTabChanged]=useState<WorkspaceChange|null>(null);
- // Source changes and resets can invalidate any view. Gap edits only affect
- // import, allocations and analyses; views opened later load fresh data.
+ const {project,analysisRefresh,storageError,overview,overviewError,analysisAvailable,
+  openAnalysis,updateName,projectImported,refreshAnalysis}=useProjectWorkspace(view,setView);
  useEffect(()=>onWorkspaceChange(type=>{
   if(type==='gap-state-changed'&&!['import','gaps','allocations','analysis'].includes(view))return;
-  // Never partially refresh project state while an existing editor is stale.
   setOtherTabChanged(type);
  }),[view]);
-
- const[overview,setOverview]=useState<OverviewStatus|null>(null);const[overviewError,setOverviewError]=useState('');
- useEffect(()=>{let active=true;recoverInterruptedRestore().then(()=>recoverSourceMutation()).then(()=>loadProject()).then(p=>{if(active)setProject(p)}).catch(()=>{if(active)setStorageError('Lokal lagring eller återställning misslyckades. Kontrollera datalagringen innan du fortsätter.')});return()=>{active=false}},[]);
- useEffect(()=>{let active=true;if(!project){setOverview(null);return()=>{active=false}};void Promise.all([loadCanonical(),loadGapState()]).then(([canonical,gaps])=>{if(active){setOverview(projectOverviewStatus(project,canonical,gaps));setOverviewError('')}}).catch(()=>{if(active){setOverview(null);setOverviewError('Kunde inte läsa projektets analysstatus. Kontrollera lokal lagring.')}});return()=>{active=false}},[project,analysisRefresh,view]);
- const analysisAvailable=overview?.hasData===true&&!overviewError&&!storageError;
- const openAnalysis=async()=>{
-  try{
-   // Read persisted source data at the point of navigation, not a possibly stale UI snapshot.
-   const [currentProject,canonical,gaps]=await Promise.all([loadProject(),loadCanonical(),loadGapState()]);
-   const status=projectOverviewStatus(currentProject,canonical,gaps);
-   setProject(currentProject);setOverview(status);setOverviewError('');
-   if(status.hasData){setAnalysisRefresh(v=>v+1);setView('analysis')}
-   else {setView('import');setOverviewError('Importera minst en källa med analysuppgifter innan du öppnar Analys.')}
-  }catch{setView('import');setOverview(null);setOverviewError('Kunde inte kontrollera importerade analysuppgifter. Försök igen eller kontrollera lokal lagring.')}
- };
- const updateName=async(name:string)=>{if(!project)return;const p={...project,name};setProject(p);try{await saveProject(p);setStorageError('')}catch{setStorageError('Kunde inte spara projektet lokalt.')}};
  return <div className="shell"><a className="skip-link" href="#main-content">Hoppa till innehållet</a><aside className="sidebar"><div className="brand"><span className="brandmark"><BarChart3 size={24}/></span><div><strong>Utvecklingsanalys</strong><small>Analysarbetsyta</small></div></div><nav aria-label="Huvudmeny">{navigationGroups.map(group=><div className="nav-group" key={group.label}>{group.label&&<span className="nav-group-title">{group.label}</span>}{group.items.map(id=>{const n=nav.find(item=>item.id===id)!;return <button key={n.id} type="button" aria-current={view===n.id?'page':undefined} className={view===n.id?'nav-link active':'nav-link'} aria-disabled={n.id==='analysis'&&!analysisAvailable?'true':undefined} title={n.id==='analysis'&&!analysisAvailable?'Importera analysuppgifter för att aktivera Analys':undefined} onClick={()=>n.id==='analysis'?(analysisAvailable?void openAnalysis():undefined):setView(n.id)}><n.icon size={19} aria-hidden="true"/>{n.label}</button>})}</div>)}</nav><div className="sidebar-foot"><ShieldCheck size={16}/>Lokal data · ingen server</div></aside>
  <div className="content"><header className="topbar"><div><strong>{project?.name??'Mitt analysprojekt'}</strong><small>Projektbackup · DEV-011</small></div><span className="pill">Lokal analys</span></header><main id="main-content">
  {otherTabChanged&&<div role="alert" className="alert"><strong>{otherTabChanged==='gap-state-changed'?'Kompletteringar eller fördelningar har ändrats i en annan flik.':otherTabChanged==='workspace-reset'?'Arbetsytan har återställts i en annan flik.':'Arbetsytan har ändrats i en annan flik.'}</strong> Ladda om innan du fortsätter för att undvika att skriva tillbaka gamla data. <button type="button" className="primary" onClick={()=>window.location.reload()}>Ladda om nu</button></div>}
@@ -68,15 +46,15 @@ export default function App(){
 
  {view==='gaps'&&<GapView/>}
  {view==='analysis'&&(analysisAvailable?<AnalyticsView refreshKey={analysisRefresh} onOpenCompletions={()=>setView(legacyNav?'gaps':'import')}/>:<section className="panel"><h2>Importera analysuppgifter först</h2><p>Det finns ännu inga importerade analysvärden i projektet.</p><button className="primary" onClick={()=>setView('import')}>Gå till importen</button></section>)}
- {view==='import'&&<ImportGuide replaceId={replaceSourceId} setReplaceId={setReplaceSourceId} onAnalyze={()=>{void openAnalysis()}} onAllocations={()=>setView('allocations')} project={project} onProject={p=>{setProject(p);setAnalysisRefresh(v=>v+1)}}/>}
+ {view==='import'&&<ImportGuide replaceId={replaceSourceId} setReplaceId={setReplaceSourceId} onAnalyze={()=>{void openAnalysis()}} onAllocations={()=>setView('allocations')} project={project} onProject={projectImported}/>}
  {view==='relations'&&<RelationsView/>}
  {view==='allocations'&&(legacyNav?<AllocationsView/>:<><div className="eyebrow">ARBETSFÖRDELNING</div><h1>Fördelningar</h1><OptionalAllocationsView mode="rules"/></>)}
  {view==='planning'&&<PlanningView/>}
  {view==='configuration'&&<ConfigurationView/>}
- {view==='groups'&&<GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)}/>}
+ {view==='groups'&&<GroupsView onSaved={refreshAnalysis}/>}
  {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><p className="lead">Hantera projektet, UO-grupper och fördelningstyper. Backup och återställning finns i ett separat avsnitt längst ner.</p>
  <section className="panel" aria-label="Projektinställningar"><h2>Projekt</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p></section>
- <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={()=>setAnalysisRefresh(v=>v+1)} embedded/></section>
+ <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={refreshAnalysis} embedded/></section>
  <section aria-label="Administrera fördelningstyper" style={{marginTop:24}}><OptionalAllocationsView/></section>
  <section className="panel" aria-label="Backup och återställning" style={{marginTop:24}}><h2>Backup och återställning</h2><p>Exportera projektdata eller återställ en säkerhetskopia. Återställning av arbetsytan finns längst ner och bör användas med försiktighet.</p><PortabilityView/><ResetWorkspace/></section></>}
 

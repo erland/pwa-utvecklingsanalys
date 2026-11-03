@@ -2,16 +2,16 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: 96164d390b2fe5c27dd760cdfd3a79059da82880
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-004-cross-tab-scoped
-active_step: KF-004
-step_state: awaiting_pr_ci
-completed_steps: [KF-001, KF-002, KF-003]
+base_sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
+work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-005-project-lifecycle
+active_step: KF-005
+step_state: verified_awaiting_merge
+completed_steps: [KF-001, KF-002, KF-003, KF-004]
 verification:
   baseline_main:
-    sha: 96164d390b2fe5c27dd760cdfd3a79059da82880
-    workflow_run: 41720457214
-    result: pending_at_step_start
+    sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
+    workflow_run: 41722827639
+    result: success
   kf_001:
     pr: 270
     result: merged_and_ci_passed
@@ -21,27 +21,29 @@ verification:
   kf_003:
     pr: 272
     result: merged_and_ci_passed
-    last_pr_workflow_run: 41718986862
   kf_004:
-    result: pending_pr_ci
-    tests:
-      - src/storage/workspaceEvents.test.ts
-      - e2e/kf-004-scoped-workspace-invalidation.spec.ts
-      - e2e/ip-003-cross-tab-invalidation.spec.ts
-    change_type: ux_change_and_functional_invalidation
+    pr: 273
+    result: merged_and_ci_passed
+    last_pr_workflow_run: 41721692516
+  kf_005:
+    result: verified_awaiting_merge
+    verified_code_commit: 8f330b189cd7600088227093cb06d1ec7ccadf89
+    workflow_run: 41723323306
+    test: e2e/kf-005-project-lifecycle.spec.ts
+    change_type: behavior_preserving_refactoring
 scope:
-  events:
-    - sources-changed
-    - workspace-reset
-    - gap-state-changed
-  gap_views: [import, gaps, allocations, analysis]
-  unaffected_views: [overview, settings, groups, relations, planning, configuration]
-  cross_tab_recovery: explicit_page_reload_only
+  extracted_hook: src/app/useProjectWorkspace.ts
+  entrypoint: src/App.tsx
+  preserved_contracts:
+    - restore_before_source_recovery_before_load_project
+    - project_name_serialized_write
+    - overview_refresh_when_project_or_view_changes
+    - analysis_rechecks_persisted_sources_before_navigation
+    - legacy_navigation_compatibility
 known_risks:
-  - "Legacy unguarded saveGapState writes remain unprotected against competing writes"
-  - "BroadcastChannel may be unavailable; transactional conflict protection is independent"
-  - "Source reset and multi-database restore are not single atomic transactions"
-  - "PR #256 still modifies UoImportCompletionView and must be reviewed separately"
+  - "PR #256 remains open and modifies UoImportCompletionView separately"
+  - "Legacy unguarded GapState writes remain possible"
+  - "Source reset and multi-database restore are not atomic"
 next_step:
-  recommended: KF-004
-  reason: "Await PR-head Verify PWA and code review before proceeding to KF-005"
+  recommended: KF-005
+  reason: "Final status-only commit requires a fresh PR-head Verify PWA; then review and merge before KF-006"
