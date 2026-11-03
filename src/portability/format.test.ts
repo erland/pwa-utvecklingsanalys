@@ -1,6 +1,7 @@
 import {it,expect} from 'vitest';
 import {emptySemantic} from '../domain/semantic';
-import {emptyCanonical} from '../domain/canonical';
+import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
+import {approvedActivityParts,previewActivityAllocation} from '../domain/activityAllocation';
 import {emptyAllocations} from '../allocations/model';
 import {emptyPlanning} from '../planning/model';
 import {backupToJson,validateBackup,exportFactsCsv} from './format';
@@ -40,17 +41,26 @@ it('roundtrips a source-aware project',()=>{
 
 it('accepts cost activity rules in a v3 backup without widening the metric contract',()=>{
  const semantic=emptySemantic();
- const canonical=emptyCanonical();
+ const source={datasetId:'cost-source',sheet:'Budget',cell:'D5'};
+ const matrix=(id:string,activity:'development'|'maintenance',value:number):AnalysisRecord=>({id,metric:'other_cost',year:2027,value,activity,scope:{axis:'work',uoId:'uo:cost'},authority:'original',approval:'reported',granularity:'activity-part',workPart:'uo-activity-matrix',workloadId:'matrix',source});
+ const total=(id:string,metric:'other_cost'|'consultant_cost',value:number):AnalysisRecord=>({id,metric,year:2027,value,activity:'unknown',scope:{axis:'work',uoId:'uo:cost',loId:'lo:one'},authority:'original',approval:'reported',granularity:'total',workPart:'lo',workloadId:'cost-work',source});
+ const canonical={...emptyCanonical(),records:[matrix('dev','development',60),matrix('maintenance','maintenance',40),total('other','other_cost',100),total('consultant','consultant_cost',20)]};
+ const rule={id:'cost-rule',datasetId:'cost-source',uoId:'uo:cost',metric:'other_cost' as const,year:2027,reason:'Split costs'};
+ const fingerprint=previewActivityAllocation(canonical,rule).fingerprint;
  const base={
   format:'utvecklingsanalys-project' as const,version:3 as const,exportedAt:'2026-11-03',
   project:{schemaVersion:1 as const,id:'project',name:'Cost allocation',datasets:[{id:'cost-source',name:'cost.xlsx',planningYear:2027,importedAt:'2026-11-03',source:'excel' as const}],updatedAt:'2026-11-03'},
   semantic,planning:emptyPlanning(),configuration:null,legacyAllocations:emptyAllocations(),drafts:[],configurationHistory:[],canonical,
-  gapState:{requirements:[],resolutions:[],activityAllocationRules:[{id:'cost-rule',datasetId:'cost-source',uoId:'uo:cost',metric:'other_cost' as const,year:2027,reason:'Split costs'}],
-   activityAllocationDecisions:[{ruleId:'cost-rule',fingerprint:'source-fingerprint',approvedAt:'2026-11-03',reason:'Reviewed cost split',overrides:[{loId:'lo:one',developmentPercent:60}]}]}
+  gapState:{requirements:[],resolutions:[],activityAllocationRules:[rule],
+   activityAllocationDecisions:[{ruleId:'cost-rule',fingerprint,approvedAt:'2026-11-03',reason:'Reviewed cost split',overrides:[{loId:'lo:one',developmentPercent:60}]}]}
  };
  const restored=validateBackup(JSON.parse(backupToJson(base)));
  expect(restored.gapState?.activityAllocationRules?.[0]).toEqual(base.gapState.activityAllocationRules[0]);
  expect(restored.gapState?.activityAllocationDecisions?.[0]).toEqual(base.gapState.activityAllocationDecisions[0]);
+ const parts=approvedActivityParts(restored.canonical!,restored.gapState!.activityAllocationRules![0],restored.gapState!.activityAllocationDecisions![0]);
+ expect(parts.filter(p=>p.activity==='development')).toHaveLength(1);
+ expect(parts.find(p=>p.activity==='development')?.value).toBeCloseTo(72);
+ expect(parts.find(p=>p.activity==='maintenance')?.value).toBeCloseTo(48);
  for(const metric of ['consultant_cost','invalid']){
   const bad={...base,gapState:{...base.gapState,activityAllocationRules:[{...base.gapState.activityAllocationRules[0],metric}]}};
   expect(()=>validateBackup(bad)).toThrow('INVALID_ACTIVITY_ALLOCATION_RULE');
