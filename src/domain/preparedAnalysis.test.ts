@@ -12,6 +12,29 @@ const make=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:str
  authority:'original',approval:'reported',granularity:loId?'total':'activity-part',
  workloadId:loId?'ds|uo:A|'+loId+'|it_hours|2027|year':'ds|uo:A|it_hours|2027',
  source:{datasetId:'ds',sheet:'Budget',cell:id}
+ it('reports auto allocation failures with source scope but keeps unallocated totals unchanged',()=>{
+  const source=emptyCanonical();
+  source.records=[make('D5',80,'development'),make('D26',70,'unknown','lo:one')];
+  const result=prepareAnalysisDataset(source,{requirements:[],resolutions:[]});
+  expect(result.diagnostics).toEqual([{
+   code:'AUTO_ALLOCATION_FAILED',datasetId:'ds',uoId:'uo:A',year:2027,metric:'it_hours',reason:'INCOMPLETE_UO_OR_LO'
+  }]);
+  expect(result.dataset.preparedAnalysis.diagnostics).toEqual(result.diagnostics);
+  expect(result.dataset.records.filter(r=>r.authority==='derived')).toHaveLength(0);
+  expect(analyzeCanonical(result.dataset,{requirements:[],resolutions:[]},{axis:'work',metrics:['it_hours'],activity:'all'}).total).toBe(70);
+ });
+ it('reports a stale approved allocation without treating it as an automatic replacement',()=>{
+  const source=emptyCanonical();
+  source.records=[make('D5',60,'development'),make('E5',40,'maintenance'),make('D26',100,'unknown','lo:one')];
+  const rule={id:'review',datasetId:'ds',uoId:'uo:A',metric:'it_hours' as const,year:2027,reason:'Reviewed'};
+  const approved=approveSharedActivityAllocation(previewActivityAllocation(source,rule),'Reviewed',[]);
+  const changed={...source,records:source.records.map(r=>r.id==='D26'?{...r,value:110}:r)};
+  const result=prepareAnalysisDataset(changed,{requirements:[],resolutions:[],activityAllocationRules:[rule],activityAllocationDecisions:[approved]});
+  expect(result.staleApprovals).toBe(1);
+  expect(result.diagnostics).toEqual([{code:'STALE_OR_INVALID_APPROVAL',datasetId:'ds',uoId:'uo:A',year:2027,metric:'it_hours',reason:'Approval fingerprint or allocation is no longer valid'}]);
+  expect(result.dataset.records.filter(r=>r.authority==='derived')).toHaveLength(0);
+ });
+
 });
 describe('prepared annual analysis boundary',()=>{
  it('automatically distributes IT hours before any approval and preserves source',()=>{
