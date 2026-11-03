@@ -1,4 +1,4 @@
-import {approvedActivityParts,previewActivityAllocation,type ActivityAllocationRule} from './activityAllocation';
+import {approvedActivityParts,createActivityAllocationPreviewer,type ActivityAllocationRule} from './activityAllocation';
 import type {AnalysisRecord,CanonicalDataset} from './canonical';
 import type {GapState} from '../gaps/store';
 import {activeManualUoSplits,manualSplitKey} from '../allocations/manualUoAllocation';
@@ -19,6 +19,9 @@ export type PreparedAnalysis={dataset:PreparedDataset;staleApprovals:number;excl
 export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):PreparedAnalysis{
  const approvalSource=(source as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
  const original:CanonicalDataset=withCompletedUoMatrices(approvalSource?{...source,records:approvalSource}:source,state.uoImportCompletions??[]);
+ // All candidate previews share this immutable source; validate it only once.
+ // Any validation errors are still raised per preview and handled by the existing diagnostics.
+ const previewForRule=createActivityAllocationPreviewer(original);
  const calculated:AnalysisRecord[]=[];
  let staleApprovals=0;
  const diagnostics:AllocationDiagnostic[]=[];
@@ -42,11 +45,11 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
   const decision=state.activityAllocationDecisions?.find(d=>d.ruleId===rule.id);
   let parts:AnalysisRecord[]=[];
   if(decision){
-   parts=approvedActivityParts(original,rule,decision);
+   parts=approvedActivityParts(original,rule,decision,previewForRule);
    if(!parts.length){staleApprovals++;diagnostics.push({code:'STALE_OR_INVALID_APPROVAL',datasetId:rule.datasetId,uoId:rule.uoId,year:rule.year,metric:rule.metric,reason:'Approval fingerprint or allocation is no longer valid'});continue}
   }else{
    try{
-    const preview=previewActivityAllocation(original,rule);
+    const preview=previewForRule(rule);
     const locked=new Set((preview.lockedLo??[]).map(x=>x.loId));
     parts=preview.items.filter(item=>!locked.has(item.loId)).flatMap(item=>
      (['development','maintenance'] as const).map(activity=>({
