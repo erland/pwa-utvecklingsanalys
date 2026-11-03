@@ -84,7 +84,7 @@ export async function approveBudgetSource(result:ImportResult,id:string,fileName
   const next={...project,datasets:[...project.datasets.filter(d=>d.id!==id),{id,name:result.uo,planningYear:2027,importedAt:new Date().toISOString(),source:'excel' as const}]};
   await saveSemantic(semantic);await saveCanonical(canonical);await saveProject(next);
   return next;
- });
+ },true);
 }
 
 /** New tabular sources use the same cross-database undo journal as budget imports. */
@@ -96,5 +96,5 @@ export async function approveTabularSource(result:TableResult,id:string,fileName
   const next={...project,datasets:[...project.datasets,{id,name:fileName,planningYear:result.facts[0].year,source:'excel' as const,importedAt:new Date().toISOString()}]};
   await saveSemantic(semantic);await saveCanonical(canonical);await saveProject(next);
   return next;
- });
+ },true);
 }
