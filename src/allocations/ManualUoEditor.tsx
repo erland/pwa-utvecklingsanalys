@@ -18,7 +18,7 @@ export default function ManualUoEditor({data,gaps,onSaved,year,kind,uoId}:{data:
    const latest=await loadGapState();
    if(JSON.stringify(latest.manualUoSplits??[])!==JSON.stringify(gaps.manualUoSplits??[]))throw new Error('Fördelningen har ändrats i en annan flik. Ladda om.');
    const manualUoSplits=saveManualUoSplit(data,latest.manualUoSplits??[],{uoId:row.uoId,year:row.year,metric:row.metric,developmentPercent:value});
-   const next={...latest,manualUoSplits};await saveGapState(next);onSaved(next);
+   const next={...latest,manualUoSplits};await saveGapState(next,latest);onSaved(next);
   }catch(e){setError(String(e))}finally{setBusy(false)}
  };
  if(!eligible.length)return null;
