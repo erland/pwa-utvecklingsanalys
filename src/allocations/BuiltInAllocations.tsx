@@ -123,7 +123,7 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
    else decisions[index]=approvals[i];
   }
   const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
-  await saveGapState(next);onSaved(next);
+  await saveGapState(next,latest);onSaved(next);
  };
  const saveAcrossYears=async(groups:{rules:ActivityAllocationRule[];previews:AllocationPreview[]}[],overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
   // Validate all target years before persisting a single atomic state update.
@@ -139,7 +139,7 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
   const rules=[...(current.activityAllocationRules??[])];
   for(const rule of selectedRules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
   const next={...current,activityAllocationRules:rules,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
-  await saveGapState(next);onSaved(next);
+  await saveGapState(next,current);onSaved(next);
  };
  const bulkMatchUo=async(uoId:string)=>{
   const targets=[...editorGroups.values()].filter(g=>g.rules[0].uoId===uoId&&(selected==='activity-cost'?g.rules[0].metric==='other_cost':g.rules[0].metric!=='other_cost')&&(year===0||g.rules[0].year===year));
@@ -164,7 +164,7 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
   const rules=[...(latest.activityAllocationRules??[])];
   for(const rule of selectedRules)if(ids.has(rule.id)&&!rules.some(r=>r.id===rule.id))rules.push(rule);
   const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:[...(latest.activityAllocationDecisions??[]).filter(d=>!ids.has(d.ruleId)),...decisions]};
-  await saveGapState(next);onSaved(next);
+  await saveGapState(next,latest);onSaved(next);
  };
  const kinds:[Kind,string,string,string][]=[
   ['activity','Utveckling / Förvaltning – timmar','Utveckling','Förvaltning'],
