@@ -76,7 +76,10 @@ describe('IP-007 synthetic analysis performance baseline',()=>{
    const prep=prepareAnalysisDataset(canonical,state);
    expect(prep.diagnostics).toEqual([]);
    expect(prep.staleApprovals).toBe(0);
-   expect(prep.dataset.records.filter(r=>r.authority==='original')).toHaveLength(canonical.records.length);
+   // UO matrix rows are ratio sources and are intentionally excluded from the prepared analytic volume.
+   const loSources=canonical.records.filter(r=>r.workPart==='lo');
+   expect(prep.dataset.records.filter(r=>r.authority==='original')).toEqual(loSources);
+   expect(prep.excludedMatrix).toBe(canonical.records.length-loSources.length);
    const query={axis:'work' as const,metrics:['it_hours','business_hours'] as Metric[],activity:'all' as const,organizationLevel:'uo' as const};
    const expected=uoCount*loPerUo*years.length*(values.it_hours+values.business_hours);
    expect(analyzeCanonical(prep.dataset,state,query).total).toBe(expected);
