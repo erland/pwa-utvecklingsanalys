@@ -31,8 +31,13 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
  const withLo=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.scope.loId&&r.granularity==='total').map(identity));
  // In UO-detail mode overhead is additive alongside LO, but UO's activity matrix is an alternative summary.
  const withDetail=new Set(filtered.filter(r=>r.scope.axis==='work'&&r.granularity==='total'&&(r.scope.loId||r.workPart==='uo-overhead')).map(identity));
+ // Pre-index annual/monthly presence once for the selected query scope.
+ // Previously each workload group rescanned all filtered records (quadratic cost).
+ const periodFlags=new Map<string,number>();
  const groups=new Map<string,AnalysisRecord[]>();
  for(const r of filtered){
+  const periodKey=JSON.stringify([r.metric,r.year,sourceId(r),r.scope]);
+  periodFlags.set(periodKey,(periodFlags.get(periodKey)??0)|(r.month===undefined?1:2));
   const key=JSON.stringify([r.workloadId,r.metric,r.year,r.month??null,r.scope]);
   groups.set(key,[...(groups.get(key)??[]),r]);
  }
@@ -46,9 +51,10 @@ export function analyzeCanonical(data:CanonicalDataset,state:GapState,query:Cano
   if(!representative)continue;
   const root=representative.scope.axis==='work'&&!representative.scope.loId;
   if(root&&(query.detailUoId?withDetail:withLo).has(identity(representative))&&!total&&values.every(r=>r.workPart===undefined||r.workPart==='uo-activity-matrix')){excludedAlternatives+=values.length;continue}
-  // For monthly/annual collisions reject the entire selection instead of silently adding both.
-  const periodPeers=filtered.filter(r=>r.metric===representative.metric&&r.year===representative.year&&sourceId(r)===sourceId(representative)&&JSON.stringify(r.scope)===JSON.stringify(representative.scope));
-  if(periodPeers.some(r=>r.month!==undefined)&&periodPeers.some(r=>r.month===undefined))throw new Error('MIXED_PERIOD_GRANULARITY');
+  // Preserve the existing selected-source/metric/year/scope collision rule,
+  // including collisions across distinct workload IDs.
+  const periodKey=JSON.stringify([representative.metric,representative.year,sourceId(representative),representative.scope]);
+  if(periodFlags.get(periodKey)===3)throw new Error('MIXED_PERIOD_GRANULARITY');
   const development=parts.find(r=>r.activity==='development');
   const maintenance=parts.find(r=>r.activity==='maintenance');
   const complete=Boolean(development&&maintenance);
