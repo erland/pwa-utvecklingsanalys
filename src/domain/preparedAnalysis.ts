@@ -10,13 +10,19 @@ import type {AllocationPreview} from './activityAllocation';
 /** Import/completion boundary. Resolve approved activity parts once before any analysis query.
  * Original imports and approvals are never overwritten.
  */
-export type PreparedDataset=CanonicalDataset & {preparedAnalysis:{staleApprovals:number;excludedMatrix:number}};
-export type PreparedAnalysis={dataset:PreparedDataset;staleApprovals:number;excludedMatrix:number};
+export type AllocationDiagnostic={
+ code:'STALE_OR_INVALID_APPROVAL'|'AUTO_ALLOCATION_FAILED'|'INCOMPLETE_IMPORTED_LO_ACTIVITY'|'MANUAL_REBALANCE_FAILED';
+ datasetId:string;uoId:string;year:number;metric:AnalysisRecord['metric'];reason:string;
+};
+export type PreparedDataset=CanonicalDataset & {preparedAnalysis:{staleApprovals:number;excludedMatrix:number;diagnostics:AllocationDiagnostic[]}};
+export type PreparedAnalysis={dataset:PreparedDataset;staleApprovals:number;excludedMatrix:number;diagnostics:AllocationDiagnostic[]};
 export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):PreparedAnalysis{
  const approvalSource=(source as CanonicalDataset & {allocationSourceRecords?:AnalysisRecord[]}).allocationSourceRecords;
  const original:CanonicalDataset=withCompletedUoMatrices(approvalSource?{...source,records:approvalSource}:source,state.uoImportCompletions??[]);
  const calculated:AnalysisRecord[]=[];
  let staleApprovals=0;
+ const diagnostics:AllocationDiagnostic[]=[];
+ const reason=(error:unknown)=>error instanceof Error?error.message:'UNKNOWN_ALLOCATION_ERROR';
  // Imported UO matrix values drive automatic LO splits even before the user edits anything.
  // Saved decisions take precedence and are validated against the current source fingerprint.
  const candidates=new Map<string,ActivityAllocationRule>();
@@ -37,7 +43,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
   let parts:AnalysisRecord[]=[];
   if(decision){
    parts=approvedActivityParts(original,rule,decision);
-   if(!parts.length){staleApprovals++;continue}
+   if(!parts.length){staleApprovals++;diagnostics.push({code:'STALE_OR_INVALID_APPROVAL',datasetId:rule.datasetId,uoId:rule.uoId,year:rule.year,metric:rule.metric,reason:'Approval fingerprint or allocation is no longer valid'});continue}
   }else{
    try{
     const preview=previewActivityAllocation(original,rule);
@@ -51,7 +57,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
       authority:'derived' as const,approval:'approved' as const,granularity:'activity-part' as const,workloadId:item.workloadId
      }))
     );
-   }catch{continue}
+   }catch(error){diagnostics.push({code:'AUTO_ALLOCATION_FAILED',datasetId:rule.datasetId,uoId:rule.uoId,year:rule.year,metric:rule.metric,reason:reason(error)});continue}
   }
   // Cost allocation has one shared UO ratio but two distinct LO cost metrics.
   // Allocate each category separately to prevent double-counting consultant costs.
@@ -84,7 +90,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
    for(const metric of splitMetrics){
    const scope={datasetId,uoId:split.uoId,year:split.year,metric};
    const {locks,incompleteLoIds}=importedLoActivityLocks(original,scope);
-   if(incompleteLoIds.length){staleApprovals++;continue}
+   if(incompleteLoIds.length){staleApprovals++;diagnostics.push({code:'INCOMPLETE_IMPORTED_LO_ACTIVITY',datasetId,uoId:split.uoId,year:split.year,metric,reason:'Incomplete imported LO: '+incompleteLoIds.join(', ')});continue}
    const originals=original.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===datasetId&&r.scope.axis==='work'&&r.scope.uoId===split.uoId&&r.year===split.year&&r.metric===metric&&r.granularity==='total'&&(r.scope.loId||r.workPart==='uo-overhead'));
    const groups=new Map<string,AnalysisRecord[]>();
    for(const r of originals){const id=r.scope.axis==='work'?(r.scope.loId??'uo-overhead:'+split.uoId):'';groups.set(id,[...(groups.get(id)??[]),r])}
@@ -98,7 +104,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
    const total=items.reduce((n,i)=>n+i.total,0),development=total*split.developmentPercent/100;
    const preview:AllocationPreview={ruleId:'manual:'+datasetId+':'+split.year+':'+metric,fingerprint:split.sourceFingerprint,items,uo:{development,maintenance:total-development},lockedLo:locks};
    let balanced:AllocationPreview;
-   try{balanced=rebalanceUoBudgetAllocation(preview,[],locks)}catch{staleApprovals++;continue}
+   try{balanced=rebalanceUoBudgetAllocation(preview,[],locks)}catch(error){staleApprovals++;diagnostics.push({code:'MANUAL_REBALANCE_FAILED',datasetId,uoId:split.uoId,year:split.year,metric,reason:reason(error)});continue}
    for(const item of balanced.items){
     if(locks.some(l=>l.loId===item.loId))continue;
     for(const activity of ['development','maintenance'] as const)calculated.push({
@@ -115,5 +121,5 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
  // The UO summary matrix is never volume. Older source records can omit workPart.
  const isMatrix=(r:AnalysisRecord)=>r.scope.axis==='work'&&!r.scope.loId&&r.granularity==='activity-part'&&(r.workPart==='uo-activity-matrix'||r.authority==='original');
  const excludedMatrix=source.records.filter(isMatrix).length;
- return {dataset:{schemaVersion:2,records:[...source.records.filter(r=>!isMatrix(r)),...calculated],preparedAnalysis:{staleApprovals,excludedMatrix}},staleApprovals,excludedMatrix};
+ return {dataset:{schemaVersion:2,records:[...source.records.filter(r=>!isMatrix(r)),...calculated],preparedAnalysis:{staleApprovals,excludedMatrix,diagnostics}},staleApprovals,excludedMatrix,diagnostics};
 }
