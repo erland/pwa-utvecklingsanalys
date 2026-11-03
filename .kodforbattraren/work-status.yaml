@@ -5,13 +5,13 @@ default_branch: main
 base_sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
 work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-005-project-lifecycle
 active_step: KF-005
-step_state: awaiting_pr_ci
+step_state: verified_awaiting_merge
 completed_steps: [KF-001, KF-002, KF-003, KF-004]
 verification:
   baseline_main:
     sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
     workflow_run: 41722827639
-    result: pending_at_step_start
+    result: success
   kf_001:
     pr: 270
     result: merged_and_ci_passed
@@ -26,7 +26,9 @@ verification:
     result: merged_and_ci_passed
     last_pr_workflow_run: 41721692516
   kf_005:
-    result: pending_pr_ci
+    result: verified_awaiting_merge
+    verified_code_commit: 8f330b189cd7600088227093cb06d1ec7ccadf89
+    workflow_run: 41723323306
     test: e2e/kf-005-project-lifecycle.spec.ts
     change_type: behavior_preserving_refactoring
 scope:
@@ -44,4 +46,4 @@ known_risks:
   - "Source reset and multi-database restore are not atomic"
 next_step:
   recommended: KF-005
-  reason: "Await PR-head Verify PWA and review before KF-006"
+  reason: "Final status-only commit requires a fresh PR-head Verify PWA; then review and merge before KF-006"
