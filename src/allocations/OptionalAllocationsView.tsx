@@ -1,6 +1,6 @@
 import BuiltInAllocations from './BuiltInAllocations';
 import {allocationTypeOverview} from './typeOverview';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,type GapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
@@ -39,6 +39,8 @@ function PercentEditor({dimension,scope,year,own,base,onSave,onRemove}:{dimensio
 
 export default function OptionalAllocationsView({mode='definitions'}:{mode?:'definitions'|'rules'}){
  const [data,setData]=useState<OptionalAllocations>(emptyOptionalAllocations);
+ // Track the revision observed when this editor loaded, not the latest at save time.
+ const expectedRevision=useRef<string|null>(null);
  const [canonicalData,setCanonicalData]=useState<CanonicalDataset|null>(null);
  const [gaps,setGaps]=useState<GapState>({requirements:[],resolutions:[]});
  const [units,setUnits]=useState<Unit[]>([]),[years,setYears]=useState<number[]>([]);
@@ -53,7 +55,9 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
  useEffect(()=>{let live=true;void (async()=>{
   const [canonical,legacy,gapState]=await Promise.all([loadCanonical(),loadAllocations(),loadGapState()]);
   const config=mode==='rules'?(await readConfiguration()??await initializeConfiguration(legacy,{})):await initializeConfiguration(legacy,{});
+  const history=await revisions();
   if(!live)return;
+  expectedRevision.current=history.at(-1)?.id??null;
   setData(readOptionalAllocations(config?.sections.optionalAllocations));setCanonicalData(canonical);setGaps(gapState);
   const map=new Map<string,Unit>(),dateSet=new Set<number>();
   for(const record of canonical.records){dateSet.add(record.year);if(record.scope.axis!=='work')continue;
@@ -66,7 +70,7 @@ export default function OptionalAllocationsView({mode='definitions'}:{mode?:'def
   setUnits([...map.values()].sort((a,b)=>label(a.id).localeCompare(label(b.id),'sv')).map(x=>({...x,los:x.los.sort((a,b)=>label(a).localeCompare(label(b),'sv'))})));
   setYears([...dateSet].sort());
  })().catch(e=>{if(live)setError(String(e))});return()=>{live=false}},[mode]);
- const persist=async(next:OptionalAllocations)=>{parseOptionalAllocations(next);const config=await readConfiguration();if(!config)throw new Error('Konfiguration saknas');const history=await revisions();await commitConfiguration({...config,sections:{...config.sections,optionalAllocations:next}},'Update optional allocations',history.at(-1)?.id);setData(next);setRevision(v=>v+1);setNotice('Fördelningen sparades i projektets konfiguration och versionshistorik.')};
+ const persist=async(next:OptionalAllocations)=>{parseOptionalAllocations(next);const config=await readConfiguration();if(!config)throw new Error('Konfiguration saknas');if(!expectedRevision.current)throw new Error('Konfigurationsrevision saknas. Ladda om sidan innan du sparar.');let nextRevision:string;try{nextRevision=await commitConfiguration({...config,sections:{...config.sections,optionalAllocations:next}},'Update optional allocations',expectedRevision.current)}catch(error){if(error instanceof Error&&error.message==='REVISION_CONFLICT')throw new Error('Fördelningarna har ändrats i en annan flik. Ladda om sidan innan du sparar igen.');throw error}expectedRevision.current=nextRevision;setData(next);setRevision(v=>v+1);setNotice('Fördelningen sparades i projektets konfiguration och versionshistorik.')};
  const create=async()=>{setError('');setNotice('');try{
   const values=categories.map(v=>v.name.trim());
   if(!name.trim()||values.length<2||new Set(values.map(x=>x.toLocaleLowerCase('sv'))).size!==values.length)throw new Error('Ange namn och minst två unika kategorier.');
