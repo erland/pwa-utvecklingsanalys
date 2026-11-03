@@ -16,7 +16,7 @@ test('KF-002: a stale tab cannot overwrite another tab\'s GapState update',async
  await createRequirement(first,'Sparad från första fliken');
  await expect(first.locator('li').filter({hasText:'Sparad från första fliken'})).toBeVisible();
  await createRequirement(second,'Föråldrad andra fliken');
- await expect(second.getByRole('alert')).toContainText('STALE_GAP_STATE');
+ await expect(second.getByRole('alert').filter({hasText:'STALE_GAP_STATE'})).toContainText('STALE_GAP_STATE');
  await second.reload();
  await second.getByRole('button',{name:'Kompletteringar',exact:true}).click();
  await expect(second.locator('li').filter({hasText:'Sparad från första fliken'})).toBeVisible();
