@@ -17,7 +17,7 @@ import {canonicalTrend} from './canonicalTrend';
 import {canonicalGroupYears} from './canonicalGroupYears';
 import AnnualTrendReport from './AnnualTrendReport';
 import CostTypeAnalysis from './CostTypeAnalysis';
-import OrganizationYearLines from './OrganizationYearLines';
+import OrganizationYearReport from './OrganizationYearReport';
 import {canonicalCsv} from './canonicalCsv';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpenCompletions:()=>void}){
@@ -76,7 +76,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  {axis==='work'&&preparedData&&optionalAllocations&&<OptionalAllocationAnalysis data={preparedData} state={state} config={optionalAllocations} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} organization={organization} groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]}/>}
  {unit==='costs'&&axis==='work'&&preparedData&&costQuery&&<CostTypeAnalysis data={preparedData} state={state} query={costQuery} showTrend={year==='all'&&years.length>1}/>}
  {year==='all'&&years.length>1&&<><AnnualTrendReport trend={trend} metrics={choices}/>
- <section className="organization-year-details" aria-label="Utveckling per organisationsdel och tabell"><OrganizationYearLines matrix={groupYears}/><p>Årsvärden för samma organisationsurval som linjediagrammet. Streck betyder saknat värde, inte noll.</p>{groupYears&&groupYears.years.length>0?<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Organisation per år"><thead><tr><th>Organisation</th>{groupYears.years.map(y=><th key={y}>{y}</th>)}<th>Totalt</th></tr></thead><tbody>{groupYears.rows.map(row=><tr key={row.key}><th scope="row">{row.label}</th>{row.values.map((value,i)=><td key={groupYears!.years[i]}>{value===null?'–':format(value)+' '+groupYears!.unit}</td>)}<td>{format(row.total)} {groupYears!.unit}</td></tr>)}</tbody><tfoot><tr><th scope="row">Totalt</th>{groupYears.yearTotals.map((value,i)=><td key={groupYears!.years[i]}>{format(value)} {groupYears!.unit}</td>)}<td>{format(groupYears.total)} {groupYears.unit}</td></tr></tfoot></table></div>:<p>Inga årsvärden för aktuellt urval.</p>}</section></>}
+ <OrganizationYearReport matrix={groupYears}/></>}
 
  </section></>:null}
  </section>;
