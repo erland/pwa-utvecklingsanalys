@@ -48,6 +48,20 @@ Källor: https://github.com/erland/pwa-utvecklingsanalys/actions/runs/4169854538
 
 **Känd teknisk begränsning:** `restoreProject` och källmutationer använder separata IndexedDB-databaser med en återställnings-/undojournal. Det är inte en atomär transaktion över alla databaser. Detta ska inte beskrivas som fullständigt transaktionssäkert och kräver separat återställningsövning.
 
+## Sammanhållet syntetiskt releaseprov (RG-automatisering)
+
+`e2e/rg-integrated-release-acceptance.spec.ts` kör ett sammanhållet projektflöde i Chromium inom ordinarie CI:
+
+1. Skapar två syntetiska Excel-filer (UO A och UO B; 2027 och 2028) utan användar-/produktionsuppgifter.
+2. Importerar båda och kontrollerar totaler per år (40 h respektive 60 h), sammanlagt 100 h, organisation × år och årslinjediagram.
+3. Exporterar CSV och kontrollerar att samma årsvisa IT-timmar finns i den nedladdade filen.
+4. Exporterar full projektbackup och kontrollerar schema/version, kanoniska poster och två källor.
+5. Återställer projektet i en separat webbläsarkontext och verifierar årsresultat och tabell igen.
+
+**Automatiseringens gräns:** detta är en syntetisk Chromium-regression och verifierar delar av RG-02, RG-06 och RG-07. Det innebär inte att dessa *manuella* acceptansrader är PASS. Det täcker inte saknade UO-värden, samtliga kostnadsslag, avbruten IndexedDB-skrivning, verklig iPad/Safari, Pages jämfört med `file://` eller publicerad release.
+
+Kör isolerat med `npx playwright test e2e/rg-integrated-release-acceptance.spec.ts` efter `npm run build` (Playwright startar `vite preview` enligt projektkonfigurationen). Testet ingår också i `npm run test:browser`. Dokumentera alltid aktuell CI-körnings URL och kandidat-SHA innan GO.
+
 ## Konkret acceptansprotokoll
 
 Kopiera tabellen till releaseärendet och fyll i faktiska utfall. Lämna inte ett saknat prov som PASS.
