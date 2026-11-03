@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {emptyCanonical,summarizeCanonical,type AnalysisRecord} from './canonical';
-import {previewActivityAllocation,approveActivityAllocation,approveSharedActivityAllocation,approveBalancedActivityGroup,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
+import {previewActivityAllocation,createActivityAllocationPreviewer,approveActivityAllocation,approveSharedActivityAllocation,approveBalancedActivityGroup,approvedActivityParts,type ActivityAllocationRule} from './activityAllocation';
 const rule:ActivityAllocationRule={id:'rule1',datasetId:'ds',uoId:'uo',metric:'it_hours',year:2027,reason:'Fördelning utifrån LO-totaler'};
 const base=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:string):AnalysisRecord=>({
  id,metric:'it_hours',value,year:2027,activity,scope:{axis:'work',uoId:'uo',...(loId?{loId}:{})},
@@ -8,6 +8,27 @@ const base=(id:string,value:number,activity:AnalysisRecord['activity'],loId?:str
  granularity:loId?'total':'activity-part',source:{datasetId:'ds',sheet:'Budget',cell:id}
 });
 const fixture=()=>({...emptyCanonical(),records:[base('D5',600,'development'),base('E5',400,'maintenance'),base('D26',700,'unknown','lo1'),base('D32',300,'unknown','lo2')]});
+describe('validated previews within an immutable analysis pass',()=>{
+ it('returns the same fingerprint and approved parts as the standalone validated path',()=>{
+  const data=fixture(),before=JSON.stringify(data);
+  const previewForRule=createActivityAllocationPreviewer(data);
+  const direct=previewActivityAllocation(data,rule);
+  expect(previewForRule(rule)).toEqual(direct);
+  const decision=approveActivityAllocation(direct,'Approved');
+  expect(approvedActivityParts(data,rule,decision,previewForRule)).toEqual(approvedActivityParts(data,rule,decision));
+  expect(JSON.stringify(data)).toBe(before);
+ });
+ it('retains canonical validation failures instead of skipping validation in the cached path',()=>{
+  const data=fixture();
+  data.records[2].value=-1;
+  const previewForRule=createActivityAllocationPreviewer(data);
+  expect(()=>previewActivityAllocation(data,rule)).toThrow('INVALID_VALUE');
+  expect(()=>previewForRule(rule)).toThrow('INVALID_VALUE');
+  const decision={ruleId:rule.id,fingerprint:'original',approvedAt:'2026-11-03',reason:'Approved'};
+  expect(approvedActivityParts(data,rule,decision,previewForRule)).toEqual([]);
+ });
+});
+
 describe('v2 approved activity allocations',()=>{
  it('allocates kronor from both other costs and consultant costs, without mixing hours',()=>{
   const costRule:ActivityAllocationRule={...rule,id:'cost-rule',metric:'other_cost'};
