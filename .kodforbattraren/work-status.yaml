@@ -2,45 +2,46 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-003-import-completion-logic
-active_step: KF-003
-step_state: verified_awaiting_merge
-completed_steps:
-  - KF-001
-  - KF-002
+base_sha: 96164d390b2fe5c27dd760cdfd3a79059da82880
+work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-004-cross-tab-scoped
+active_step: KF-004
+step_state: awaiting_pr_ci
+completed_steps: [KF-001, KF-002, KF-003]
 verification:
   baseline_main:
-    sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
-    workflow_run: 41718001644
-    result: success
+    sha: 96164d390b2fe5c27dd760cdfd3a79059da82880
+    workflow_run: 41720457214
+    result: pending_at_step_start
   kf_001:
     pr: 270
     result: merged_and_ci_passed
-    implementation_sha: ac773a722bb1d30c15a3e339bd0fefda246f3bb0
-    workflow_run: 41713591629
   kf_002:
     pr: 271
-    result: merged_and_pr_ci_passed
-    implementation_sha: d03e844ad82507be2cc8caa244959db07e3c7a57
-    workflow_run: 41715499310
+    result: merged_and_ci_passed
   kf_003:
-    test: src/import/uoImportCompletionForm.test.ts
-    result: verified_awaiting_merge
-    verified_commit: 7a50d64b4895f3b563869332ec8cb7e6a02e0cff
-    workflow_run: 41718558140
-    change_type: behavior_preserving_refactoring
+    pr: 272
+    result: merged_and_ci_passed
+    last_pr_workflow_run: 41718986862
+  kf_004:
+    result: pending_pr_ci
+    tests:
+      - src/storage/workspaceEvents.test.ts
+      - e2e/kf-004-scoped-workspace-invalidation.spec.ts
+      - e2e/ip-003-cross-tab-invalidation.spec.ts
+    change_type: ux_change_and_functional_invalidation
 scope:
-  production_changed:
-    - src/import/UoImportCompletionView.tsx
-    - src/import/uoImportCompletionForm.ts
-  overlap_with_pr_256:
-    file: src/import/UoImportCompletionView.tsx
-    status: open_draft_requires_merge_review
+  events:
+    - sources-changed
+    - workspace-reset
+    - gap-state-changed
+  gap_views: [import, gaps, allocations, analysis]
+  unaffected_views: [overview, settings, groups, relations, planning, configuration]
+  cross_tab_recovery: explicit_page_reload_only
 known_risks:
-  - "Legacy saveGapState(next) in import completion view still lacks transactional revision guard"
-  - "PR #256 modifies the same view; resolve semantically before either PR is combined"
-  - "Cross-database restore is journal-based, not atomic"
+  - "Legacy unguarded saveGapState writes remain unprotected against competing writes"
+  - "BroadcastChannel may be unavailable; transactional conflict protection is independent"
+  - "Source reset and multi-database restore are not single atomic transactions"
+  - "PR #256 still modifies UoImportCompletionView and must be reviewed separately"
 next_step:
-  recommended: KF-003
-  reason: "Review and merge KF-003 after latest PR-head CI; then proceed to KF-004"
+  recommended: KF-004
+  reason: "Await PR-head Verify PWA and code review before proceeding to KF-005"
