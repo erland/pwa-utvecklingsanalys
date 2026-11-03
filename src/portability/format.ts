@@ -1,4 +1,4 @@
-import {previewActivityAllocation} from '../domain/activityAllocation';
+import {isActivityAllocationRuleMetric,previewActivityAllocation} from '../domain/activityAllocation';
 import {validateCanonical,type CanonicalDataset} from '../domain/canonical';
 import {validateReconciliationRule} from '../reconciliation/model';
 import type {GapState} from '../gaps/store';
@@ -48,7 +48,7 @@ export function validateBackup(input:unknown):ProjectBackup{
   const rules=b.gapState?.activityAllocationRules??[],decisions=b.gapState?.activityAllocationDecisions??[];
   const ids=new Set<string>();
   for(const rule of rules){
-   if(!rule.id||ids.has(rule.id)||!rule.reason?.trim()||!rule.datasetId||!rule.uoId||!Number.isInteger(rule.year)||!['it_hours','business_hours'].includes(rule.metric))throw new Error('INVALID_ACTIVITY_ALLOCATION_RULE');
+   if(!rule.id||ids.has(rule.id)||!rule.reason?.trim()||!rule.datasetId||!rule.uoId||!Number.isInteger(rule.year)||!isActivityAllocationRuleMetric(rule.metric))throw new Error('INVALID_ACTIVITY_ALLOCATION_RULE');
    ids.add(rule.id);
   }
   const decided=new Set<string>();

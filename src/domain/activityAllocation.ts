@@ -3,6 +3,11 @@ import {importedLoActivityLocks} from './importedLoLocks';
 import {validateCanonical,type Activity,type AnalysisRecord,type CanonicalDataset,type Metric} from './canonical';
 
 /** Decisions are kept separately from immutable imported observations. */
+/** Self-standing allocation rules use these source metrics. Consultant costs are derived from other_cost. */
+export const activityAllocationRuleMetrics=['it_hours','business_hours','other_cost'] as const;
+export function isActivityAllocationRuleMetric(value:unknown):value is typeof activityAllocationRuleMetrics[number]{
+ return typeof value==='string'&&activityAllocationRuleMetrics.some(metric=>metric===value);
+}
 export type ActivityAllocationRule={id:string;datasetId:string;uoId:string;metric:Metric;year:number;reason:string};
 export type ActivityAllocationDecision={ruleId:string;fingerprint:string;approvedAt:string;reason:string;overrides?:LoDevelopmentOverride[];sharedPercentages?:boolean};
 export type AllocationPreview={ruleId:string;fingerprint:string;lockedLo?:LockedLoActivity[];uo:{development:number;maintenance:number};items:{loId:string;total:number;development:number;maintenance:number;workloadId:string}[]};
@@ -10,7 +15,7 @@ export type AllocationPreview={ruleId:string;fingerprint:string;lockedLo?:Locked
 const sortRows=(rows:AnalysisRecord[])=>rows.map(r=>[r.id,r.value,r.metric,r.year,r.month??'',r.activity,r.workloadId,r.scope,r.source]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)));
 export function previewActivityAllocation(data:CanonicalDataset,rule:ActivityAllocationRule):AllocationPreview{
  const errors=validateCanonical(data);if(errors.length)throw new Error(errors.join(','));
- if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!['it_hours','business_hours','other_cost'].includes(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
+ if(!rule.id?.trim()||!rule.datasetId||!rule.uoId||!isActivityAllocationRuleMetric(rule.metric)||!Number.isInteger(rule.year)||!rule.reason?.trim())throw new Error('INVALID_ALLOCATION_RULE');
  const original=data.records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.source?.datasetId===rule.datasetId&&(r.metric===rule.metric||(rule.metric==='other_cost'&&r.metric==='consultant_cost'))&&r.year===rule.year&&r.scope.axis==='work'&&r.scope.uoId===rule.uoId);
  // Use annual LO records when available; otherwise roll up monthly LO source values
  // into a virtual annual total for approval. Never mutate source records or add months
