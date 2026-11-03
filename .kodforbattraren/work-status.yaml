@@ -5,7 +5,7 @@ default_branch: main
 base_sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
 work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-003-import-completion-logic
 active_step: KF-003
-step_state: awaiting_pr_ci
+step_state: verified_awaiting_merge
 completed_steps:
   - KF-001
   - KF-002
@@ -13,7 +13,7 @@ verification:
   baseline_main:
     sha: b7432ec6f784e63d4af1952e273df137bdbaf09f
     workflow_run: 41718001644
-    result: pending_at_step_start
+    result: success
   kf_001:
     pr: 270
     result: merged_and_ci_passed
@@ -26,7 +26,9 @@ verification:
     workflow_run: 41715499310
   kf_003:
     test: src/import/uoImportCompletionForm.test.ts
-    result: pending_pr_ci
+    result: verified_awaiting_merge
+    verified_commit: 7a50d64b4895f3b563869332ec8cb7e6a02e0cff
+    workflow_run: 41718558140
     change_type: behavior_preserving_refactoring
 scope:
   production_changed:
@@ -41,4 +43,4 @@ known_risks:
   - "Cross-database restore is journal-based, not atomic"
 next_step:
   recommended: KF-003
-  reason: "Await PR-head CI and review before KF-004"
+  reason: "Review and merge KF-003 after latest PR-head CI; then proceed to KF-004"
