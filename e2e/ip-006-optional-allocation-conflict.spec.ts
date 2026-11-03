@@ -36,7 +36,9 @@ test('IP-006: stale optional allocation editor cannot overwrite a newer tab revi
  await second.reload();
  await second.getByRole('button',{name:'Inställningar',exact:true}).click();
  const reloaded=second.getByRole('region',{name:'Valfria fördelningstyper'});
- await expect(reloaded.getByText('Från första fliken',{exact:true})).toBeVisible();
- await expect(reloaded.getByText('Andra sparningen',{exact:true})).toBeVisible();
- await expect(reloaded.getByText('Från äldre flik',{exact:true})).toHaveCount(0);
+ // Each saved type is a button whose accessible name includes a trailing chevron and details.
+ const types=reloaded.getByRole('region',{name:'Befintliga fördelningstyper'});
+ await expect(types.getByRole('button',{name:/^Från första fliken\s*›/})).toBeVisible();
+ await expect(types.getByRole('button',{name:/^Andra sparningen\s*›/})).toBeVisible();
+ await expect(types.getByRole('button',{name:/^Från äldre flik\s*›/})).toHaveCount(0);
 });
