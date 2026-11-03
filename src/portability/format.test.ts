@@ -36,3 +36,28 @@ it('roundtrips a source-aware project',()=>{
  expect(exportFactsCsv(semantic)).toContain('source.xlsx');
  expect(()=>validateBackup({...b,project:{...b.project,datasets:[]}})).toThrow('MISSING_DATASET_SUMMARY');
 });
+
+
+it('accepts cost activity rules in a v3 backup without widening the metric contract',()=>{
+ const semantic=emptySemantic();
+ const canonical=emptyCanonical();
+ const base={
+  format:'utvecklingsanalys-project' as const,version:3 as const,exportedAt:'2026-11-03',
+  project:{schemaVersion:1 as const,id:'project',name:'Cost allocation',datasets:[{id:'cost-source',name:'cost.xlsx',planningYear:2027,importedAt:'2026-11-03',source:'excel' as const}],updatedAt:'2026-11-03'},
+  semantic,planning:emptyPlanning(),configuration:null,legacyAllocations:emptyAllocations(),drafts:[],configurationHistory:[],canonical,
+  gapState:{requirements:[],resolutions:[],activityAllocationRules:[{id:'cost-rule',datasetId:'cost-source',uoId:'uo:cost',metric:'other_cost' as const,year:2027,reason:'Split costs'}],
+   activityAllocationDecisions:[{ruleId:'cost-rule',fingerprint:'source-fingerprint',approvedAt:'2026-11-03',reason:'Reviewed cost split',overrides:[{loId:'lo:one',developmentPercent:60}]}]}
+ };
+ const restored=validateBackup(JSON.parse(backupToJson(base)));
+ expect(restored.gapState?.activityAllocationRules?.[0]).toEqual(base.gapState.activityAllocationRules[0]);
+ expect(restored.gapState?.activityAllocationDecisions?.[0]).toEqual(base.gapState.activityAllocationDecisions[0]);
+ for(const metric of ['consultant_cost','invalid']){
+  const bad={...base,gapState:{...base.gapState,activityAllocationRules:[{...base.gapState.activityAllocationRules[0],metric}]}};
+  expect(()=>validateBackup(bad)).toThrow('INVALID_ACTIVITY_ALLOCATION_RULE');
+ }
+ for(const metric of ['it_hours','business_hours']){
+  const historical={...base,gapState:{...base.gapState,activityAllocationRules:[{...base.gapState.activityAllocationRules[0],metric}]}};
+  expect(validateBackup(historical).gapState?.activityAllocationRules?.[0].metric).toBe(metric);
+ }
+ expect(()=>validateBackup({...base,gapState:{...base.gapState,activityAllocationDecisions:[{...base.gapState.activityAllocationDecisions[0],overrides:[{loId:'lo:one',developmentPercent:120}]}]}})).toThrow('INVALID_ACTIVITY_ALLOCATION_DECISION');
+});
