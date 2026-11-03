@@ -139,7 +139,7 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
   const rules=[...(current.activityAllocationRules??[])];
   for(const rule of selectedRules)if(!rules.some(r=>r.id===rule.id))rules.push(rule);
   const next={...current,activityAllocationRules:rules,activityAllocationDecisions:[...(current.activityAllocationDecisions??[]).filter(d=>!ruleIds.has(d.ruleId)),...approvals]};
-  await saveGapState(next,latest);onSaved(next);
+  await saveGapState(next,current);onSaved(next);
  };
  const bulkMatchUo=async(uoId:string)=>{
   const targets=[...editorGroups.values()].filter(g=>g.rules[0].uoId===uoId&&(selected==='activity-cost'?g.rules[0].metric==='other_cost':g.rules[0].metric!=='other_cost')&&(year===0||g.rules[0].year===year));
