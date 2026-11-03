@@ -34,6 +34,7 @@ test('IP-006: stale optional allocation editor cannot overwrite a newer tab revi
  await expect(firstView.getByRole('status')).toContainText('Fördelningen sparades');
 
  await second.reload();
+ await second.getByRole('button',{name:'Inställningar',exact:true}).click();
  const reloaded=second.getByRole('region',{name:'Valfria fördelningstyper'});
  await expect(reloaded.getByText('Från första fliken',{exact:true})).toBeVisible();
  await expect(reloaded.getByText('Andra sparningen',{exact:true})).toBeVisible();
