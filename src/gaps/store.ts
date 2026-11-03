@@ -1,4 +1,5 @@
 import {openDB} from 'idb';
+import {notifyWorkspaceChange} from '../storage/workspaceEvents';
 import type {UoImportCompletion} from '../import/uoImportCompletions';
 import type {ManualUoSplit} from '../allocations/manualUoAllocation';
 import type {ActivityAllocationRule,ActivityAllocationDecision} from '../domain/activityAllocation';
@@ -18,7 +19,7 @@ export async function loadGapState():Promise<GapState>{return await (await db())
  */
 export async function saveGapState(state:GapState,expected?:GapState):Promise<void>{
  const database=await db();
- if(!expected){await database.put('state',state,'active');return}
+ if(!expected){await database.put('state',state,'active');notifyWorkspaceChange('gap-state-changed');return}
  const tx=database.transaction('state','readwrite');
  const current=await tx.store.get('active') as GapState|undefined;
  if(JSON.stringify(current??empty())!==JSON.stringify(expected)){
@@ -27,4 +28,5 @@ export async function saveGapState(state:GapState,expected?:GapState):Promise<vo
  }
  await tx.store.put(state,'active');
  await tx.done;
+ notifyWorkspaceChange('gap-state-changed');
 }
