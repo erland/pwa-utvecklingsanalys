@@ -62,6 +62,20 @@ Källor: https://github.com/erland/pwa-utvecklingsanalys/actions/runs/4169854538
 
 Kör isolerat med `npx playwright test e2e/rg-integrated-release-acceptance.spec.ts` efter `npm run build` (Playwright startar `vite preview` enligt projektkonfigurationen). Testet ingår också i `npm run test:browser`. Dokumentera alltid aktuell CI-körnings URL och kandidat-SHA innan GO.
 
+## Fristående HTML från lokal fil (RG-09, delautomatisering)
+
+`scripts/verify-singlefile-acceptance.mjs` kör den byggda `dist-singlefile/index.html` direkt via `file://` i Playwright Chromium, efter strukturell och grundläggande runtimekontroll. Testet:
+
+- importerar ett syntetiskt UO-underlag med IT-timmar 42 h (2027) och 58 h (2028)
+- avstämmer totalt 100 h och respektive budgetår
+- exporterar CSV och verifierar årets värden
+- tar projektbackup och kontrollerar att den innehåller kanoniska poster och en datakälla
+- laddar om den lokala HTML-filen och verifierar att analysen finns kvar
+
+Testet ingår i **Verify PWA** och i **Publish release**. Det är automatisk Chromium-evidens för *en del* av RG-09, inte ett godkännande av Safari/iPad eller publicerad GitHub Pages. Om webbläsarens hantering av `file://` blockerar IndexedDB eller nedladdningar ska det rapporteras som en faktisk miljöbegränsning, inte kringgås genom att förvandla testet till ett HTTP-test.
+
+Kör med `npm run build:singlefile && npx playwright install chromium && node scripts/verify-singlefile-acceptance.mjs`.
+
 ## Konkret acceptansprotokoll
 
 Kopiera tabellen till releaseärendet och fyll i faktiska utfall. Lämna inte ett saknat prov som PASS.
