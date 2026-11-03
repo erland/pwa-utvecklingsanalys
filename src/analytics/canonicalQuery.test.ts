@@ -123,4 +123,17 @@ describe('canonical analytics with source-aware completions',()=>{
  it('rejects mixing hours and costs',()=>{
   expect(()=>analyzeCanonical(data(),gaps,{...q,metrics:['it_hours','consultant_cost']})).toThrow('MIXED_UNITS');
  });
+ it('rejects annual and monthly rows in the same selected source metric year and scope even across workload IDs',()=>{
+  const annual=row('annual',100,'unknown','lo1');
+  const monthly={...row('monthly',20,'unknown','lo1'),month:1,workloadId:'distinct-monthly-workload'};
+  const dataset={...emptyCanonical(),records:[annual,monthly]};
+  expect(()=>analyzeCanonical(dataset,gaps,q)).toThrow('MIXED_PERIOD_GRANULARITY');
+  expect(()=>analyzeCanonical(dataset,gaps,{...q,year:2028})).not.toThrow();
+  const otherSource={...monthly,source:{datasetId:'other',sheet:'S',cell:'B2'}};
+  expect(analyzeCanonical({...emptyCanonical(),records:[annual,otherSource]},gaps,q).total).toBe(120);
+  const otherScope={...monthly,scope:{axis:'work' as const,uoId:'other-uo',loId:'lo1'}};
+  expect(analyzeCanonical({...emptyCanonical(),records:[annual,otherScope]},gaps,q).total).toBe(120);
+  expect(analyzeCanonical(dataset,gaps,{...q,datasetIds:['missing']}).total).toBe(0);
+ });
+
 });
