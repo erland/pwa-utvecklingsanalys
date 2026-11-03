@@ -76,6 +76,16 @@ Testet ingår i **Verify PWA** och i **Publish release**. Det är automatisk Chr
 
 Kör med `npm run build:singlefile && npx playwright install chromium && node scripts/verify-singlefile-acceptance.mjs`.
 
+## Publicerad Pages – efterpubliceringsprov (RG-09, delautomatisering)
+
+`e2e/rg-pages-deployment.spec.ts` verifierar en syntetisk import, årsanalys, CSV, projektbackup och återinläsning. I vanlig `Verify PWA` körs testet mot lokal Vite-förhandsvisning, så testets eget beteende kontrolleras innan release.
+
+Vid en ny GitHub Release kör arbetsflödet `Publish release (Pages + standalone HTML)` först bygg/test, sedan faktisk Pages-publicering och därefter ett separat **`pages-acceptance`-jobb** med `RG_PAGES_URL` från `deploy-pages`-stegets `page_url`. Denna kontroll riktas mot den *publicerade* webbplatsen och är inte ett test mot den lokala `dist`-mappen. Misslyckas provet visas det som fel i releasearbetsflödet även om publiceringen redan genomförts. Därför får kontrollen inte beskrivas som en teknisk spärr som förhindrar själva publiceringen.
+
+Körning för felsökning efter bygg/med en tillgänglig Pages-adress: `RG_PAGES_URL=https://<ägare>.github.io/<repo>/ npx playwright test e2e/rg-pages-deployment.spec.ts`. Använd faktiska utdata från `deploy-pages`, inte en antagen adress.
+
+**Begränsningar:** testet använder isolerad Chromium-profil och syntetiska uppgifter. Det verifierar inte verklig iPad/Safari, offlinebeteende efter installation, zoom/tangentbord, skarp Exceldata eller att tidigare lokala användarprojekt fungerar. De manuella RG-08/RG-09-kontrollerna kvarstår. Ingen release genomförs av denna PR.
+
 ## Konkret acceptansprotokoll
 
 Kopiera tabellen till releaseärendet och fyll i faktiska utfall. Lämna inte ett saknat prov som PASS.
