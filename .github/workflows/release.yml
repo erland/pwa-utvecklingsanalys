@@ -50,9 +50,29 @@ jobs:
   pages:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+  pages-acceptance:
+    needs: pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Verify deployed Pages with synthetic project
+        env:
+          RG_PAGES_URL: ${{ needs.pages.outputs.page_url }}
+        run: |
+          test -n "$RG_PAGES_URL"
+          npx playwright test e2e/rg-pages-deployment.spec.ts
