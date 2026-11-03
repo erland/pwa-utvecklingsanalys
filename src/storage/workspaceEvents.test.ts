@@ -23,8 +23,12 @@ describe('cross-tab workspace invalidation',()=>{
   expect(observed).toEqual(['sources-changed']);
   remote.postMessage({type:'workspace-reset',senderId:'another-tab'});
   expect(observed).toEqual(['sources-changed','workspace-reset']);
+  remote.postMessage({type:'gap-state-changed',senderId:'another-tab'});
+  expect(observed).toEqual(['sources-changed','workspace-reset','gap-state-changed']);
+  remote.postMessage({type:'unrecognized',senderId:'another-tab'});
+  expect(observed).toEqual(['sources-changed','workspace-reset','gap-state-changed']);
   unsubscribe();
   remote.postMessage({type:'sources-changed',senderId:'another-tab'});
-  expect(observed).toEqual(['sources-changed','workspace-reset']);
+  expect(observed).toEqual(['sources-changed','workspace-reset','gap-state-changed']);
  });
 });
