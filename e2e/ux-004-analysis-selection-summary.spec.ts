@@ -13,7 +13,7 @@ test('UX-004: the analysis summary follows year, metrics, activity, area and UO 
  await page.locator('#direct-import-files').setInputFiles({name:'ux-004.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await workbook.xlsx.writeBuffer())});
  await expect(page.getByRole('status').filter({hasText:'ux-004.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Analys',exact:true}).click();
- const summary=page.getByRole('region',{name:'Aktuellt analysurval'});
+ const summary=page.getByRole('region',{name:'Valda filter för resultaten'});
  await expect(summary).toContainText('Organisation: Alla UO');
  await expect(summary).toContainText('År: Alla år');
  await expect(summary).toContainText('IT-timmar + Verksamhetstimmar');
