@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
-import {planningTotals,visiblePlanningRows,visibleProjectParts} from './PlanningScopeAnalysis';
+import {planningTotals,visiblePlanningRows,visibleProjectParts,resolvePlanningSelection} from './PlanningScopeAnalysis';
 import {analyzeCanonical} from './canonicalQuery';
 import type {GapState} from '../gaps/store';
 
@@ -62,6 +62,20 @@ describe('additive planning of UO and independent projects',()=>{
    ['project-part:Test:A',10,0],['project-part:Test:B',undefined,70]
   ]);
   expect(planningTotals(prepared,state,['it_hours'],2027).total).toBe(200);
+ });
+ it('resolves a single detail by type and identity and clears it when current filters exclude it',()=>{
+  const data=dataset();
+  const rows=visiblePlanningRows(data,state,['it_hours'],2027,'all','all');
+  const project={kind:'Projekt' as const,key:'project:Test'};
+  const uo={kind:'UO' as const,key:'uo:Test'};
+  expect(resolvePlanningSelection(rows,project)).toMatchObject({kind:'Projekt',key:'project:Test',value:100});
+  expect(resolvePlanningSelection(rows,uo)).toMatchObject({kind:'UO',key:'uo:Test',value:100});
+  expect(resolvePlanningSelection(rows,null)).toBeNull();
+  expect(resolvePlanningSelection(visiblePlanningRows(data,state,['it_hours'],2027,'all','uo'),project)).toBeNull();
+  expect(resolvePlanningSelection(visiblePlanningRows(data,state,['other_cost'],2028,'all','all'),project)).toBeNull();
+  expect(resolvePlanningSelection(rows,{kind:'Projekt',key:'uo:Test'})).toBeNull();
+  // A filtered-out detail must not alter the additive budget totals.
+  expect(planningTotals(data,state,['it_hours'],2027).total).toBe(200);
  });
  it('does not count unallocated project activity as zero development by mistake',()=>{
   const d=dataset();

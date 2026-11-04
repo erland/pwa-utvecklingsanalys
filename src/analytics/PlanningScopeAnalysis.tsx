@@ -16,7 +16,12 @@ export function planningTotals(data:CanonicalDataset,state:GapState,metrics:Metr
 }
 
 type ActivitySelection='all'|'development'|'maintenance';
-type VisiblePlanningRow={key:string;label:string;kind:'UO'|'Projekt';value:number|undefined;unallocated:number};
+export type VisiblePlanningRow={key:string;label:string;kind:'UO'|'Projekt';value:number|undefined;unallocated:number};
+export type SelectedPlanningObject={kind:'UO'|'Projekt';key:string};
+/** Resolve against current filters so an old selection is never displayed as a stale detail. */
+export function resolvePlanningSelection(rows:readonly VisiblePlanningRow[],selection:SelectedPlanningObject|null){
+ return selection?rows.find(r=>r.kind===selection.kind&&r.key===selection.key)??null:null;
+}
 /** Always retain source planning objects even when their activity split is unknown. */
 export function visiblePlanningRows(data:CanonicalDataset,state:GapState,metrics:Metric[],year:number|undefined,activity:ActivitySelection,scope:PlanningScope):VisiblePlanningRow[]{
  const all=planningTotals(data,state,metrics,year,'all');
@@ -44,13 +49,13 @@ export function visibleProjectParts(data:CanonicalDataset,state:GapState,metrics
 
 export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{data:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number}){
  const [activity,setActivity]=useState<'all'|'development'|'maintenance'>('all');
- const [openProject,setOpenProject]=useState<string|null>(null);
- const [openUo,setOpenUo]=useState<string|null>(null);
+ const [selectedObject,setSelectedObject]=useState<SelectedPlanningObject|null>(null);
  if(!metrics.length)return <p>Välj minst ett mått.</p>;
  let totals:ReturnType<typeof planningTotals>;
  try{totals=planningTotals(data,state,metrics,year,activity)}catch(error){return <p role="alert">Kunde inte visa planeringsbehov: {String(error)}</p>}
  const includeUo=scope!=='project',includeProjects=scope!=='uo';
  const rows=visiblePlanningRows(data,state,metrics,year,activity,scope);
+ const activeObject=resolvePlanningSelection(rows,selectedObject);
  const total=(includeUo?totals.uo.total:0)+(includeProjects?totals.projects.total:0);
  const unit=totals.unit;
  const parts=(projectId:string)=>visibleProjectParts(data,state,metrics,year,activity,projectId);
@@ -66,24 +71,28 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
    <tbody><tr><th scope="row">UO</th><td>{fmt(totals.uo.total)} {unit}</td></tr><tr><th scope="row">Projekt</th><td>{fmt(totals.projects.total)} {unit}</td></tr></tbody>
    <tfoot><tr><th scope="row">Totalt</th><td>{fmt(totals.total)} {unit}</td></tr></tfoot>
   </table>}
-  <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Planering per UO och projekt">
+  {activeObject&&<nav className="actions" aria-label="Analysnivå">
+   <button type="button" className="secondary" onClick={()=>setSelectedObject(null)}>← {scope==='project'?'Alla projekt':scope==='uo'?'Alla UO':'Alla UO och projekt'}</button>
+   <span aria-hidden="true">›</span><strong>{activeObject.kind}: {decode(activeObject.key)}</strong>
+  </nav>}
+  {!activeObject&&<div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Planering per UO och projekt">
    <thead><tr><th>Typ</th><th>Planeringsobjekt</th><th>Behov</th></tr></thead>
    <tbody>{rows.map(row=><tr key={row.kind+row.key}>
     <td>{row.kind}</td>
-    <th scope="row"><button type="button" className="secondary" aria-expanded={row.kind==='Projekt'?openProject===row.key:openUo===row.key}
-     onClick={()=>row.kind==='Projekt'?setOpenProject(old=>old===row.key?null:row.key):setOpenUo(old=>old===row.key?null:row.key)}>
+    <th scope="row"><button type="button" className="secondary"
+     onClick={()=>setSelectedObject({kind:row.kind,key:row.key})}>
      {decode(row.key)}
     </button></th>
     <td>{row.value===undefined?'Ej fördelat':fmt(row.value)+' '+unit}{activity!=='all'&&row.unallocated>0&&<small> · Ofördelat: {fmt(row.unallocated)} {unit}</small>}</td>
    </tr>)}</tbody>
-  </table></div>
-  {rows.filter(row=>row.kind==='Projekt'&&openProject===row.key).map(row=><section key={row.key} className="panel" aria-label={'Projektdelar '+decode(row.key)}>
+  </table></div>}
+  {rows.filter(row=>activeObject?.kind==='Projekt'&&activeObject.key===row.key).map(row=><section key={row.key} className="panel" aria-label={'Projektdelar '+decode(row.key)}>
    <h4>{decode(row.key)} – projektdelar</h4>
    <table className="canonical-table"><thead><tr><th>Del</th><th>Behov</th></tr></thead><tbody>
     {parts(row.key).map(part=><tr key={part.key}><th scope="row">{decode(part.key)}</th><td>{part.value===undefined?'Ej fördelat':fmt(part.value)+' '+unit}{activity!=='all'&&part.unallocated>0&&<small> · Ofördelat: {fmt(part.unallocated)} {unit}</small>}</td></tr>)}
    </tbody></table>
   </section>)}
-  {rows.filter(row=>row.kind==='UO'&&openUo===row.key).map(row=><section key={row.key} className="panel" aria-label={'LO per '+decode(row.key)}>
+  {rows.filter(row=>activeObject?.kind==='UO'&&activeObject.key===row.key).map(row=><section key={row.key} className="panel" aria-label={'LO per '+decode(row.key)}>
    <h4>{decode(row.key)} – LO och UO Övergripande</h4>
    <table className="canonical-table"><thead><tr><th>Del</th><th>Behov</th></tr></thead><tbody>
     {uoParts(row.key).map(part=><tr key={part.key}><th scope="row">{part.label}</th><td>{fmt(part.value)} {unit}</td></tr>)}
