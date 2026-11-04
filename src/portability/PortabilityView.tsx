@@ -1,4 +1,5 @@
 import {gzipBackup,readBackupFile} from './compression';
+import {backupSelectionError} from './backupSelectionError';
 import {useState} from 'react';
 import {loadProject} from '../storage';
 import type {ProjectBackup} from './format';
@@ -11,8 +12,23 @@ export default function PortabilityView(){
  const [pending,setPending]=useState<ProjectBackup|null>(null),[info,setInfo]=useState(''),[busy,setBusy]=useState(false);
  const [currentProject,setCurrentProject]=useState<{name:string;sources:number}|null>(null);
  const [restored,setRestored]=useState(false);
+ const [inspectionErrorDetail,setInspectionErrorDetail]=useState('');
  const create=async(kind:'backup'|'gzip'|'csv'|'xlsx')=>{setBusy(true);try{const b=await captureProject();if(kind==='backup')download('utvecklingsanalys-projekt-v2.json',backupToJson(b),'application/json');else if(kind==='gzip'){const blob=await gzipBackup(backupToJson(b));const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='utvecklingsanalys-projekt-v2.json.gz';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}else if(kind==='csv')download('utvecklingsanalys-observationer.csv',exportFactsCsv(b.semantic),'text/csv;charset=utf-8');else {const buffer=await exportFactsXlsx(b.semantic);const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='utvecklingsanalys-observationer.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}setInfo('Export skapad. Förvara backupen säkert.')}catch(e){setInfo('Export misslyckades: '+String(e))}finally{setBusy(false)}};
- const inspect=async(file?:File)=>{setPending(null);setCurrentProject(null);setRestored(false);if(!file)return;setBusy(true);try{const parsed=validateBackup(await readBackupFile(file));const current=await loadProject();setPending(parsed);setCurrentProject({name:current.name,sources:current.datasets.length});setInfo('Validerad backup: '+parsed.project.name+', '+parsed.semantic.observations.length+' observationer.')}catch(e){setInfo('Filen avvisades eller nuvarande projekt kunde inte läsas: '+String(e))}finally{setBusy(false)}};
+ const inspect=async(file?:File)=>{
+  setPending(null);setCurrentProject(null);setRestored(false);setInspectionErrorDetail('');
+  if(!file)return;
+  setBusy(true);
+  try{
+   let parsed:ProjectBackup;
+   try{parsed=validateBackup(await readBackupFile(file))}
+   catch(e){const feedback=backupSelectionError(e);setInspectionErrorDetail(feedback.technical);setInfo(feedback.message);return}
+   try{
+    const current=await loadProject();
+    setPending(parsed);setCurrentProject({name:current.name,sources:current.datasets.length});
+    setInfo('Validerad backup: '+parsed.project.name+', '+parsed.semantic.observations.length+' observationer.');
+   }catch(e){setInspectionErrorDetail(e instanceof Error?e.message:String(e));setInfo('Nuvarande projekt kunde inte läsas. Ladda om sidan och kontrollera att projektet öppnas innan du försöker återställa en backup.')}
+  }finally{setBusy(false)}
+ };
  const restore=async()=>{if(!pending||busy)return;setBusy(true);setRestored(false);try{await restoreProject(pending);setInfo('Projekt återställt. Ladda om appen för att visa det återställda projektet.');setPending(null);setCurrentProject(null);setRestored(true)}catch(e){setInfo('Återställning misslyckades. Kontrollera att projektets data är intakta innan du försöker igen: '+String(e))}finally{setBusy(false)}};
  return <section className="panel"><h2>Projektbackup och dataexport</h2><p>Spara projektinformation, observationer, planeringsscenarier och konfiguration i en versionsmärkt JSON-backup. Sparade Excelarbetsböcker i importutkast och konfigurationens revisionshistorik ingår. Original som inte längre finns sparade lokalt kan inte återskapas.</p>
  <div className="actions"><button className="primary" disabled={busy} onClick={()=>{void create('backup')}}>Ladda ner projektbackup</button><button className="secondary" disabled={busy} onClick={()=>{void create('gzip')}}>Ladda ner komprimerad backup (GZIP)</button><button className="secondary" disabled={busy} onClick={()=>{void create('csv')}}>Exportera observationer CSV</button><button className="secondary" disabled={busy} onClick={()=>{void create('xlsx')}}>Exportera observationer XLSX</button></div>
@@ -27,5 +43,7 @@ export default function PortabilityView(){
  </section>}
  <button className="primary" disabled={busy||pending===null||!currentProject} onClick={()=>{void restore()}}>{busy?'Arbetar med backup…':'Bekräfta återställning'}</button>
  {restored&&<div className="actions"><button type="button" className="primary" onClick={()=>window.location.reload()}>Ladda om appen nu</button></div>}
- {info&&<p role="status">{info}</p>}</section>;
+ {info&&<p role="status">{info}</p>}
+ {inspectionErrorDetail&&<details><summary>Tekniska detaljer om den avvisade filen</summary><p>{inspectionErrorDetail}</p></details>}
+ </section>;
 }
