@@ -30,7 +30,7 @@ export default function App(){
  const [view,setView]=useState<ViewId>('overview');
  const [otherTabChanged,setOtherTabChanged]=useState<WorkspaceChange|null>(null);
  const {project,analysisRefresh,storageError,overview,overviewError,analysisAvailable,
-  openAnalysis,updateName,projectImported,refreshAnalysis}=useProjectWorkspace(view,setView);
+  nameSaveStatus,openAnalysis,updateName,retryNameSave,projectImported,refreshAnalysis}=useProjectWorkspace(view,setView);
  useEffect(()=>onWorkspaceChange(type=>{
   if(type==='gap-state-changed'&&!['import','gaps','allocations','analysis'].includes(view))return;
   setOtherTabChanged(type);
@@ -53,7 +53,10 @@ export default function App(){
  {view==='configuration'&&<ConfigurationView/>}
  {view==='groups'&&<GroupsView onSaved={refreshAnalysis}/>}
  {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><p className="lead">Hantera projektet, UO-grupper och fördelningstyper. Backup och återställning finns i ett separat avsnitt längst ner.</p>
- <section className="panel" aria-label="Projektinställningar"><h2>Projekt</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>{void updateName(e.target.value)}}/><p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p></section>
+ <section className="panel" aria-label="Projektinställningar"><h2>Projekt</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>updateName(e.target.value)}/>
+ <div role="status" aria-live="polite" aria-atomic="true" className="project-save-feedback">{nameSaveStatus==='saving'?'Sparar projektnamn…':nameSaveStatus==='saved'?'Projektnamnet är sparat.':nameSaveStatus==='error'?'Projektnamnet kunde inte sparas.':''}</div>
+ {nameSaveStatus==='error'&&<button type="button" className="secondary" onClick={retryNameSave}>Försök spara igen</button>}
+ <p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p></section>
  <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={refreshAnalysis} embedded/></section>
  <section aria-label="Administrera fördelningstyper" style={{marginTop:24}}><OptionalAllocationsView/></section>
  <section className="panel" aria-label="Backup och återställning" style={{marginTop:24}}><h2>Backup och återställning</h2><p>Exportera projektdata eller återställ en säkerhetskopia. Återställning av arbetsytan finns längst ner och bör användas med försiktighet.</p><PortabilityView/><ResetWorkspace/></section></>}
