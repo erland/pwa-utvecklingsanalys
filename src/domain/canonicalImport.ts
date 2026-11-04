@@ -71,3 +71,35 @@ export function replaceCanonicalSource(existing:CanonicalDataset,records:Analysi
  const next={...emptyCanonical(),records:[...existing.records.filter(r=>r.source?.datasetId!==datasetId),...records]};
  const errors=validateCanonical(next);if(errors.length)throw new Error(errors.join(', '));return next;
 }
+
+/** Independent project budgets are additive to UO budgets, never mapped to a fictitious UO. */
+export function canonicalFromProject(result:ImportResult,datasetId:string):AnalysisRecord[]{
+ if(result.profile!=='project-budget-2027-v1'||!result.uo.trim()||result.issues.some(x=>x.severity==='error'))
+  throw new Error('PROJECT_IMPORT_NOT_APPROVED');
+ const projectId='project:'+slug(result.uo);
+ const grouped=new Map<string,typeof result.facts>();
+ for(const fact of result.facts){
+  if(fact.value<0||!Number.isFinite(fact.value))throw new Error('NEGATIVE_SOURCE_AMOUNT');
+  const key=JSON.stringify([fact.area,fact.measure,fact.period.year]);
+  grouped.set(key,[...(grouped.get(key)??[]),fact]);
+ }
+ const records:AnalysisRecord[]=[];
+ for(const facts of grouped.values()){
+  const annual=facts.filter(f=>f.period.month===undefined);
+  const monthly=facts.filter(f=>f.period.month!==undefined);
+  const chosen=facts[0].period.year===2027&&monthly.length?monthly:annual.length?annual:monthly;
+  const first=chosen[0];if(!first)continue;
+  const partId='project-part:'+slug(result.uo)+':'+slug(first.area);
+  const value=chosen.reduce((sum,f)=>sum+f.value,0);
+  records.push({
+   id:[datasetId,first.source.sheet,first.source.cell,first.measure,'project'].map(slug).join('|'),
+   metric:first.measure,value,year:first.period.year,activity:'unknown',
+   scope:{axis:'project',projectId,partId},authority:'original',approval:'reported',
+   granularity:'total',workloadId:[datasetId,projectId,partId,first.measure,first.period.year].join('|'),
+   source:{datasetId,sheet:first.source.sheet,cell:first.source.cell}
+  });
+ }
+ const errors=validateCanonical({...emptyCanonical(),records});
+ if(errors.length)throw new Error(errors.join(','));
+ return records;
+}
