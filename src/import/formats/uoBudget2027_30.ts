@@ -5,7 +5,29 @@ import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
 import {readLoActivitySheet,type LoActivityFact} from '../loActivitySheet';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
 export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
-export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name)&&!/^Projekt\s*:/i.test(String(sheet.getCell('B1').value??'').trim()));}
+/** Detect unambiguous free-named project sections without requiring a LO/UO prefix.
+ * A normal UO section with numeric budget data always wins over an inferred project.
+ */
+export function isProjectBudgetSheet(sheet:ExcelJS.Worksheet):boolean{
+ if(!UO_BUDGET_SHEET.test(sheet.name))return false;
+ const heading=String(sheet.getCell('B1').value??'').trim();
+ if(/^Projekt\s*:\s*\S/i.test(heading))return true;
+ if(!heading||/skriv namn/i.test(heading))return false;
+ let named=0,uo=0;
+ for(let r=19;r<sheet.rowCount;r++){
+  const area=sheet.getCell(r,2).value;
+  if(typeof area!=='string'||!area.trim())continue;
+  const candidate=area.trim();
+  const metric=sheet.getCell(r+1,3).value;
+  if(typeof metric!=='string'||!/it[ -]?timmar|v timmar|verksamhetstimmar|omk|produktkonsulter|prod.konsulter/i.test(metric))continue;
+  const hasValues=[...Array(Math.min(sheet.columnCount,19)-3)].some((_,i)=>typeof sheet.getCell(r+1,i+4).value==='number');
+  if(!hasValues)continue;
+  if(/^(?:UO Övergripande|LO(?:\s+)?[^\s]+)(?:\s.*)?$/i.test(candidate))uo++;
+  else if(!/^(?:totalt?|summa|summering)$/i.test(candidate))named++;
+ }
+ return named>0&&uo===0;
+}
+export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name)&&!isProjectBudgetSheet(sheet));}
 export type Measure='it_hours'|'business_hours'|'other_cost'|'consultant_cost';
 export type Fact={uo:string;area:string;measure:Measure;period:{year:number;month?:number};value:number;unit:'h'|'SEK';source:{sheet:string;cell:string}};
 export type Issue={code:string;severity:'error'|'warning';message:string;cell?:string};
