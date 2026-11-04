@@ -5,7 +5,7 @@ import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
 import {readLoActivitySheet,type LoActivityFact} from '../loActivitySheet';
 import {developmentMatrix,readMatrix,type MatrixMapping,type MatrixResult} from '../matrixSection';
 export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
-export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name));}
+export function matchesUoBudget2027_30(workbook:ExcelJS.Workbook):boolean{return workbook.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name)&&!/^Projekt\s*:/i.test(String(sheet.getCell('B1').value??'').trim()));}
 export type Measure='it_hours'|'business_hours'|'other_cost'|'consultant_cost';
 export type Fact={uo:string;area:string;measure:Measure;period:{year:number;month?:number};value:number;unit:'h'|'SEK';source:{sheet:string;cell:string}};
 export type Issue={code:string;severity:'error'|'warning';message:string;cell?:string};
@@ -32,11 +32,11 @@ function areaText(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen=new Set<string>
 }
 function measure(s:string):Measure|null{const v=s.toLowerCase().replace(/\s+/g,' ');if(/it[ -]?timmar/.test(v))return 'it_hours';if(/v timmar|verksamhetstimmar/.test(v))return 'business_hours';if(/prod.konsulter|produktkonsulter/.test(v))return 'consultant_cost';if(/omk/.test(v)&&/övrigt/.test(v))return 'other_cost';return null;}
 function period(v:ExcelJS.Cell['value']){if(v instanceof Date)return {year:v.getFullYear(),month:v.getMonth()+1};if(typeof v==='number'&&Number.isInteger(v)&&v>=2020&&v<=2100)return {year:v};if(typeof v==='string'){const m=v.match(/^(20\d{2})(?:[-/]([01]?\d))?$/);if(m)return {year:+m[1],...(m[2]?{month:+m[2]}:{})};}return null;}
-export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMapping?:MatrixMapping|null):Promise<ImportResult>{
+export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMapping?:MatrixMapping|null,projectMode=false):Promise<ImportResult>{
  const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);
  const sheet=mapping?wb.getWorksheet(mapping.sheet):wb.worksheets.find(s=>UO_BUDGET_SHEET.test(s.name));
  if(!sheet)return {profile:'uo-budget-2027-v1',uo:'',facts:[],issues:[{code:'PROFILE_NOT_MATCHED',severity:'error',message:'UO totalblad hittades inte.'}],excludedSheets:wb.worksheets.map(s=>s.name)};
- const issues:Issue[]=[];const uo=valueText(sheet.getCell(mapping?.uoCell??'B1')).replace(/^UO:\s*/i,'').replace(/^["“]|["”]$/g,'').trim();
+ const issues:Issue[]=[];const uo=valueText(sheet.getCell(mapping?.uoCell??'B1')).replace(/^(?:UO|Projekt):\s*/i,'').replace(/^["“]|["”]$/g,'').trim();
  if(!uo||/skriv namn/i.test(uo))issues.push({code:'UO_NAME_MISSING',severity:'warning',message:'UO-namn saknas eller är en platshållare.',cell:'B1'});
  const periods=new Map<number,{year:number;month?:number}>();
  for(let c=4;c<=sheet.columnCount;c++){const header=sheet.getCell(mapping?.headerRow??11,c);const p=period(header.value);if(p)periods.set(c,p);else {const annual=valueText(header).match(/^ÅRSBEHOV\s+(20\d{2})$/i);if(annual&&Number(annual[1])>2027)periods.set(c,{year:Number(annual[1])});}}
@@ -56,7 +56,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  let area='';const facts:Fact[]=[];let candidates=0,unresolved=0,formulas=0;
  for(let r=mapping?.startRow??19;r<=sheet.rowCount;r++){
   const row=sheet.getRow(r),a=areaText(sheet,row.getCell(mapping?.areaColumn??2)),label=valueText(row.getCell(mapping?.labelColumn??3)).trim();
-  if(a){area=/^(?:UO Övergripande|LO(?:\s+)?[^\s]+)(?:\s.*)?$/i.test(a)?a:'';}
+  if(a){area=projectMode?(!/^(?:totalt?|summa|summering)$/i.test(a)&&!measure(a)?a:''): /^(?:UO Övergripande|LO(?:\\s+)?[^\\s]+)(?:\\s.*)?$/i.test(a)?a:'';}
   const kind=measure(label);
   if(!label||/\bTOT\b|\bSUMMA\b/i.test(label))continue;
   for(const [c,p] of periods){
