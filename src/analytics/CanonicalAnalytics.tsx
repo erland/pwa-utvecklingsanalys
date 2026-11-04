@@ -20,6 +20,7 @@ import CostTypeAnalysis from './CostTypeAnalysis';
 import OrganizationYearReport from './OrganizationYearReport';
 import {canonicalCsv} from './canonicalCsv';
 import {analysisSelectionSummary} from './analysisSelectionSummary';
+import {allocationDiagnosticHelp,diagnosticMetricLabel} from './allocationDiagnosticHelp';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpenCompletions:()=>void}){
  const [departmentDemand,setDepartmentDemand]=useState<DepartmentDemandObservation[]>([]);
@@ -75,7 +76,11 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  {axis==='department'&&unit==='hours'?<><DepartmentDemandAnalysis groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]} records={departmentDemand} year={year==='all'?undefined:Number(year)} metrics={choices.filter((m):m is 'it_hours'|'business_hours'=>m==='it_hours'||m==='business_hours')}/></>:!data?<p>Hämtar analysdata…</p>:!data.records.length?<p>Inga data i analysmodellen. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><section className="analysis-summary" aria-label="Sammanfattning av analys"><h3>2. Sammanfattning</h3><p>Resultatet gäller valt urval och uppdateras när filtren ändras.</p><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong><small>{result.includedRecords} bidragande källposter i aktuellt urval</small></div></div><div className="actions"><button type="button" className="secondary" onClick={()=>{if(!result)return;const blob=new Blob([canonicalCsv(result,trend)],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='analys.csv';link.click();URL.revokeObjectURL(url)}}>Exportera analys som CSV</button></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
  {result.staleApprovals>0&&<p role="status" className="notice">{result.staleApprovals} sparade LO-justeringar är inaktuella efter ändrat källunderlag. Kontrollera dem under Fördelningar.</p>}
- {preparedData?.preparedAnalysis.diagnostics.length? <details className="notice"><summary>Diagnostik för fördelningar ({preparedData.preparedAnalysis.diagnostics.length})</summary><ul>{preparedData.preparedAnalysis.diagnostics.map((d,i)=><li key={i}><strong>{d.code}</strong> · {d.uoId} · {d.year} · {d.metric} · Källa: {d.datasetId} · {d.reason}</li>)}</ul></details>:null}
+ {preparedData?.preparedAnalysis.diagnostics.length? <details className="notice"><summary>Diagnostik för fördelningar ({preparedData.preparedAnalysis.diagnostics.length})</summary><p>Följande underlag behöver kontrolleras. Importerade originalvärden ändras inte av denna information.</p><ul>{preparedData.preparedAnalysis.diagnostics.map((d,i)=>{const help=allocationDiagnosticHelp(d.code);return <li key={i} style={{marginBottom:12}}>
+ <strong>{help.title}</strong> · {d.uoId} · {d.year} · {diagnosticMetricLabel(d.metric)}
+ <p>{help.explanation} <strong>Nästa åtgärd:</strong> {help.action}</p>
+ <details><summary>Tekniska detaljer</summary><p>Felkod: {d.code} · Källa: {d.datasetId} · Orsak: {d.reason}</p></details>
+ </li>})}</ul></details>:null}
  </section>
  <section className="analysis-details" aria-label="Fördjupad analys"><h3>3. Fördjupning</h3><p>Utforska organisationen, fördelningarna och utvecklingen över tid.</p>
  {axis==='work'&&preparedData&&choices.length>0&&<UoAnalysisNavigator data={preparedData} state={state} models={models} metrics={choices} activity={activity} year={year==='all'?undefined:Number(year)} selection={organization} onSelectionChange={setOrganization} selectedModelId={activeGroupModelId}/>}
