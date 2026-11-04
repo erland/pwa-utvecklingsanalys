@@ -7,7 +7,7 @@ export interface Measure {id:string;label:string;unit:Unit;aggregation:Aggregati
 export interface SourceRef {datasetId:string;fileName:string;sheet:string;cell:string}
 export interface Observation {id:string;entityId:string;measureId:string;value:number;period:{year:number;month?:number};planningVersion:string;scenario:string;source:SourceRef;kind:'detail'|'subtotal'|'subset';sectionId?:string;activity?:string;quality:'reported'|'estimated';}
 export interface Relation {id:string;type:'contains'|'performs'|'supports'|'enables';fromId:string;toId:string;validFrom:string;validTo?:string;source?:SourceRef}
-export interface DepartmentDemandObservation {id:string;uoId:string;departmentCodeRaw:string;departmentCode:string;departmentName:string;year:number;metric:'it_hours'|'business_hours';hours:number;anchoringStatus:string;comments:string[];source:SourceRef}
+export interface DepartmentDemandObservation {id:string;/** Planning object identity: uo:* or project:*; legacy name retained for stored UO data. */uoId:string;planningType?:'uo'|'project';departmentCodeRaw:string;departmentCode:string;departmentName:string;year:number;metric:'it_hours'|'business_hours';hours:number;anchoringStatus:string;comments:string[];source:SourceRef}
 export interface SemanticDataset {schemaVersion:1;entities:Entity[];measures:Measure[];observations:Observation[];relations:Relation[];departmentDemand?:DepartmentDemandObservation[]}
 export const DEFAULT_MEASURES:Measure[]=[
  {id:'it_hours',label:'IT-timmar',unit:'h',aggregation:'sum',description:'Tid nedlagd eller planerad för IT'},
@@ -45,7 +45,7 @@ export function validateSemantic(data:SemanticDataset):string[]{
  const departmentIds=new Set<string>();
  for(const d of data.departmentDemand??[]){
   if(!d.id||departmentIds.has(d.id))issues.push('DUPLICATE_DEPARTMENT_DEMAND');departmentIds.add(d.id);
-  if(!d.uoId?.trim()||!d.departmentName?.trim()||!Number.isInteger(d.year)||d.year<2000||d.year>2100||!['it_hours','business_hours'].includes(d.metric)||!Number.isFinite(d.hours)||d.hours<0)issues.push('INVALID_DEPARTMENT_DEMAND');
+  if(!d.uoId?.trim()||d.planningType!==undefined&&d.planningType!=='uo'&&d.planningType!=='project'||d.planningType==='project'&&!d.uoId.startsWith('project:')||!d.departmentName?.trim()||!Number.isInteger(d.year)||d.year<2000||d.year>2100||!['it_hours','business_hours'].includes(d.metric)||!Number.isFinite(d.hours)||d.hours<0)issues.push('INVALID_DEPARTMENT_DEMAND');
   if(!d.source?.datasetId||!d.source.fileName||!d.source.sheet||!d.source.cell||!Array.isArray(d.comments))issues.push('INVALID_DEPARTMENT_SOURCE');
  }
  for(const r of data.relations){if(!entities.has(r.fromId)||!entities.has(r.toId))issues.push('UNKNOWN_RELATION_ENDPOINT');if(r.validTo&&r.validTo<r.validFrom)issues.push('INVALID_RELATION_PERIOD')}
