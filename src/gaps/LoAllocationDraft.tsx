@@ -2,7 +2,7 @@ import {useRef,useState} from 'react';
 import {applySharedPercentages,approveBalancedActivityGroup,type AllocationPreview,type ActivityAllocationDecision} from '../domain/activityAllocation';
 import type {LoDevelopmentOverride} from '../import/formats/uoBudgetCompletion';
 import {uoBudget2027_30} from '../import/formats/uoBudget2027_30';
-import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
+import {rebalanceUoBudgetAllocation,mergeLoOverrides} from '../import/formats/uoBudgetCompletion';
 
 /** Human-readable labels; canonical identifiers remain unchanged in persisted overrides. */
 export function allocationLabel(id:string):string{
@@ -29,7 +29,7 @@ export function feasibleLoPercentRange(previews:readonly AllocationPreview[],loI
 }
 
 /** Adjustments are persisted only when explicitly approved. */
-export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId,autoSave=false,unit='h'}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string;autoSave?:boolean;unit?:'h'|'kr'}){
+export default function LoAllocationDraft({preview,decision,onApprove,quick=false,onApproved,sharedMode=false,balancedPreviews,cards=false,onlyLoId,autoSave=false,priorByRule={},unit='h'}:{preview:AllocationPreview;decision?:ActivityAllocationDecision;onApprove:(overrides:LoDevelopmentOverride[],reason:string)=>Promise<void>;quick?:boolean;onApproved?:()=>void;sharedMode?:boolean;balancedPreviews?:AllocationPreview[];cards?:boolean;onlyLoId?:string;autoSave?:boolean;priorByRule?:Record<string,LoDevelopmentOverride[]>;unit?:'h'|'kr'}){
  const [changes,setChanges]=useState<Record<string,string>>(()=>autoSave?{}:Object.fromEntries((decision?.overrides??[]).map(o=>[o.loId,String(o.developmentPercent)])));
  const pending=useRef<Record<string,string>>({});
  const saving=useRef(false);
@@ -57,6 +57,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
    return {loId,developmentPercent:Number(value)};
   });
   const completion=uoBudget2027_30.kind==='budget'?uoBudget2027_30.completion:undefined;
+  const requested=(p:AllocationPreview)=>autoSave?mergeLoOverrides(priorByRule[p.ruleId]??[],overrides):overrides;
   // The built-in Alla card may already contain a validated, weighted snapshot of saved decisions.
   // Do not replace it with an unedited source rebalance until the user moves the slider.
   if(completion&&(!cards||!balancedPreviews?.length||Object.keys(changes).length>0)){
@@ -69,7 +70,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
      items.set(item.loId,old?{...old,total:old.total+item.total,development:old.development+item.development,maintenance:old.maintenance+item.maintenance}:item);
     }
     return {...preview,items:[...items.values()],uo:{development:results.reduce((n,p)=>n+p.uo.development,0),maintenance:results.reduce((n,p)=>n+p.uo.maintenance,0)}};
-   })():sharedMode?applySharedPercentages(preview,overrides):completion(preview,overrides);
+   })():sharedMode?applySharedPercentages(preview,overrides):completion(preview,requested(preview));
   }
  }catch(e){problem=e instanceof Error?e.message:String(e)}
  const totalDev=shown.items.reduce((sum,item)=>sum+item.development,0);
