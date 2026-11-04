@@ -24,7 +24,7 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
  const includeUo=scope!=='project',includeProjects=scope!=='uo';
  const rows=[
   ...(includeUo?totals.uo.rows.map(row=>({...row,kind:'UO' as const})):[]),
-  ...(includeProjects?totals.projects.rows.map(row=>({...row,kind:'Projekt' as const})):[]
+  ...(includeProjects?totals.projects.rows.map(row=>({...row,kind:'Projekt' as const})):[])
  ];
  const total=(includeUo?totals.uo.total:0)+(includeProjects?totals.projects.total:0);
  const unit=totals.unit;
