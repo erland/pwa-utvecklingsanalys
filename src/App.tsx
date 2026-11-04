@@ -1,5 +1,5 @@
 import {onWorkspaceChange,type WorkspaceChange} from './storage/workspaceEvents';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {ViewId} from './model';
 import {useProjectWorkspace} from './app/useProjectWorkspace';
 import ResetWorkspace from './reset/ResetWorkspace';
@@ -25,6 +25,7 @@ const legacyNavigationGroups: {label:string;items:ViewId[]}[]=[
 // The normal PWA never advertises manual configuration screens.
 export default function App(){
  const[replaceSourceId,setReplaceSourceId]=useState<string|null>(null);
+ const navigationRef=useRef<HTMLElement|null>(null);
  const [legacyNav]=useState(()=>typeof localStorage!=='undefined'&&localStorage.getItem('utvecklingsanalys:e2e-legacy-navigation')==='1');
  const navigationGroups=legacyNav?legacyNavigationGroups:[{label:'',items:['overview','import','allocations','analysis','settings'] as ViewId[]}];
  const [view,setView]=useState<ViewId>('overview');
@@ -35,8 +36,12 @@ export default function App(){
   if(type==='gap-state-changed'&&!['import','gaps','allocations','analysis'].includes(view))return;
   setOtherTabChanged(type);
  }),[view]);
- return <div className="shell"><a className="skip-link" href="#main-content">Hoppa till innehållet</a><aside className="sidebar"><div className="brand"><span className="brandmark"><BarChart3 size={24}/></span><div><strong>Utvecklingsanalys</strong><small>Analysarbetsyta</small></div></div><nav aria-label="Huvudmeny">{navigationGroups.map(group=><div className="nav-group" key={group.label}>{group.label&&<span className="nav-group-title">{group.label}</span>}{group.items.map(id=>{const n=nav.find(item=>item.id===id)!;return <button key={n.id} type="button" aria-current={view===n.id?'page':undefined} className={view===n.id?'nav-link active':'nav-link'} aria-disabled={n.id==='analysis'&&!analysisAvailable?'true':undefined} title={n.id==='analysis'&&!analysisAvailable?'Importera analysuppgifter för att aktivera Analys':undefined} onClick={()=>n.id==='analysis'?(analysisAvailable?void openAnalysis():undefined):setView(n.id)}><n.icon size={19} aria-hidden="true"/>{n.label}</button>})}</div>)}</nav><div className="sidebar-foot"><ShieldCheck size={16}/>Lokal data · ingen server</div></aside>
- <div className="content"><header className="topbar"><div><strong>{project?.name??'Mitt analysprojekt'}</strong><small>Projektbackup · DEV-011</small></div><span className="pill">Lokal analys</span></header><main id="main-content">
+ return <div className="shell"><a className="skip-link" href="#main-content">Hoppa till innehållet</a><aside className="sidebar"><div className="brand"><span className="brandmark"><BarChart3 size={24}/></span><div><strong>Utvecklingsanalys</strong><small>Analysarbetsyta</small></div></div><div className="mobile-nav-tools" aria-label="Bläddra i huvudmenyn">
+ <span>Fler vyer? Svep menyn eller använd pilarna.</span>
+ <button type="button" className="mobile-nav-arrow" aria-label="Bläddra menyn åt vänster" onClick={()=>navigationRef.current?.scrollBy({left:-210,behavior:'auto'})}>‹</button>
+ <button type="button" className="mobile-nav-arrow" aria-label="Bläddra menyn åt höger" onClick={()=>navigationRef.current?.scrollBy({left:210,behavior:'auto'})}>›</button>
+ </div><nav ref={navigationRef} aria-label="Huvudmeny">{navigationGroups.map(group=><div className="nav-group" key={group.label}>{group.label&&<span className="nav-group-title">{group.label}</span>}{group.items.map(id=>{const n=nav.find(item=>item.id===id)!;return <button key={n.id} type="button" aria-current={view===n.id?'page':undefined} className={view===n.id?'nav-link active':'nav-link'} aria-disabled={n.id==='analysis'&&!analysisAvailable?'true':undefined} title={n.id==='analysis'&&!analysisAvailable?'Importera analysuppgifter för att aktivera Analys':undefined} onClick={()=>n.id==='analysis'?(analysisAvailable?void openAnalysis():undefined):setView(n.id)}><n.icon size={19} aria-hidden="true"/>{n.label}</button>})}</div>)}</nav><div className="sidebar-foot"><ShieldCheck size={16}/>Lokal data · ingen server</div></aside>
+ <div className="content"><header className="topbar"><div><strong>{project?.name??'Mitt analysprojekt'}</strong><small>Projektdata lagras lokalt</small></div><span className="pill">Lokal analys</span></header><main id="main-content">
  {otherTabChanged&&<div role="alert" className="alert"><strong>{otherTabChanged==='gap-state-changed'?'Kompletteringar eller fördelningar har ändrats i en annan flik.':otherTabChanged==='workspace-reset'?'Arbetsytan har återställts i en annan flik.':'Arbetsytan har ändrats i en annan flik.'}</strong> Ladda om innan du fortsätter för att undvika att skriva tillbaka gamla data. <button type="button" className="primary" onClick={()=>window.location.reload()}>Ladda om nu</button></div>}
  {storageError&&<div role="alert" className="alert">{storageError}</div>}
  {view==='overview'&&<><div className="eyebrow">ÖVERSIKT</div><h1>Överblick över verksamhetsutvecklingen</h1><p className="lead">Samla Excelunderlag från olika källor, justera fördelningar och analysera utvecklingens inriktning. Alla värden hämtas från ditt lokala projekt.</p>
