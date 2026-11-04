@@ -2,48 +2,57 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-005-project-lifecycle
-active_step: KF-005
-step_state: verified_awaiting_merge
-completed_steps: [KF-001, KF-002, KF-003, KF-004]
+base_sha: b169b243f40b2060226c75e1a3cf70f7eda51e22
+work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-006-release-readiness
+active_step: KF-006
+step_state: release_evidence_documented_awaiting_pr_ci
+completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005]
 verification:
   baseline_main:
-    sha: ee165d26ea721b31b1ae242b41dcacaaeba8bbf1
-    workflow_run: 41722827639
-    result: success
+    sha: b169b243f40b2060226c75e1a3cf70f7eda51e22
+    workflow_run: 41724581146
+    result: pending_at_review
   kf_001:
     pr: 270
     result: merged_and_ci_passed
+    workflow_run: 41713591629
   kf_002:
     pr: 271
     result: merged_and_ci_passed
+    workflow_run: 41715499310
   kf_003:
     pr: 272
     result: merged_and_ci_passed
+    workflow_run: 41718986862
   kf_004:
     pr: 273
     result: merged_and_ci_passed
-    last_pr_workflow_run: 41721692516
+    workflow_run: 41721692516
   kf_005:
-    result: verified_awaiting_merge
-    verified_code_commit: 8f330b189cd7600088227093cb06d1ec7ccadf89
-    workflow_run: 41723323306
-    test: e2e/kf-005-project-lifecycle.spec.ts
-    change_type: behavior_preserving_refactoring
-scope:
-  extracted_hook: src/app/useProjectWorkspace.ts
-  entrypoint: src/App.tsx
-  preserved_contracts:
-    - restore_before_source_recovery_before_load_project
-    - project_name_serialized_write
-    - overview_refresh_when_project_or_view_changes
-    - analysis_rechecks_persisted_sources_before_navigation
-    - legacy_navigation_compatibility
-known_risks:
-  - "PR #256 remains open and modifies UoImportCompletionView separately"
-  - "Legacy unguarded GapState writes remain possible"
-  - "Source reset and multi-database restore are not atomic"
+    pr: 274
+    result: merged_and_ci_passed
+    workflow_run: 41723885451
+  kf_006:
+    change_type: verification_and_documentation_only
+    report: docs/kf-006-release-verification.md
+    result: evidence_documented_pending_pr_ci
+release_readiness:
+  decision: NO_GO
+  go_authorized: false
+  manual_acceptance_rg_01_to_rg_10: not_performed
+  published_release_at_review: v0.6.7
+  latest_release_published_date: 2026-11-02
+  planned_new_release: none
+  outstanding_risk_ids: [RR-01, RR-02, RR-03, RR-04, RR-05, RR-06]
+  active_open_pr:
+    number: 256
+    state: draft
+    mergeability: dirty
+  blockers:
+    - "Manual RG-01–RG-10 sign-off not recorded"
+    - "Legacy unguarded GapState writes require mitigation or explicit acceptance"
+    - "Import-completion PR #256 must be reconciled or dispositioned"
+    - "Actual iPad/Safari, restore, published Pages and standalone acceptance outstanding"
 next_step:
-  recommended: KF-005
-  reason: "Final status-only commit requires a fresh PR-head Verify PWA; then review and merge before KF-006"
+  recommended: manual_release_acceptance_and_blocker_triage
+  reason: "Do not release or start a broad refactoring without RG evidence and formal decision"
