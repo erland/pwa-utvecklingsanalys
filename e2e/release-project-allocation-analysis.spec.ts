@@ -29,12 +29,12 @@ test('release: imported UO and independent project stay additive after a saved p
  // All planning volume includes both types, but no activity is silently assumed.
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const analysis=page.locator('.canonical-analytics');
- await analysis.getByLabel('Planeringstyp').selectOption('all');
+ await analysis.getByRole('combobox',{name:'Planeringstyp',exact:true}).selectOption('all');
  await analysis.getByLabel('period',{exact:true}).selectOption('2027');
  const panel=page.getByRole('region',{name:'Samlat planeringsbehov'});
  await expect(panel.getByRole('table',{name:'Summering UO och projekt'})).toContainText('UO');
  await expect(panel.getByRole('table',{name:'Summering UO och projekt'})).toContainText('100 h');
- await analysis.getByLabel('Planeringstyp').selectOption('project');
+ await analysis.getByRole('combobox',{name:'Planeringstyp',exact:true}).selectOption('project');
  await expect(panel).toContainText('Totalt: 60 h');
  await analysis.getByLabel('Aktivitet för projekt och UO').selectOption('development');
  await expect(panel).toContainText('Totalt: 0 h');
@@ -57,7 +57,7 @@ test('release: imported UO and independent project stay additive after a saved p
  await page.reload();
  await page.getByRole('button',{name:'Analys',exact:true}).click();
  const refreshed=page.locator('.canonical-analytics');
- await refreshed.getByLabel('Planeringstyp').selectOption('project');
+ await refreshed.getByRole('combobox',{name:'Planeringstyp',exact:true}).selectOption('project');
  await refreshed.getByLabel('period',{exact:true}).selectOption('2027');
  await refreshed.getByLabel('Aktivitet för projekt och UO').selectOption('development');
  const selected=page.getByRole('region',{name:'Samlat planeringsbehov'});
@@ -66,6 +66,6 @@ test('release: imported UO and independent project stay additive after a saved p
  await expect(selected).toContainText('Totalt: 24 h');
  await refreshed.getByLabel('Aktivitet för projekt och UO').selectOption('all');
  await expect(selected).toContainText('Totalt: 60 h');
- await refreshed.getByLabel('Planeringstyp').selectOption('all');
+ await refreshed.getByRole('combobox',{name:'Planeringstyp',exact:true}).selectOption('all');
  await expect(selected).toContainText('Totalt: 100 h');
 });
