@@ -26,7 +26,7 @@ export function analysisSelectionSummary(input:{
  return {
   organization:scope,
   measure:(unit==='costs'&&axis==='work'?'Kostnader':'Timmar')+' · '+(metrics.length?metrics.map(m=>metricNames[m]).join(' + '):'Inget mått valt'),
-  activity:axis==='work'&&unit==='hours'?(activity==='all'?'Utveckling och förvaltning':activity==='development'?'Utveckling':activity==='maintenance'?'Förvaltning':'Fördelade aktiviteter'):undefined,
+  activity:axis==='work'&&(unit==='hours'||activity!=='all')?(activity==='all'?'Utveckling och förvaltning':activity==='development'?'Utveckling':activity==='maintenance'?'Förvaltning':'Fördelade aktiviteter'):undefined,
   year:year==='all'?'Alla år':year
  };
 }
