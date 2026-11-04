@@ -15,7 +15,7 @@ verification:
   baseline_main:
     sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
     workflow_run: 41775869991
-    result: pending_at_step_start
+    result: success
   rr_03_01:
     result: pending_pr_ci
     tests:
@@ -28,7 +28,7 @@ release_readiness:
   manual_acceptance_rg_01_to_rg_10: not_performed
   outstanding_risk_ids: [RR-01, RR-02, RR-03, RR-04, RR-05, RR-06]
   remaining_rr_03_risk: "Other unguarded GapState writers not yet audited"
-  pr_256_disposition: "Superseded UI capability; planned closure without merge"
+  pr_256_disposition: "Closed without merge as superseded; discussion recorded on PR #256"
 next_step:
   recommended: review_remaining_unguarded_gapstate_writers
   reason: "Audit other critical write paths after completing RR-03-01 and record manual release acceptance separately"
