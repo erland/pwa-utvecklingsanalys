@@ -31,9 +31,9 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
  // Totals, blank separators and notes do not have a department code.
  for(let row=5;row<=sheet.rowCount;row++){
   const name=value(row,2),code=value(row,1);
-  if(!name||!/^\\d{3,}\\*?$/.test(code))continue;
+  if(!name||!/^\d{3,}\*?$/.test(code))continue;
   // The IT department belongs to IT hours regardless of its location.
-  const metric=code.replaceAll('*','')==='713'||/^IT[-\\s]avdelningen$/i.test(name)?'it_hours':'business_hours';
+  const metric=code.replaceAll('*','')==='713'||/^IT[-\s]avdelningen$/i.test(name)?'it_hours':'business_hours';
   const anchoringStatus=value(row,6);
   const comments=[7,8,9].map(col=>value(row,col)).filter(Boolean);
   for(const [year,col] of years){
