@@ -47,7 +47,7 @@ test('UO department demand survives import, discrepancy, reload and reciprocal d
  const demand=page.getByRole('region',{name:'Avdelningsbehov'});
  await expect(demand).toContainText('Avdelning Alfa');
  await expect(demand).toContainText('IT-avdelningen');
- await demand.getByRole('button',{name:'Avdelning Alfa'}).click();
+ await demand.getByRole('group',{name:'Cirkeldiagram: Efterfrågade timmar per avdelning'}).getByRole('button',{name:'Avdelning Alfa'}).click();
  await expect(page.getByRole('region',{name:'Fördjupning av avdelningsbehov'})).toContainText('UO A');
  await expect(demand.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO A');
  await analysis.getByLabel('organisation',{exact:true}).selectOption('work');
