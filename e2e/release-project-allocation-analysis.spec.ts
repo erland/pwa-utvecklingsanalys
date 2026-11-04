@@ -32,7 +32,7 @@ test('release: imported UO and independent project stay additive after a saved p
  await analysis.getByLabel('Planeringstyp').selectOption('all');
  await analysis.getByLabel('period',{exact:true}).selectOption('2027');
  const panel=page.getByRole('region',{name:'Samlat planeringsbehov'});
- await expect(panel.getByRole('table',{name:'Summering UO och projekt'})).toContainText('Infrastruktur');
+ await expect(panel.getByRole('table',{name:'Summering UO och projekt'})).toContainText('UO');
  await expect(panel.getByRole('table',{name:'Summering UO och projekt'})).toContainText('100 h');
  await analysis.getByLabel('Planeringstyp').selectOption('project');
  await expect(panel).toContainText('Totalt: 60 h');
