@@ -54,7 +54,7 @@ export default function App(){
  {view==='groups'&&<GroupsView onSaved={refreshAnalysis}/>}
  {view==='settings'&&<><div className="eyebrow">PROJEKT</div><h1>Inställningar</h1><p className="lead">Hantera projektet, UO-grupper och fördelningstyper. Backup och återställning finns i ett separat avsnitt längst ner.</p>
  <section className="panel" aria-label="Projektinställningar"><h2>Projekt</h2><label htmlFor="project-name">Namn på lokalt projekt</label><input id="project-name" value={project?.name??''} disabled={!project} onChange={e=>updateName(e.target.value)}/>
- <div role="status" aria-live="polite" aria-atomic="true" className="project-save-feedback">{nameSaveStatus==='saving'?'Sparar projektnamn…':nameSaveStatus==='saved'?'Projektnamnet är sparat.':nameSaveStatus==='error'?'Projektnamnet kunde inte sparas.':''}</div>
+ <div aria-live="polite" aria-atomic="true" className="project-save-feedback">{nameSaveStatus==='saving'?'Sparar projektnamn…':nameSaveStatus==='saved'?'Projektnamnet är sparat.':nameSaveStatus==='error'?'Projektnamnet kunde inte sparas.':''}</div>
  {nameSaveStatus==='error'&&<button type="button" className="secondary" onClick={retryNameSave}>Försök spara igen</button>}
  <p className="notice">Projektet lagras lokalt i IndexedDB. Exportera en backup regelbundet.</p></section>
  <section aria-label="Administrera UO-grupper" style={{marginTop:24}}><GroupsView onSaved={refreshAnalysis} embedded/></section>
