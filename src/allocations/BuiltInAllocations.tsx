@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {withCompletedUoMatrices} from '../import/uoImportCompletions';
-import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
+import {approvedActivityParts,previewActivityAllocation,approveBalancedActivityGroup,approveActivityAllocation,applySharedPercentages,type ActivityAllocationRule,type AllocationPreview} from '../domain/activityAllocation';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
-import {rebalanceUoBudgetAllocation} from '../import/formats/uoBudgetCompletion';
+import {rebalanceUoBudgetAllocation,mergeLoOverrides} from '../import/formats/uoBudgetCompletion';
 import {loadGapState,saveGapState} from '../gaps/store';
 import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
@@ -106,7 +106,10 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
   group.rules.push(rule);group.previews.push(preview);editorGroups.set(key,group);
  }
  const saveGroup=async(group:{rules:ActivityAllocationRule[];previews:AllocationPreview[]},overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
-  const approvals=approveBalancedActivityGroup(group.previews,reason,overrides);
+  const approvals=group.previews.map(preview=>{
+   const previous=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===preview.ruleId)?.overrides??[];
+   return approveActivityAllocation(preview,reason,mergeLoOverrides(previous,overrides));
+  });
   const latest=await loadGapState();
   // Abort if another tab has replaced source-linked decisions since the displayed snapshot.
   for(const rule of group.rules){
@@ -128,7 +131,10 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
  };
  const saveAcrossYears=async(groups:{rules:ActivityAllocationRule[];previews:AllocationPreview[]}[],overrides:{loId:string;developmentPercent:number}[],reason:string)=>{
   // Validate all target years before persisting a single atomic state update.
-  const approvals=groups.flatMap(group=>approveBalancedActivityGroup(group.previews,reason,overrides));
+  const approvals=groups.flatMap(group=>group.previews.map(preview=>{
+   const previous=(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===preview.ruleId)?.overrides??[];
+   return approveActivityAllocation(preview,reason,mergeLoOverrides(previous,overrides));
+  }));
   const current=await loadGapState();
   const selectedRules=groups.flatMap(group=>group.rules);
   for(const rule of selectedRules){
@@ -272,7 +278,7 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
          <p><strong>{status.label}</strong> · {status.description}</p>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={setYear} label={'LO-period '+name(loId)}/>
 
-         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave unit={kind==='activity-cost'?'kr':'h'} onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
+         <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave priorByRule={Object.fromEntries(previewGroups.flatMap(g=>g.previews.map(p=>[p.ruleId,(gaps.activityAllocationDecisions??[]).find(d=>d.ruleId===p.ruleId)?.overrides??[]])))} unit={kind==='activity-cost'?'kr':'h'} onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
         </section>;
        });
       })()}
