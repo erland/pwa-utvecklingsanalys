@@ -18,11 +18,13 @@ export default function DepartmentDemandAnalysis({records,year,metrics,groupMode
   <h3>Resursbehov per avdelning</h3>
   <p>Efterfrågade avdelningstimmar från UO och tvärgående projekt. Avdelningarnas referenskoder visas inte. Uppgifterna är en alternativ fördelning av budgetbehoven och adderas inte till UO- eller projekttotalen.</p>
   <p><strong>Planering:</strong> {planningType==='all'?'Alla – UO och projekt':planningType==='uo'?'UO':'Projekt'}</p>
-  <DepartmentDemandBreakdown title="Efterfrågade timmar per avdelning" rows={result.rows} onSelect={id=>setSelectedId(old=>old===id?null:id)}/>
-  <DepartmentDemandTrend records={shown} metrics={metrics} selectedDepartment={selected?.id}/>
-  {selected&&<section className="panel" aria-label="Fördjupning av avdelningsbehov">
-   <button type="button" className="secondary" onClick={()=>setSelectedId(null)}>Tillbaka till avdelningar</button>
+  {selected?<section className="panel" aria-label="Fördjupning av avdelningsbehov">
+   <nav className="actions" aria-label="Analysnivå">
+    <button type="button" className="secondary" onClick={()=>setSelectedId(null)}>← Alla avdelningar</button>
+    <span aria-hidden="true">›</span><strong>{selected.label}</strong>
+   </nav>
    <DepartmentDemandBreakdown title={'Efterfrågande UO och projekt – '+selected.label} rows={detail} showPlanningType/>
-  </section>}
+  </section>:<DepartmentDemandBreakdown title="Efterfrågade timmar per avdelning" rows={result.rows} onSelect={id=>setSelectedId(id)}/>}
+  <DepartmentDemandTrend records={shown} metrics={metrics} selectedDepartment={selected?.id}/>
  </section>;
 }
