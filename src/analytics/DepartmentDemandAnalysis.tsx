@@ -25,6 +25,6 @@ export default function DepartmentDemandAnalysis({records,year,metrics,groupMode
    </nav>
    <DepartmentDemandBreakdown title={'Efterfrågande UO och projekt – '+selected.label} rows={detail} showPlanningType/>
   </section>:<DepartmentDemandBreakdown title="Efterfrågade timmar per avdelning" rows={result.rows} onSelect={id=>setSelectedId(id)}/>}
-  <DepartmentDemandTrend records={shown} metrics={metrics} selectedDepartment={selected?.id}/>
+  <DepartmentDemandTrend records={shown} metrics={metrics} selectedDepartment={selected?.id} selectedYear={year}/>
  </section>;
 }
