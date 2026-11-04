@@ -10,14 +10,15 @@ export type DepartmentDemandRow={id:string;label:string;itHours:number;businessH
 export type DepartmentDemandAnalysis={rows:DepartmentDemandRow[];total:number;itHours:number;businessHours:number};
 
 /** Alternative view over imported UO->department demand, never added to canonical budget. */
-export function analyzeDepartmentDemand(records:readonly DepartmentDemandObservation[],options:{perspective:'department'|'uo';year?:number;metrics:readonly ('it_hours'|'business_hours')[];scope?:{level:'all'|'group'|'uo';id?:string};groupModel?:UoGroupModel}):DepartmentDemandAnalysis{
+export function analyzeDepartmentDemand(records:readonly DepartmentDemandObservation[],options:{perspective:'department'|'uo';year?:number;metrics:readonly ('it_hours'|'business_hours')[];scope?:{level:'all'|'group'|'uo';id?:string};planningType?:'all'|'uo'|'project';groupModel?:UoGroupModel}):DepartmentDemandAnalysis{
  const groups=new Map<string,DepartmentDemandRow>();
  for(const d of records){
   if(options.year!==undefined&&d.year!==options.year||!options.metrics.includes(d.metric))continue;
+  if(options.planningType&&options.planningType!=='all'&&(d.planningType??'uo')!==options.planningType)continue;
   if(options.scope?.level==='uo'&&d.uoId!==options.scope.id)continue;
-  if(options.scope?.level==='group'&&(groupForUo(options.groupModel??{id:'',name:'',groups:[]},d.uoId)?.id??'unassigned')!==options.scope.id)continue;
+  if(options.scope?.level==='group'&&(d.planningType==='project'||(groupForUo(options.groupModel??{id:'',name:'',groups:[]},d.uoId)?.id??'unassigned')!==options.scope.id))continue;
   const id=options.perspective==='uo'?d.uoId:(d.departmentCode||d.departmentName.trim().toLocaleLowerCase('sv-SE'));
-  const label=options.perspective==='uo'?decodeURIComponent(d.uoId.replace(/^uo:/,'')):departmentDisplayName(d.departmentName);
+  const label=options.perspective==='uo'?decodeURIComponent(d.uoId.replace(/^(?:uo|project):/,'')):departmentDisplayName(d.departmentName);
   const prior=groups.get(id)??{id,label,itHours:0,businessHours:0,total:0};
   if(d.metric==='it_hours')prior.itHours+=d.hours;else prior.businessHours+=d.hours;
   prior.total+=d.hours;groups.set(id,prior);

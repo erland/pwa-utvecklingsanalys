@@ -83,7 +83,19 @@ export function importProjectFacts(existing:SemanticDataset,result:ImportResult,
   observations.push({id,entityId:partId,measureId:fact.measure,value:fact.value,period:fact.period,
    planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'detail',quality:'reported'});
  }
- const next={...existing,entities,observations};
+ // Department requests are an alternative perspective on the same project hours.
+ // Preserve project identity and provenance; never add these to budget observations.
+ const departmentDemand=[
+  ...(existing.departmentDemand??[]).filter(d=>d.source.datasetId!==datasetId),
+  ...(result.departmentDemand??[]).map(f=>({
+   id:[datasetId,f.source.sheet,f.source.cell,f.metric].map(slug).join('|'),
+   uoId:projectId,planningType:'project' as const,departmentCodeRaw:f.departmentCodeRaw,
+   departmentCode:f.departmentCode,departmentName:f.departmentName,year:f.year,
+   metric:f.metric,hours:f.hours,anchoringStatus:f.anchoringStatus,
+   comments:[...f.comments],source:{datasetId,fileName,sheet:f.source.sheet,cell:f.source.cell}
+  }))
+ ];
+ const next={...existing,entities,observations,departmentDemand};
  const errors=validateSemantic(next);if(errors.length)throw new Error(errors.join(','));
  return next;
 }

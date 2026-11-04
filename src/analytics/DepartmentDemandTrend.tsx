@@ -18,7 +18,7 @@ export default function DepartmentDemandTrend({records,metrics,selectedDepartmen
  const y=(v:number)=>height-bottom-v/max*(height-top-bottom);
  const path=(values:(number|null)[])=>{let started=false;return values.map((v,i)=>{if(v===null){started=false;return ''}const command=(started?'L':'M')+x(i)+' '+y(v);started=true;return command}).join(' ')};
  return <section className="panel" aria-label="Utveckling av avdelningsbehov">
-  <h3>{selectedDepartment?'Utveckling av efterfrågan per UO':'Utveckling per avdelning'}</h3>
+  <h3>{selectedDepartment?'Utveckling av efterfrågan per UO och projekt':'Utveckling per avdelning'}</h3>
   <p>Årsvis efterfrågade timmar för valda timtyper. Saknade observationer visas som luckor och inte som noll.</p>
   <svg className="annual-line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Linjediagram för avdelningsbehov">
    <line x1={left} y1={height-bottom} x2={width-right} y2={height-bottom} stroke="#8295a2"/>
@@ -28,7 +28,7 @@ export default function DepartmentDemandTrend({records,metrics,selectedDepartmen
    {series.map((line,i)=><path key={line.id} d={path(line.values)} fill="none" stroke={CHART_COLORS[i%CHART_COLORS.length]} strokeWidth="2.5"/>)}
   </svg>
   <ul className="pie-legend" aria-label="Diagramförklaring">{series.map((line,i)=><li key={line.id}><span className="pie-swatch" style={{backgroundColor:CHART_COLORS[i%CHART_COLORS.length]}} aria-hidden="true"/>{line.label}</li>)}</ul>
-  <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Avdelningsbehov per år"><thead><tr><th>{selectedDepartment?'UO':'Avdelning'}</th>{years.map(year=><th key={year}>{year}</th>)}</tr></thead><tbody>
+  <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label="Avdelningsbehov per år"><thead><tr><th>{selectedDepartment?'UO / projekt':'Avdelning'}</th>{years.map(year=><th key={year}>{year}</th>)}</tr></thead><tbody>
    {series.map(line=><tr key={line.id}><th scope="row">{line.label}</th>{line.values.map((value,i)=><td key={years[i]}>{value===null?'–':fmt(value)+' h'}</td>)}</tr>)}
   </tbody><tfoot><tr><th scope="row">Totalt</th>{data.map((d,i)=><td key={years[i]}>{fmt(d.total)} h</td>)}</tr></tfoot></table></div>
  </section>;

@@ -7,18 +7,21 @@ import {departmentDemandDrilldown} from '../domain/departmentDemandDrilldown';
 import DepartmentDemandBreakdown from './DepartmentDemandBreakdown';
 
 export default function DepartmentDemandAnalysis({records,year,metrics,groupModel}:{records:readonly DepartmentDemandObservation[];year?:number;metrics:readonly ('it_hours'|'business_hours')[];groupModel?:UoGroupModel}){
+ const [planningType,setPlanningType]=useState<'all'|'uo'|'project'>('all');
+ const shown=records.filter(r=>planningType==='all'||(r.planningType??'uo')===planningType);
  const [selectedId,setSelectedId]=useState<string|null>(null);
- const result=analyzeDepartmentDemand(records,{perspective:'department',year,metrics,groupModel});
+ const result=analyzeDepartmentDemand(shown,{perspective:'department',year,metrics,groupModel});
  const selected=result.rows.find(row=>row.id===selectedId);
- const detail=selected?departmentDemandDrilldown(records,{perspective:'department',id:selected.id,year,metrics}):[];
+ const detail=selected?departmentDemandDrilldown(shown,{perspective:'department',id:selected.id,year,metrics}):[];
  return <section className="panel department-demand-analysis" aria-label="Avdelningsbehov">
   <h3>Resursbehov per avdelning</h3>
-  <p>Samtliga UO:s efterfrågade timmar från respektive avdelning. Avdelningarnas referenskoder visas inte. Dessa timmar är inte ett tillägg till UO-budgeten.</p>
+  <p>Efterfrågade avdelningstimmar från UO och tvärgående projekt. Avdelningarnas referenskoder visas inte. Uppgifterna är en alternativ fördelning av budgetbehoven och adderas inte till UO- eller projekttotalen.</p>
+  <label>Planeringstyp <select aria-label="Planeringstyp för avdelningar" value={planningType} onChange={e=>{setPlanningType(e.target.value as 'all'|'uo'|'project');setSelectedId(null)}}><option value="all">Alla</option><option value="uo">UO</option><option value="project">Projekt</option></select></label>
   <DepartmentDemandBreakdown title="Efterfrågade timmar per avdelning" rows={result.rows} onSelect={id=>setSelectedId(old=>old===id?null:id)}/>
-  <DepartmentDemandTrend records={records} metrics={metrics} selectedDepartment={selected?.id}/>
+  <DepartmentDemandTrend records={shown} metrics={metrics} selectedDepartment={selected?.id}/>
   {selected&&<section className="panel" aria-label="Fördjupning av avdelningsbehov">
    <button type="button" className="secondary" onClick={()=>setSelectedId(null)}>Tillbaka till avdelningar</button>
-   <DepartmentDemandBreakdown title={'Efterfrågande UO – '+selected.label} rows={detail}/>
+   <DepartmentDemandBreakdown title={'Efterfrågande UO och projekt – '+selected.label} rows={detail} showPlanningType/>
   </section>}
  </section>;
 }
