@@ -20,7 +20,8 @@ test('UX-002: mixed batch shows success and rejected files with distinct next ac
  await expect(results).toContainText('godkand.xlsx');
  const successfulFile=results.locator('li').filter({hasText:'godkand.xlsx'});
  await expect(successfulFile).toContainText('importerad');
- await expect(successfulFile).not.toContainText('detaljvärden');
+ await expect(successfulFile.locator('details')).not.toHaveAttribute('open');
+ await expect(successfulFile.getByText(/detaljvärden/)).toBeHidden();
  await expect(successfulFile).not.toContainText('Nästa åtgärd:');
  await successfulFile.getByText('Visa detaljer').click();
  await expect(successfulFile).toContainText('1 detaljvärden');
