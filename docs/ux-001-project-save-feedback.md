@@ -8,7 +8,7 @@ I `src/App.tsx` sparades projektnamnet vid varje tangenttryckning via `useProjec
 
 ## UX-förändring
 
-- Under fältet **Namn på lokalt projekt** visas status med `role="status"` och `aria-live="polite"`: *Sparar projektnamn…*, *Projektnamnet är sparat.* eller *Projektnamnet kunde inte sparas.*
+- Under fältet **Namn på lokalt projekt** visas status med `aria-live="polite"` (utan extra `role="status"`, för att inte skapa tvetydiga statusregioner för andra funktioner): *Sparar projektnamn…*, *Projektnamnet är sparat.* eller *Projektnamnet kunde inte sparas.*
 - Vid fel visas **Försök spara igen**, som sparar det nuvarande namn som visas, utan att tvinga fram ett nytt tangenttryck.
 - En monoton versionsräknare ignorerar sena resultat från tidigare skrivförsök. Detta är viktigt eftersom `saveProject` serialiserar IndexedDB-skrivningar; bara den senaste användarredigeringen får rapportera sparat/fel.
 - Lagringsformat, importflöde, navigation och hur namnet uppdateras i rubriken är oförändrade. Inget debouncing- eller spara-på-blur-beteende införs.
