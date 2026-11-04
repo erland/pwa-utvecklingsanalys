@@ -46,7 +46,7 @@ test('release: imported UO and independent project stay additive after a saved p
  await allocations.getByRole('button',{name:/Utveckling \/ Förvaltning – projekt/}).click();
  await allocations.getByLabel('Projektfördelning år').selectOption('2027');
  await allocations.getByRole('region',{name:'Välj projekt att fördela'}).getByRole('button',{name:/Digitalisering/}).click();
- const row=allocations.getByRole('region',{name:'Fördelning Gemensam informationshantering it_hours 2027'});
+ const row=allocations.locator('[aria-label="Fördelning Gemensam informationshantering it_hours 2027"]');
  await row.getByLabel('Utveckling procent Gemensam informationshantering 2027 it_hours').fill('60');
  await expect(row).toContainText('Förhandsvisning (ej sparad): Utveckling 36 h');
  await row.getByRole('button',{name:'Spara fördelning'}).click();
