@@ -27,19 +27,19 @@ const data=()=>{
  ]};
 };
 const html=(scope:'all'|'project',metric:AnalysisRecord['metric'],activity:'all'|'development'|'maintenance')=>
- renderToStaticMarkup(createElement(PlanningScopeAnalysis,{data:data(),state,scope,metrics:[metric],year:2027,activity}));
+ renderToStaticMarkup(createElement(PlanningScopeAnalysis,{data:data(),state,scope,metrics:[metric],year:2027,activity})).replace(/<!-- -->/g,'');
 describe('shared activity filter and rendered planning totals',()=>{
  it('uses exactly the parent-selected activity in planning table and aggregate',()=>{
   expect(planningTotals(data(),state,['it_hours'],2027,'development').total).toBe(70);
   const development=html('all','it_hours','development');
-  expect(development).toContain('Totalt: <!-- -->70');
+  expect(development).toContain('Totalt: 70');
   expect(development).toContain('60 h');
   expect(development).toContain('10 h');
   const maintenance=html('all','it_hours','maintenance');
-  expect(maintenance).toContain('Totalt: <!-- -->80');
+  expect(maintenance).toContain('Totalt: 80');
   expect(maintenance).toContain('40 h');
   const total=html('all','it_hours','all');
-  expect(total).toContain('Totalt: <!-- -->150');
+  expect(total).toContain('Totalt: 150');
   expect(total).not.toContain('Aktivitet för projekt och UO');
  });
  it('includes activity name in shared summary for project costs, without cost-specific double filtering',()=>{
@@ -50,8 +50,8 @@ describe('shared activity filter and rendered planning totals',()=>{
   expect(summary('development').activity).toBe('Utveckling');
   expect(summary('maintenance').activity).toBe('Förvaltning');
   expect(summary('all').activity).toBeUndefined();
-  expect(html('project','other_cost','development')).toContain('Totalt: <!-- -->150');
-  expect(html('project','other_cost','maintenance')).toContain('Totalt: <!-- -->50');
-  expect(html('project','other_cost','all')).toContain('Totalt: <!-- -->200');
+  expect(html('project','other_cost','development')).toContain('Totalt: 150');
+  expect(html('project','other_cost','maintenance')).toContain('Totalt: 50');
+  expect(html('project','other_cost','all')).toContain('Totalt: 200');
  });
 });
