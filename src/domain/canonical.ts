@@ -4,10 +4,11 @@
 export type Activity='development'|'maintenance'|'unknown';
 export type SourceAuthority='original'|'manual'|'derived';
 export type ApprovalState='reported'|'pending'|'approved';
-export type ReportingAxis='work'|'department';
+export type ReportingAxis='work'|'department'|'project';
 export type WorkScope={axis:'work';uoId:string;loId?:string};
 export type DepartmentScope={axis:'department';departmentId:string};
-export type AnalysisScope=WorkScope|DepartmentScope;
+export type ProjectScope={axis:'project';projectId:string;partId:string};
+export type AnalysisScope=WorkScope|DepartmentScope|ProjectScope;
 export type Metric='it_hours'|'business_hours'|'consultant_cost'|'other_cost';
 export type WorkPart='uo-overhead'|'lo'|'uo-activity-matrix';
 export type AnalysisRecord={
@@ -44,6 +45,7 @@ export function validateCanonical(dataset:CanonicalDataset):string[]{
   }
   if(r.scope.axis==='work'){if(!r.scope.uoId?.trim())errors.push('UO_REQUIRED')}
   else if(r.scope.axis==='department'){if(!r.scope.departmentId?.trim())errors.push('DEPARTMENT_REQUIRED')}
+  else if(r.scope.axis==='project'){if(!r.scope.projectId?.trim()||!r.scope.partId?.trim())errors.push('PROJECT_PART_REQUIRED')}
   else errors.push('INVALID_AXIS');
   if(r.granularity==='total'&&r.activity!=='unknown'||r.granularity==='activity-part'&&r.activity==='unknown')errors.push('INVALID_GRANULARITY');
   // A reported total and its component parts are two descriptions of the same workload, not additive records.
