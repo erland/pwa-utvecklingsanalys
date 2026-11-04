@@ -40,12 +40,12 @@ describe('independent matrix sections',()=>{
   expect(r.issues).toEqual([]);
   expect(r.facts.find(f=>f.activity==='development')?.value).toBeCloseTo(7720);
  });
- it('keeps cell-specific warnings and excludes incomplete UO splits',async()=>{
+ it('keeps cell-specific warnings and preserves imported halves for completion',async()=>{
   const w=new ExcelJS.Workbook(),s=w.addWorksheet('Tabell');
   s.getCell('D4').value='Utv. 2027';s.getCell('E4').value='Förv. 2027';
   s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=7;
   const r=await readMatrix(await w.xlsx.writeBuffer(),{...developmentMatrix(s.name),firstRow:5,lastRow:5,firstColumn:4,lastColumn:5});
-  expect(r.facts).toEqual([]);
-  expect(r.issues.some(i=>i.cell==='D5')).toBe(true);
+  expect(r.facts).toMatchObject([{year:2027,measureId:'it_hours',activity:'development',value:7000}]);
+  expect(r.issues.some(i=>i.cell==='D5'&&/komplettera/i.test(i.message))).toBe(true);
  });
 });
