@@ -15,12 +15,12 @@ describe('independent matrix sections',()=>{
   s.getCell('C7').value='Omkostnader (Mnkr)';s.getCell('D7').value=1.5;
   const bytes=await w.xlsx.writeBuffer() as ArrayBuffer;
   const matrix=await readMatrix(bytes,developmentMatrix(s.name));
-  expect(matrix.facts.map(f=>f.value)).toEqual([2000,3000]);
+  expect(matrix.facts.map(f=>f.value)).toEqual([2000,3000,1500000]);
   expect(matrix.issues.some(i=>i.cell==='D7')).toBe(true);
   expect(matrix.excludedTotals).toBe(1);
   const parsed=await importUoBudget(bytes);
   const data=importBudgetFacts(emptySemantic(),parsed,'source','a.xlsx',true);
-  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(2);
+  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(3);
   expect(data.observations.find(o=>o.activity==='maintenance')?.value).toBe(3000);
   expect(analyze(data,{measureId:'all_hours',groupBy:'uo'}).total).toBe(42);
  });
