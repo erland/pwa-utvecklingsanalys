@@ -30,12 +30,16 @@ export default function DirectImport({project,onProject,replaceId,onReplaced,onI
   {unexpectedError&&<p role="alert">{unexpectedError}</p>}
   {results.length>0&&<div role="status" aria-live="polite" aria-label="Importresultat" className="import-feedback">
    <h3>Importresultat</h3>
-   <p><strong>{summary.imported} importerade · {summary.rejected} inte importerade</strong>{summary.warnings>0?' · '+summary.warnings+' med varningar':''} av {results.length} valda filer.</p>
-   <ul>{results.map((r,i)=>{const feedback=presentImportResult(r);return <li key={i} className="panel" style={{marginTop:8,padding:14}}>
+   {(results.length>1||summary.rejected>0||summary.warnings>0)&&<p><strong>{summary.imported} importerade · {summary.rejected} inte importerade</strong>{summary.warnings>0?' · '+summary.warnings+' med varningar':''} av {results.length} valda filer.</p>}
+   <ul>{results.map((r,i)=>{const feedback=presentImportResult(r);const clean=r.status==='imported'&&feedback.statusLabel==='Importerad';return <li key={i} className="panel" style={{marginTop:8,padding:14}}>
     <strong>{r.fileName}</strong> – <strong>{feedback.statusLabel.toLowerCase()}</strong>
-    <p>{feedback.detail}</p><p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p>
+    {clean?<details style={{marginTop:8}}>
+     <summary>Visa detaljer</summary>
+     <p>{feedback.detail}</p>
+    </details>:<>
+     <p>{feedback.detail}</p><p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p>
+    </>}
    </li>})}</ul>
-   {summary.imported>0&&<p>Importen är genomförd för dessa filer, men det kan fortfarande finnas UO-värden att komplettera eller fördelningar att kontrollera innan analysen är fullständig.</p>}
    {summary.rejected>0&&<p>Rätta de avvisade filerna och välj dem igen. Redan importerade filer behöver inte importeras på nytt.</p>}
   </div>}
  </section>;
