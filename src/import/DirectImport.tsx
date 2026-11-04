@@ -2,19 +2,23 @@ import {useState} from 'react';
 import {importFilesDirectly,type DirectImportResult} from './directImport';
 import type {AnalysisProject} from '../model';
 import {loadProject} from '../storage';
+import {importBatchSummary,presentImportResult} from './importFeedback';
 
 export default function DirectImport({project,onProject,replaceId,onReplaced,onImported}:{project:AnalysisProject|null;onProject:(project:AnalysisProject)=>void;replaceId?:string|null;onReplaced?:()=>void;onImported?:()=>void}){
  const [busy,setBusy]=useState(false);
  const [results,setResults]=useState<DirectImportResult[]>([]);
+ const [unexpectedError,setUnexpectedError]=useState('');
+ const summary=importBatchSummary(results);
  const run=async(files:FileList|null)=>{
   if(!files?.length)return;
-  setBusy(true);
+  setBusy(true);setResults([]);setUnexpectedError('');
   try{
    const result=await importFilesDirectly(Array.from(files),async()=>onProject(await loadProject()),replaceId);
    setResults(result);
    if(result.some(item=>item.status==='imported'))onImported?.();
    if(replaceId&&result.some(item=>item.status==='imported'))onReplaced?.();
-  }finally{setBusy(false);}
+  }catch(e){setUnexpectedError('Importen kunde inte slutföras: '+(e instanceof Error?e.message:String(e)))}
+  finally{setBusy(false);}
  };
  return <section className="panel" aria-label="Automatisk import">
   <h2>Importera Excel-filer automatiskt</h2>
@@ -23,6 +27,16 @@ export default function DirectImport({project,onProject,replaceId,onReplaced,onI
   <input id="direct-import-files" aria-label="Välj filer för automatisk import" type="file" accept=".xlsx" multiple={!replaceId} disabled={busy||!project} onChange={e=>{void run(e.target.files);e.target.value='';}}/>
   {!project&&<p>Skapa ett projekt innan du importerar filer.</p>}
   {busy&&<p role="status">Importerar filer…</p>}
-  {results.length>0&&<div role="status" aria-live="polite"><h3>Importresultat</h3><ul>{results.map((r,i)=><li key={i}><strong>{r.fileName}</strong>: {r.status==='imported'?r.facts+' detaljvärden '+r.message.toLowerCase()+' ('+r.format+')':'Inte importerad – '+r.message}</li>)}</ul></div>}
+  {unexpectedError&&<p role="alert">{unexpectedError}</p>}
+  {results.length>0&&<div role="status" aria-live="polite" aria-label="Importresultat" className="import-feedback">
+   <h3>Importresultat</h3>
+   <p><strong>{summary.imported} importerade · {summary.rejected} inte importerade</strong>{summary.warnings>0?' · '+summary.warnings+' med varningar':''} av {results.length} valda filer.</p>
+   <ul>{results.map((r,i)=>{const feedback=presentImportResult(r);return <li key={i} className="panel" style={{marginTop:8,padding:14}}>
+    <strong>{r.fileName}</strong> – <strong>{feedback.statusLabel.toLowerCase()}</strong>
+    <p>{feedback.detail}</p><p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p>
+   </li>})}</ul>
+   {summary.imported>0&&<p>Importen är genomförd för dessa filer, men det kan fortfarande finnas UO-värden att komplettera eller fördelningar att kontrollera innan analysen är fullständig.</p>}
+   {summary.rejected>0&&<p>Rätta de avvisade filerna och välj dem igen. Redan importerade filer behöver inte importeras på nytt.</p>}
+  </div>}
  </section>;
 }
