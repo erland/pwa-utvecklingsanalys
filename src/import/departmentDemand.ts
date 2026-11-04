@@ -27,10 +27,13 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
   const raw=sheet.getRow(row).getCell(col).value;
   return typeof raw==='string'?raw.trim():typeof raw==='number'?String(raw):'';
  };
- for(const row of [6,7,8,9,10,11,12,13,14,15,18]){
+ // Department identity, not row position, determines whether a row is a detail.
+ // Totals, blank separators and notes do not have a department code.
+ for(let row=5;row<=sheet.rowCount;row++){
   const name=value(row,2),code=value(row,1);
-  if(!name)continue;
-  const metric=row===18?'it_hours':'business_hours';
+  if(!name||!/^\\d{3,}\\*?$/.test(code))continue;
+  // The IT department belongs to IT hours regardless of its location.
+  const metric=code.replaceAll('*','')==='713'||/^IT[-\\s]avdelningen$/i.test(name)?'it_hours':'business_hours';
   const anchoringStatus=value(row,6);
   const comments=[7,8,9].map(col=>value(row,col)).filter(Boolean);
   for(const [year,col] of years){
