@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import {importUoBudget,UO_BUDGET_SHEET,type ImportResult} from './uoBudget2027_30';
+import {importUoBudget,isProjectBudgetSheet,type ImportResult} from './uoBudget2027_30';
 
 /** Explicit project marker prevents accidental reinterpretation of ordinary UO files. */
 export const projectBudget2027_30={
@@ -7,8 +7,7 @@ export const projectBudget2027_30={
  id:'project-budget-2027-30',
  label:'Projektbudget 2027–2030',
  matches(book:ExcelJS.Workbook):boolean{
-  return book.worksheets.some(sheet=>UO_BUDGET_SHEET.test(sheet.name)&&
-   /^Projekt\s*:\s*\S/i.test(String(sheet.getCell('B1').value??'').trim()));
+  return book.worksheets.some(isProjectBudgetSheet);
  },
  async parse(bytes:ArrayBuffer):Promise<ImportResult>{
   const result=await importUoBudget(bytes,undefined,null,true);
