@@ -1,5 +1,5 @@
 import {useRef,useState} from 'react';
-import {applySharedPercentages,approveBalancedActivityGroup,type AllocationPreview,type ActivityAllocationDecision} from '../domain/activityAllocation';
+import {applySharedPercentages,type AllocationPreview,type ActivityAllocationDecision} from '../domain/activityAllocation';
 import type {LoDevelopmentOverride} from '../import/formats/uoBudgetCompletion';
 import {uoBudget2027_30} from '../import/formats/uoBudget2027_30';
 import {rebalanceUoBudgetAllocation,mergeLoOverrides} from '../import/formats/uoBudgetCompletion';
