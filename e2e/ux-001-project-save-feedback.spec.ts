@@ -7,7 +7,7 @@ test('UX-001: rapid project name edits show last saved value and survive reload'
  await name.fill('Första namnet');
  await name.fill('Andra namnet');
  await name.fill('Slutligt projektnamn');
- await expect(page.getByRole('status').filter({hasText:'Projektnamnet är sparat.'})).toBeVisible();
+ await expect(page.locator('.project-save-feedback').filter({hasText:'Projektnamnet är sparat.'})).toBeVisible();
  await expect(page.locator('.topbar strong')).toHaveText('Slutligt projektnamn');
  await page.reload();
  await page.getByRole('button',{name:'Inställningar',exact:true}).click();
@@ -28,11 +28,11 @@ test('UX-001: failed local write explains failure and allows retry',async({page}
  await page.getByRole('button',{name:'Inställningar',exact:true}).click();
  await page.evaluate(()=>{(window as Window&{__failProjectNameSave?:boolean}).__failProjectNameSave=true});
  await page.getByLabel('Namn på lokalt projekt').fill('Projektnamn efter retry');
- await expect(page.getByRole('status').filter({hasText:'Projektnamnet kunde inte sparas.'})).toBeVisible();
+ await expect(page.locator('.project-save-feedback').filter({hasText:'Projektnamnet kunde inte sparas.'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Försök spara igen'})).toBeVisible();
  await page.evaluate(()=>{(window as Window&{__failProjectNameSave?:boolean}).__failProjectNameSave=false});
  await page.getByRole('button',{name:'Försök spara igen'}).click();
- await expect(page.getByRole('status').filter({hasText:'Projektnamnet är sparat.'})).toBeVisible();
+ await expect(page.locator('.project-save-feedback').filter({hasText:'Projektnamnet är sparat.'})).toBeVisible();
  await expect(page.getByRole('button',{name:'Försök spara igen'})).toHaveCount(0);
  await page.reload();
  await page.getByRole('button',{name:'Inställningar',exact:true}).click();
