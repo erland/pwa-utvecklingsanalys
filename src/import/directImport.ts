@@ -1,6 +1,6 @@
 import {recognizeWorkbook} from './formats/registry';
-import {approveBudgetSource,approveTabularSource,replaceImportedSource} from './sourceManagement';
-import {importBudgetFacts} from '../domain/importAdapter';
+import {approveBudgetSource,approveProjectSource,approveTabularSource,replaceImportedSource} from './sourceManagement';
+import {importBudgetFacts,importProjectFacts} from '../domain/importAdapter';
 import {importTableFacts} from './tabularAdapter';
 import {loadSemantic} from '../domain/semanticStore';
 import {tableIdentityIssues} from './tabularAdapter';
@@ -43,6 +43,18 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
     }else await approveTabularSource(result,crypto.randomUUID(),file.name,{});
     await onCommitted?.();
     results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:replaceId?'Ersatt':'Importerad'});
+   }else if(format?.kind==='project'){
+    if(!/\\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
+    const result=await format.parse(bytes);
+    const errors=result.issues.filter(i=>i.severity==='error');
+    if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
+    if(!result.uo.trim()||!result.facts.length)throw new Error('Projektnamn eller importbara detaljvärden saknas.');
+    if(replaceId){
+     await replaceImportedSource(replaceId,before=>importProjectFacts(before,result,replaceId,file.name),
+      {name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},{project:result});
+    }else await approveProjectSource(result,crypto.randomUUID(),file.name);
+    await onCommitted?.();
+    results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:'Importerad'});
    }else{
     const {result,formatLabel}=await prepareDirectImport(file);
     const includeMatrix=Boolean(result.matrix?.facts.length);
