@@ -66,7 +66,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  </div>:<div className="analysis-metric-groups" aria-label="Kostnadsmått"><fieldset><legend>Kostnadsmått</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.length>1?old.filter(x=>x!==m):old)}/>{labels[m]}</label>)}</fieldset></div>}
  <div className="analysis-filter-card" aria-label="Välj analysår"><p><strong>Budgetår</strong> – välj ett enskilt år eller alla år för en sammanlagd vy. Årstrenden använder alltid samtliga tillgängliga år.</p><label>År<select aria-label="period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div>
  </div></section>
- <section className="notice" aria-label="Aktuellt analysurval">
+ <section className="notice" aria-label="Valda filter för resultaten">
   <strong>Aktuellt analysurval</strong>
   <p><strong>Organisation:</strong> {selectionSummary.organization} · <strong>År:</strong> {selectionSummary.year}</p>
   <p><strong>Mått:</strong> {selectionSummary.measure}{selectionSummary.activity?' · Aktivitet: '+selectionSummary.activity:''}</p>
