@@ -44,7 +44,7 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
     await onCommitted?.();
     results.push({fileName:file.name,status:'imported',format:format.label,facts:result.facts.length,message:replaceId?'Ersatt':'Importerad'});
    }else if(format?.kind==='project'){
-    if(!/\\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
+    if(!/\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw new Error('Endast XLSX-filer på högst 15 MB stöds.');
     const result=await format.parse(bytes);
     const errors=result.issues.filter(i=>i.severity==='error');
     if(errors.length)throw new Error(errors.slice(0,3).map(i=>i.message+(i.cell?' ('+i.cell+')':'')).join('; '));
