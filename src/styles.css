@@ -104,3 +104,15 @@ main :where(.mapping-grid,.panel,.analysis-layout,.filters,.results){min-width:0
 .canonical-analytics .analysis-selection-grid>.notice{grid-column:1/-1}
 .canonical-analytics .analysis-summary,.canonical-analytics .analysis-details{margin-top:20px}
 @media(max-width:680px){.canonical-analytics .analysis-selection-grid{grid-template-columns:minmax(0,1fr)}}
+
+
+/* UX-006: Explain horizontal navigation on tablet and small-screen layouts.
+   Keep controls invisible on desktop, where the sidebar already shows all views. */
+.mobile-nav-tools{display:none}
+@media(max-width:1150px){
+ .mobile-nav-tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+ .mobile-nav-tools span{font-size:12px;color:#d1e0e9;margin-right:auto;line-height:1.4}
+ .mobile-nav-arrow{border:1px solid #91b8c6;border-radius:8px;background:#28536c;color:white;min-width:38px;min-height:38px;padding:4px 10px;font-size:22px;line-height:1}
+ .mobile-nav-arrow:hover{background:#356782}
+ .sidebar nav[aria-label="Huvudmeny"]{overscroll-behavior-x:contain;scrollbar-width:thin;scroll-padding-inline:12px}
+}
