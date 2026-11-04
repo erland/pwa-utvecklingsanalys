@@ -15,6 +15,33 @@ export function planningTotals(data:CanonicalDataset,state:GapState,metrics:Metr
  return {uo,projects,total:uo.total+projects.total,unit:uo.unit};
 }
 
+type ActivitySelection='all'|'development'|'maintenance';
+type VisiblePlanningRow={key:string;label:string;kind:'UO'|'Projekt';value:number|undefined;unallocated:number};
+/** Always retain source planning objects even when their activity split is unknown. */
+export function visiblePlanningRows(data:CanonicalDataset,state:GapState,metrics:Metric[],year:number|undefined,activity:ActivitySelection,scope:PlanningScope):VisiblePlanningRow[]{
+ const all=planningTotals(data,state,metrics,year,'all');
+ const selected=activity==='all'?all:planningTotals(data,state,metrics,year,activity);
+ const missingUo=activity==='all'?[]:analyzeCanonical(data,state,{axis:'work',metrics,year,activity:'unknown',organizationLevel:'uo'}).rows;
+ const missingProjects=activity==='all'?[]:analyzeCanonical(data,state,{axis:'project',metrics,year,activity:'unknown',organizationLevel:'uo'}).rows;
+ return [
+  ...(scope==='project'?[]:all.uo.rows.map(r=>({...r,kind:'UO' as const}))),
+  ...(scope==='uo'?[]:all.projects.rows.map(r=>({...r,kind:'Projekt' as const})))
+ ].map(r=>{
+  const chosen=r.kind==='UO'?selected.uo.rows:selected.projects.rows;
+  const missing=r.kind==='UO'?missingUo:missingProjects;
+  return {key:r.key,label:r.label,kind:r.kind,value:chosen.find(v=>v.key===r.key)?.value,unallocated:missing.find(v=>v.key===r.key)?.value??0};
+ });
+}
+/** Keep all project parts in the drill-down, including parts without a saved split. */
+export function visibleProjectParts(data:CanonicalDataset,state:GapState,metrics:Metric[],year:number|undefined,activity:ActivitySelection,projectId:string){
+ const query={axis:'project' as const,metrics,year};
+ const all=analyzeCanonical(data,state,{...query,activity:'all'}).rows;
+ const selected=activity==='all'?all:analyzeCanonical(data,state,{...query,activity}).rows;
+ const missing=activity==='all'?[]:analyzeCanonical(data,state,{...query,activity:'unknown'}).rows;
+ const ids=new Set(data.records.filter(r=>r.scope.axis==='project'&&r.scope.projectId===projectId).map(r=>r.scope.axis==='project'?r.scope.partId:''));
+ return all.filter(r=>ids.has(r.key)).map(r=>({...r,value:selected.find(s=>s.key===r.key)?.value,unallocated:missing.find(s=>s.key===r.key)?.value??0}));
+}
+
 export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{data:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number}){
  const [activity,setActivity]=useState<'all'|'development'|'maintenance'>('all');
  const [openProject,setOpenProject]=useState<string|null>(null);
@@ -23,14 +50,10 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
  let totals:ReturnType<typeof planningTotals>;
  try{totals=planningTotals(data,state,metrics,year,activity)}catch(error){return <p role="alert">Kunde inte visa planeringsbehov: {String(error)}</p>}
  const includeUo=scope!=='project',includeProjects=scope!=='uo';
- const rows=[
-  ...(includeUo?totals.uo.rows.map(row=>({...row,kind:'UO' as const})):[]),
-  ...(includeProjects?totals.projects.rows.map(row=>({...row,kind:'Projekt' as const})):[])
- ];
+ const rows=visiblePlanningRows(data,state,metrics,year,activity,scope);
  const total=(includeUo?totals.uo.total:0)+(includeProjects?totals.projects.total:0);
  const unit=totals.unit;
- const parts=(projectId:string)=>analyzeCanonical(data,state,{axis:'project',metrics,activity,year}).rows
-  .filter(row=>data.records.some(record=>record.scope.axis==='project'&&record.scope.projectId===projectId&&record.scope.partId===row.key));
+ const parts=(projectId:string)=>visibleProjectParts(data,state,metrics,year,activity,projectId);
  const uoParts=(uoId:string)=>analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:uoId}).rows;
  return <section className="panel" aria-label="Samlat planeringsbehov">
   <h3>2. Planerade behov – {scope==='all'?'UO och projekt':scope==='uo'?'UO':'projekt'}</h3>
@@ -51,13 +74,13 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
      onClick={()=>row.kind==='Projekt'?setOpenProject(old=>old===row.key?null:row.key):setOpenUo(old=>old===row.key?null:row.key)}>
      {decode(row.key)}
     </button></th>
-    <td>{fmt(row.value)} {unit}</td>
+    <td>{row.value===undefined?'Ej fördelat':fmt(row.value)+' '+unit}{activity!=='all'&&row.unallocated>0&&<small> · Ofördelat: {fmt(row.unallocated)} {unit}</small>}</td>
    </tr>)}</tbody>
   </table></div>
   {rows.filter(row=>row.kind==='Projekt'&&openProject===row.key).map(row=><section key={row.key} className="panel" aria-label={'Projektdelar '+decode(row.key)}>
    <h4>{decode(row.key)} – projektdelar</h4>
    <table className="canonical-table"><thead><tr><th>Del</th><th>Behov</th></tr></thead><tbody>
-    {parts(row.key).map(part=><tr key={part.key}><th scope="row">{decode(part.key)}</th><td>{fmt(part.value)} {unit}</td></tr>)}
+    {parts(row.key).map(part=><tr key={part.key}><th scope="row">{decode(part.key)}</th><td>{part.value===undefined?'Ej fördelat':fmt(part.value)+' '+unit}{activity!=='all'&&part.unallocated>0&&<small> · Ofördelat: {fmt(part.unallocated)} {unit}</small>}</td></tr>)}
    </tbody></table>
   </section>)}
   {rows.filter(row=>row.kind==='UO'&&openUo===row.key).map(row=><section key={row.key} className="panel" aria-label={'LO per '+decode(row.key)}>

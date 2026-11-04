@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
-import {planningTotals} from './PlanningScopeAnalysis';
+import {planningTotals,visiblePlanningRows,visibleProjectParts} from './PlanningScopeAnalysis';
 import {analyzeCanonical} from './canonicalQuery';
 import type {GapState} from '../gaps/store';
 
@@ -34,6 +34,34 @@ describe('additive planning of UO and independent projects',()=>{
   expect([costs.uo.total,costs.projects.total,costs.total,costs.unit]).toEqual([1000,250,1250,'SEK']);
   expect(planningTotals(dataset(),state,['it_hours'],2028).total).toBe(40);
   expect(planningTotals(dataset(),state,['it_hours']).total).toBe(240);
+ });
+ it('keeps unallocated projects visible under development and maintenance while preserving additive totals',()=>{
+  const data=dataset();
+  const overview=visiblePlanningRows(data,state,['it_hours'],2027,'development','all');
+  expect(overview.map(row=>[row.kind,row.key,row.value,row.unallocated])).toEqual([
+   ['UO','uo:Test',undefined,100],['Projekt','project:Test',undefined,100]
+  ]);
+  expect(planningTotals(data,state,['it_hours'],2027,'development').total).toBe(0);
+  expect(planningTotals(data,state,['it_hours'],2027).total).toBe(200);
+  const parts=visibleProjectParts(data,state,['it_hours'],2027,'maintenance','project:Test');
+  expect(parts.map(row=>[row.key,row.value,row.unallocated])).toEqual([
+   ['project-part:Test:A',undefined,30],['project-part:Test:B',undefined,70]
+  ]);
+ });
+ it('preserves object navigation for partially allocated projects without treating unknown hours as zero',()=>{
+  const data=dataset();
+  const total=data.records.find(r=>r.id==='project-hours-a')!;
+  const prepared={...data,records:[...data.records,
+   {...total,id:'a-dev',activity:'development' as const,value:10,granularity:'activity-part' as const,authority:'derived' as const,approval:'approved' as const,source:undefined},
+   {...total,id:'a-maint',activity:'maintenance' as const,value:20,granularity:'activity-part' as const,authority:'derived' as const,approval:'approved' as const,source:undefined}
+  ]};
+  const overview=visiblePlanningRows(prepared,state,['it_hours'],2027,'development','project');
+  expect(overview).toEqual([{key:'project:Test',label:'Test',kind:'Projekt',value:10,unallocated:70}]);
+  const parts=visibleProjectParts(prepared,state,['it_hours'],2027,'development','project:Test');
+  expect(parts.map(row=>[row.key,row.value,row.unallocated])).toEqual([
+   ['project-part:Test:A',10,0],['project-part:Test:B',undefined,70]
+  ]);
+  expect(planningTotals(prepared,state,['it_hours'],2027).total).toBe(200);
  });
  it('does not count unallocated project activity as zero development by mistake',()=>{
   const d=dataset();
