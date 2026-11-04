@@ -13,7 +13,7 @@ export default function DepartmentDemandBreakdown({title,rows,onSelect,showPlann
   <h4>{title}</h4>
   {total>0&&<div className="pie-layout" role="group" aria-label={'Cirkeldiagram: '+title}>
    <div className="pie-chart" role="img" aria-label={'Totalt '+format(total)+' timmar'} style={{background:'conic-gradient('+stops.map(s=>s.color+' '+s.start+'% '+s.end+'%').join(', ')+')'}}/>
-   <ul className="pie-legend">{rows.filter(row=>row.total>0).map((row,i)=><li key={row.id}><span className="pie-swatch" style={{backgroundColor:CHART_COLORS[i%CHART_COLORS.length]}} aria-hidden="true"/>{row.label}: {format(row.total)} h</li>)}</ul>
+   <ul className="pie-legend">{rows.filter(row=>row.total>0).map((row,i)=><li key={row.id}><span className="pie-swatch" style={{backgroundColor:CHART_COLORS[i%CHART_COLORS.length]}} aria-hidden="true"/>{onSelect?<button type="button" className="analysis-drilldown-label" onClick={()=>onSelect(row.id)}>{row.label}</button>:row.label}: {format(row.total)} h</li>)}</ul>
   </div>}
   <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={title}><thead><tr><th>{onSelect?'Organisation / avdelning':'Avdelning'}</th>{showPlanningType&&<th>Typ</th>}<th>Timmar</th><th>Andel</th></tr></thead><tbody>
   {rows.map(row=><tr key={row.id}><th scope="row">{onSelect?<button type="button" className="analysis-drilldown-label" onClick={()=>onSelect(row.id)}>{row.label}</button>:row.label}</th>{showPlanningType&&<td>{row.id.startsWith('project:')?'Projekt':'UO'}</td>}<td>{format(row.total)} h</td><td>{total>0?(100*row.total/total).toLocaleString('sv-SE',{maximumFractionDigits:1})+' %':'–'}</td></tr>)}
