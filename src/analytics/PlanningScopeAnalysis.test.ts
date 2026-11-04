@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
-import {planningTotals,visiblePlanningRows,visibleProjectParts,resolvePlanningSelection} from './PlanningScopeAnalysis';
+import {planningTotals,visiblePlanningRows,visibleProjectParts,resolvePlanningSelection,selectedPlanningUnknownCount,visiblePlanningUoParts} from './PlanningScopeAnalysis';
 import {analyzeCanonical} from './canonicalQuery';
 import type {GapState} from '../gaps/store';
 
@@ -76,6 +76,29 @@ describe('additive planning of UO and independent projects',()=>{
   expect(resolvePlanningSelection(rows,{kind:'Projekt',key:'uo:Test'})).toBeNull();
   // A filtered-out detail must not alter the additive budget totals.
   expect(planningTotals(data,state,['it_hours'],2027).total).toBe(200);
+ });
+ it('counts incomplete coverage only for the visible planning type and year',()=>{
+  const d=dataset();
+  const selected=planningTotals(d,state,['it_hours'],2027,'development');
+  expect([selected.uo.unknownCount,selected.projects.unknownCount]).toEqual([1,2]);
+  expect(selectedPlanningUnknownCount(selected,'uo')).toBe(1);
+  expect(selectedPlanningUnknownCount(selected,'project')).toBe(2);
+  expect(selectedPlanningUnknownCount(selected,'all')).toBe(3);
+  const nextYear=planningTotals(d,state,['it_hours'],2028,'maintenance');
+  expect(selectedPlanningUnknownCount(nextYear,'uo')).toBe(0);
+  expect(selectedPlanningUnknownCount(nextYear,'project')).toBe(1);
+  expect(selectedPlanningUnknownCount(planningTotals(d,state,['other_cost'],2027,'development'),'all')).toBe(2);
+ });
+ it('uses the same LO detail projection as the UO navigator and preserves unallocated volume',()=>{
+  const d=dataset();
+  const parts=visiblePlanningUoParts(d,state,['it_hours'],2027,'development','uo:Test');
+  expect(parts.map(p=>[p.key,p.value,p.unallocated])).toEqual([['lo:Test:A',null,100]]);
+  expect(visiblePlanningUoParts(d,state,['it_hours'],2027,'all','uo:Test').map(p=>p.value)).toEqual([100]);
+  expect(visiblePlanningUoParts(d,state,['other_cost'],2027,'development','uo:Test')
+   .map(p=>[p.key,p.value,p.unallocated])).toEqual([['lo:Test:A',null,1000]]);
+  // The detail must not change the displayed activity total.
+  expect(planningTotals(d,state,['it_hours'],2027,'development').total).toBe(0);
+  expect(planningTotals(d,state,['it_hours'],2027,'all').total).toBe(200);
  });
  it('does not count unallocated project activity as zero development by mistake',()=>{
   const d=dataset();
