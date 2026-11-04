@@ -16,7 +16,7 @@
 - Ordinarie Verify PWA i GitHub Actions måste passera: lint, TypeScript, Vitest, build, singlefile och Playwright.
 
 ## PR #256 – separat disposition
-`src/import/UoImportCompletionView.tsx` innehåller redan gruppering per UO, expanderbara UO-sektioner samt en gemensam spara-knapp per UO. Den öppna draft-PR:n #256 introducerade samma huvudsakliga flöde från en äldre kodbas och har därför **ingen kvarvarande nödvändig funktion** utifrån nuvarande krav. Dess diff innehåller främst alternativa implementationer av samma UI och små ordval. Det är säkrare att markera den som **ersatt av senare mergade ändringar** än att lösa mergekonflikter för en andra implementation. Registrera dispositionen och stäng PR #256 med motivering, **utan merge**.
+`src/import/UoImportCompletionView.tsx` innehåller redan gruppering per UO, expanderbara UO-sektioner samt en gemensam spara-knapp per UO. Den öppna draft-PR:n #256 introducerade samma huvudsakliga flöde från en äldre kodbas och har därför **ingen kvarvarande nödvändig funktion** utifrån nuvarande krav. Dess diff innehåller främst alternativa implementationer av samma UI och små ordval. Det är säkrare att markera den som **ersatt av senare mergade ändringar** än att lösa mergekonflikter för en andra implementation. PR #256 har nu **stängts utan merge** med dokumenterad motivering i PR-konversationen.
 
 ## Begränsningar
 Detta löser **en** kritisk skrivväg, inte alla ovillkorliga `saveGapState(next)`-anrop. RR-03 är fortfarande delvis öppen tills resterande skribenter inventerats och antingen korrigerats eller riskaccepterats. BroadcastChannel ger varningar men är inte datalåsning. Cross-database restore är fortfarande inte atomisk. Manuell RG-acceptans återstår och releasebeslutet är fortsatt NO-GO.
