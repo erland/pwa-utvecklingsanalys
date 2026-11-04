@@ -15,7 +15,7 @@ export function planningTotals(data:CanonicalDataset,state:GapState,metrics:Metr
  return {uo,projects,total:uo.total+projects.total,unit:uo.unit};
 }
 
-type ActivitySelection='all'|'development'|'maintenance';
+export type ActivitySelection='all'|'development'|'maintenance';
 export type VisiblePlanningRow={key:string;label:string;kind:'UO'|'Projekt';value:number|undefined;unallocated:number};
 export type SelectedPlanningObject={kind:'UO'|'Projekt';key:string};
 /** Resolve against current filters so an old selection is never displayed as a stale detail. */
@@ -47,8 +47,7 @@ export function visibleProjectParts(data:CanonicalDataset,state:GapState,metrics
  return all.filter(r=>ids.has(r.key)).map(r=>({...r,value:selected.find(s=>s.key===r.key)?.value,unallocated:missing.find(s=>s.key===r.key)?.value??0}));
 }
 
-export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{data:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number}){
- const [activity,setActivity]=useState<'all'|'development'|'maintenance'>('all');
+export default function PlanningScopeAnalysis({data,state,scope,metrics,year,activity='all'}:{data:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number;activity?:ActivitySelection}){
  const [selectedObject,setSelectedObject]=useState<SelectedPlanningObject|null>(null);
  if(!metrics.length)return <p>Välj minst ett mått.</p>;
  let totals:ReturnType<typeof planningTotals>;
@@ -63,7 +62,6 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
  return <section className="panel" aria-label="Samlat planeringsbehov">
   <h3>2. Planerade behov – {scope==='all'?'UO och projekt':scope==='uo'?'UO':'projekt'}</h3>
   <p>UO och projekt är separata underlag och summeras när båda är valda. Avdelningsfördelningar räknas inte en gång till.</p>
-  <label>Aktivitet <select aria-label="Aktivitet för projekt och UO" value={activity} onChange={e=>setActivity(e.target.value as 'all'|'development'|'maintenance')}><option value="all">Totalt</option><option value="development">Utveckling</option><option value="maintenance">Förvaltning</option></select></label>
   {activity!=='all'&&(totals.uo.unknownCount+totals.projects.unknownCount)>0&&<p className="notice" role="status">{totals.uo.unknownCount+totals.projects.unknownCount} behov saknar en komplett aktivitetsfördelning och ingår inte i valt aktivitetsresultat.</p>}
   <p><strong>Totalt: {fmt(total)} {unit}</strong></p>
   {scope==='all'&&<table className="canonical-table" aria-label="Summering UO och projekt">
