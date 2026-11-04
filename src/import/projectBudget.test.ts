@@ -25,6 +25,13 @@ describe('independent project budget import',()=>{
   expect(pf?.kind).toBe('project');expect(uf?.kind).toBe('budget');
   if(pf?.kind!=='project'||uf?.kind!=='budget')throw Error('FORMAT_NOT_RECOGNIZED');
   const p=await pf.parse(project),u=await uf.parse(uo);
+  const inferred=await source('UO: Tvärgående satsning','Gemensam informationshantering');
+  const inferredFormat=await recognizeWorkbook(inferred);
+  expect(inferredFormat?.kind).toBe('project');
+  if(inferredFormat?.kind!=='project')throw Error('PROJECT_FORMAT_NOT_INFERRED');
+  const inferredResult=await inferredFormat.parse(inferred);
+  expect(inferredResult.uo).toBe('Tvärgående satsning');
+  expect(inferredResult.facts.some(x=>x.area==='Integrationer')).toBe(true);
   expect(p.facts.some(x=>x.area==='Gemensam informationshantering')).toBe(true);
   expect(p.facts.some(x=>x.area==='Integrationer')).toBe(true);
   expect(p.facts.some(x=>x.source.cell==='D32')).toBe(true);
