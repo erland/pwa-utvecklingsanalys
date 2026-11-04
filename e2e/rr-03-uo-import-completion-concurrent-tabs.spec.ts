@@ -34,14 +34,14 @@ test('RR-03: concurrent UO import completions reject stale second editor without
  await enterCompletion(stale,'80','20');
 
  await writer.getByRole('button',{name:'Spara UO-värden för UO A'}).click();
- await expect(writer.getByRole('region',{name:'UO UO A'}).getByRole('button',{name:/UO A/})).toContainText('Kompletterat');
+ await expect(writer.getByRole('region',{name:'UO UO A'}).getByRole('button',{name:/Kompletterat/})).toContainText('Kompletterat');
  await stale.getByRole('button',{name:'Spara UO-värden för UO A'}).click();
  await expect(stale.getByRole('alert').filter({hasText:'Kompletteringarna har ändrats i en annan flik'})).toBeVisible();
 
  await stale.reload();
  await stale.getByRole('button',{name:'Import',exact:true}).click();
  const saved=stale.getByRole('region',{name:'UO UO A'});
- await saved.getByRole('button',{name:/UO A/}).click();
+ await saved.getByRole('button',{name:/Kompletterat/}).click();
  await expect(saved.getByRole('spinbutton',{name:'Utveckling UO A 2027 it_hours'})).toHaveValue('60');
  await expect(saved.getByRole('spinbutton',{name:'Förvaltning UO A 2027 it_hours'})).toHaveValue('40');
  await writer.close();await stale.close();
