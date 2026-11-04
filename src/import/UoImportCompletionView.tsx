@@ -35,11 +35,14 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
     throw new Error('Kompletteringarna har ändrats i en annan flik. Ladda om.');
    const next=buildUoCompletionState(data,latest,rows,valuesFor);
    const keys=new Set(rows.map(completionKey));
-   await saveGapState(next);
+   // Verify the entire state inside the same IndexedDB readwrite transaction.
+   // A different editor may save between loadGapState() and this commit.
+   await saveGapState(next,latest);
    setGaps(next);
    setInputs(old=>Object.fromEntries(Object.entries(old).filter(([key])=>!keys.has(key))));
    setExpanded(old=>({...old,[uoId]:false}));
-  }catch(e){setError(String(e))}finally{setBusy(false)}
+  }catch(e){setError(e instanceof Error&&e.message==='STALE_GAP_STATE'?
+   'Kompletteringarna har ändrats i en annan flik. Ladda om innan du sparar.':String(e))}finally{setBusy(false)}
  };
  return <section className="panel" aria-label="Komplettera importuppgifter">
   <h2>2. Komplettera saknade UO-värden</h2>
