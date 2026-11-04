@@ -38,6 +38,38 @@ describe('UO-linked department demand import',()=>{
   expect(result.facts.find(f=>f.source.cell==='C18')).toMatchObject({metric:'it_hours',hours:50});
   expect(result.facts.some(f=>f.source.cell==='C16'||f.source.cell==='C19')).toBe(false);
  });
+ it('imports 721* Kontrollavdelningen on previously skipped row 17',()=>{
+  const wb=workbook(),sheet=wb.getWorksheet('Timmar per avdelning')!;
+  sheet.getCell('A17').value='721*';
+  sheet.getCell('B17').value='Kontrollavdelningen';
+  sheet.getCell('C17').value=75;
+  sheet.getCell('D17').value=0;
+  const result=readDepartmentDemand(wb,'UO Klarering');
+  expect(result.facts).toEqual(expect.arrayContaining([
+   expect.objectContaining({uo:'UO Klarering',departmentCodeRaw:'721*',departmentCode:'721',
+    departmentName:'Kontrollavdelningen',metric:'business_hours',year:2027,hours:75,
+    source:{sheet:'Timmar per avdelning',cell:'C17'}}),
+   expect.objectContaining({departmentCode:'721',year:2028,hours:0})
+  ]));
+  expect(result.facts.some(f=>f.source.cell==='C16'||f.source.cell==='C19')).toBe(false);
+ });
+ it('recognizes moved IT department and ignores totals, headers and uncoded rows',()=>{
+  const wb=workbook(),sheet=wb.getWorksheet('Timmar per avdelning')!;
+  sheet.getCell('A18').value=null;
+  sheet.getCell('B18').value=null;
+  sheet.getCell('C18').value=null;
+  sheet.getCell('A21').value='713*';
+  sheet.getCell('B21').value='IT-avdelningen';
+  sheet.getCell('C21').value=60;
+  sheet.getCell('B22').value='Totalt';
+  sheet.getCell('C22').value=999;
+  sheet.getCell('A23').value='SUMMA';
+  sheet.getCell('B23').value='Alla avdelningar';
+  sheet.getCell('C23').value=999;
+  const result=readDepartmentDemand(wb,'UO Klarering');
+  expect(result.facts.find(f=>f.source.cell==='C21')).toMatchObject({metric:'it_hours',hours:60,departmentCode:'713'});
+  expect(result.facts.some(f=>f.source.cell==='C22'||f.source.cell==='C23')).toBe(false);
+ });
  it('does not invent values for absent cells or missing sheet',()=>{
   expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[]});
   expect(readDepartmentDemand(workbook(),'UO B').facts.some(f=>f.source.cell==='D18')).toBe(false);
