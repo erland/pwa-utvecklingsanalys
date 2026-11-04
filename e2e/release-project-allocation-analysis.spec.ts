@@ -45,7 +45,7 @@ test('release: imported UO and independent project stay additive after a saved p
 
  // The allocation is saved in Fördelningar, not in an independent analysis editor.
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
- const allocations=page.getByRole('region',{name:'Projektfördelningar'});
+ const allocations=page.getByRole('region',{name:'Projektfördelningar',exact:true});
  await allocations.getByRole('button',{name:/Utveckling \/ Förvaltning – projekt/}).click();
  await allocations.getByLabel('Projektfördelning år').selectOption('2027');
  await allocations.getByRole('region',{name:'Välj projekt att fördela'}).getByRole('button',{name:/Digitalisering/}).click();
