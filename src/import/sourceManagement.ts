@@ -4,12 +4,12 @@ import {loadCanonical,saveCanonical} from '../domain/canonicalStore';
 import {canonicalFromTable} from '../domain/canonicalTable';
 import {importTableFacts,type Resolution} from './tabularAdapter';
 import type {TableResult} from './tabular';
-import {canonicalFromBudget,replaceCanonicalSource} from '../domain/canonicalImport';
+import {canonicalFromBudget,canonicalFromProject,replaceCanonicalSource} from '../domain/canonicalImport';
 import type {CanonicalDataset} from '../domain/canonical';
 import type {ImportResult} from './uoBudget';
 import {loadProject,saveProject} from '../storage';
 import {loadSemantic,saveSemantic} from '../domain/semanticStore';
-import {importBudgetFacts} from '../domain/importAdapter';
+import {importBudgetFacts,importProjectFacts} from '../domain/importAdapter';
 import type {AnalysisProject,DatasetSummary} from '../model';
 import type {SemanticDataset} from '../domain/semantic';
 
@@ -59,7 +59,7 @@ export async function deleteImportedSources(ids:string[]):Promise<AnalysisProjec
   return next;
  },true);
 }
-export async function replaceImportedSource(id:string,build:(before:SemanticDataset)=>SemanticDataset,source:Omit<DatasetSummary,'id'>,canonicalResult?:{result:ImportResult;includeMatrix:boolean}|{table:TableResult;resolutions:Resolution}):Promise<AnalysisProject>{
+export async function replaceImportedSource(id:string,build:(before:SemanticDataset)=>SemanticDataset,source:Omit<DatasetSummary,'id'>,canonicalResult?:{result:ImportResult;includeMatrix:boolean}|{project:ImportResult}|{table:TableResult;resolutions:Resolution}):Promise<AnalysisProject>{
  return mutate(async()=>{
   const project=await loadProject(),semantic=await loadSemantic();
   if(!project.datasets.some(d=>d.id===id))throw new Error('UNKNOWN_SOURCE');
@@ -69,7 +69,7 @@ export async function replaceImportedSource(id:string,build:(before:SemanticData
   const next={...project,datasets:project.datasets.map(d=>d.id===id?{...source,id}:d)};
   await saveSemantic(nextSemantic);
   const canonical=await loadCanonical();
-  await saveCanonical(replaceCanonicalSource(canonical,canonicalResult?('table' in canonicalResult?canonicalFromTable(canonicalResult.table,id,canonicalResult.resolutions):canonicalFromBudget(canonicalResult.result,id,canonicalResult.includeMatrix)):[],id));
+  await saveCanonical(replaceCanonicalSource(canonical,canonicalResult?('table' in canonicalResult?canonicalFromTable(canonicalResult.table,id,canonicalResult.resolutions):'project' in canonicalResult?canonicalFromProject(canonicalResult.project,id):canonicalFromBudget(canonicalResult.result,id,canonicalResult.includeMatrix)):[],id));
   await saveProject(next);
   return next;
  },true);
@@ -94,6 +94,19 @@ export async function approveTabularSource(result:TableResult,id:string,fileName
   const semantic=importTableFacts(await loadSemantic(),result,id,fileName,resolutions);
   const canonical=replaceCanonicalSource(await loadCanonical(),canonicalFromTable(result,id,resolutions),id);
   const next={...project,datasets:[...project.datasets,{id,name:fileName,planningYear:result.facts[0].year,source:'excel' as const,importedAt:new Date().toISOString()}]};
+  await saveSemantic(semantic);await saveCanonical(canonical);await saveProject(next);
+  return next;
+ },true);
+}
+
+/** Project imports use the same recovery journal as UO budgets. */
+export async function approveProjectSource(result:ImportResult,id:string,fileName:string):Promise<AnalysisProject>{
+ return mutate(async()=>{
+  const project=await loadProject();
+  const semantic=importProjectFacts(await loadSemantic(),result,id,fileName);
+  const canonical=replaceCanonicalSource(await loadCanonical(),canonicalFromProject(result,id),id);
+  const next={...project,datasets:[...project.datasets.filter(d=>d.id!==id),
+   {id,name:result.uo,planningYear:2027,importedAt:new Date().toISOString(),source:'excel' as const}]};
   await saveSemantic(semantic);await saveCanonical(canonical);await saveProject(next);
   return next;
  },true);
