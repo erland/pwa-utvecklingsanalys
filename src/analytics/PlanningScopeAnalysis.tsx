@@ -2,6 +2,7 @@ import {useState} from 'react';
 import type {CanonicalDataset,Metric} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {analyzeCanonical} from './canonicalQuery';
+import {visibleUoDetailRows} from './UoDetailBreakdown';
 
 export type PlanningScope='all'|'uo'|'project';
 const decode=(id:string)=>{try{return decodeURIComponent(id.split(':').at(-1)??id)}catch{return id}};
@@ -18,6 +19,15 @@ export function planningTotals(data:CanonicalDataset,state:GapState,metrics:Metr
 export type ActivitySelection='all'|'development'|'maintenance';
 export type VisiblePlanningRow={key:string;label:string;kind:'UO'|'Projekt';value:number|undefined;unallocated:number};
 export type SelectedPlanningObject={kind:'UO'|'Projekt';key:string};
+/** Coverage warnings must refer only to the planning kinds actually visible. */
+export function selectedPlanningUnknownCount(totals:ReturnType<typeof planningTotals>,scope:PlanningScope):number{
+ return (scope!=='project'?totals.uo.unknownCount:0)+(scope!=='uo'?totals.projects.unknownCount:0);
+}
+/** Reuse the same LO detail projection as the dedicated UO navigator. */
+export function visiblePlanningUoParts(data:CanonicalDataset,state:GapState,metrics:Metric[],year:number|undefined,activity:ActivitySelection,uoId:string){
+ return visibleUoDetailRows(data,state,metrics,year,uoId,activity);
+}
+
 /** Resolve against current filters so an old selection is never displayed as a stale detail. */
 export function resolvePlanningSelection(rows:readonly VisiblePlanningRow[],selection:SelectedPlanningObject|null){
  return selection?rows.find(r=>r.kind===selection.kind&&r.key===selection.key)??null:null;
@@ -58,11 +68,11 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year,act
  const total=(includeUo?totals.uo.total:0)+(includeProjects?totals.projects.total:0);
  const unit=totals.unit;
  const parts=(projectId:string)=>visibleProjectParts(data,state,metrics,year,activity,projectId);
- const uoParts=(uoId:string)=>analyzeCanonical(data,state,{axis:'work',metrics,activity,year,detailUoId:uoId}).rows;
+ const uoParts=(uoId:string)=>visiblePlanningUoParts(data,state,metrics,year,activity,uoId);
  return <section className="panel" aria-label="Samlat planeringsbehov">
   <h3>2. Planerade behov – {scope==='all'?'UO och projekt':scope==='uo'?'UO':'projekt'}</h3>
   <p>UO och projekt är separata underlag och summeras när båda är valda. Avdelningsfördelningar räknas inte en gång till.</p>
-  {activity!=='all'&&(totals.uo.unknownCount+totals.projects.unknownCount)>0&&<p className="notice" role="status">{totals.uo.unknownCount+totals.projects.unknownCount} behov saknar en komplett aktivitetsfördelning och ingår inte i valt aktivitetsresultat.</p>}
+  {activity!=='all'&&selectedPlanningUnknownCount(totals,scope)>0&&<p className="notice" role="status">{selectedPlanningUnknownCount(totals,scope)} behov saknar en komplett aktivitetsfördelning och ingår inte i valt aktivitetsresultat.</p>}
   <p><strong>Totalt: {fmt(total)} {unit}</strong></p>
   {scope==='all'&&<table className="canonical-table" aria-label="Summering UO och projekt">
    <thead><tr><th>Typ</th><th>Behov</th></tr></thead>
@@ -93,7 +103,7 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year,act
   {rows.filter(row=>activeObject?.kind==='UO'&&activeObject.key===row.key).map(row=><section key={row.key} className="panel" aria-label={'LO per '+decode(row.key)}>
    <h4>{decode(row.key)} – LO och UO Övergripande</h4>
    <table className="canonical-table"><thead><tr><th>Del</th><th>Behov</th></tr></thead><tbody>
-    {uoParts(row.key).map(part=><tr key={part.key}><th scope="row">{part.label}</th><td>{fmt(part.value)} {unit}</td></tr>)}
+    {uoParts(row.key).map(part=><tr key={part.key}><th scope="row">{part.label}</th><td>{part.value===null?'Ej fördelat':fmt(part.value)+' '+unit}{activity!=='all'&&part.unallocated!==undefined&&part.unallocated>0&&<small> · Ofördelat: {fmt(part.unallocated)} {unit}</small>}</td></tr>)}
    </tbody></table>
   </section>)}
  </section>;
