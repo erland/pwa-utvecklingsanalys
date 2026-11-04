@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {saveProjectActivitySplit} from './projectActivityAllocation';
-import ProjectAllocationsPanel,{projectAllocationOverview} from './ProjectAllocationsPanel';
+import ProjectAllocationsPanel,{projectAllocationOverview,projectAllocationVisualSummary} from './ProjectAllocationsPanel';
 
 const gaps:GapState={requirements:[],resolutions:[]};
 const r=(id:string,projectId:string,year:number,metric:AnalysisRecord['metric'],value:number):AnalysisRecord=>({
@@ -41,6 +41,29 @@ describe('project activity distributions in the main allocations tab',()=>{
   expect(html).toContain('Projektfördelningar');
   expect(html).toContain('Utveckling / Förvaltning – projekt');
   expect(html).toContain('aria-expanded="false"');
+ });
+ it('shows explicit unallocated remainder rather than treating an absent decision as 0% development',()=>{
+  const source=data();
+  expect(projectAllocationVisualSummary(source,gaps,'hours',2027,'project:Alpha')).toEqual({
+   development:0,maintenance:0,unallocated:140,total:140,complete:false
+  });
+  const decisions=saveProjectActivitySplit(source,[],{workloadId:source.records[0].workloadId,developmentPercent:60});
+  expect(projectAllocationVisualSummary(source,{...gaps,projectActivitySplits:decisions},'hours',2027,'project:Alpha')).toEqual({
+   development:60,maintenance:40,unallocated:40,total:140,complete:false
+  });
+  const withBoth=saveProjectActivitySplit(source,decisions,{workloadId:source.records[1].workloadId,developmentPercent:25});
+  expect(projectAllocationVisualSummary(source,{...gaps,projectActivitySplits:withBoth},'hours',2027,'project:Alpha')).toEqual({
+   development:70,maintenance:70,unallocated:0,total:140,complete:true
+  });
+  expect(projectAllocationVisualSummary(source,{...gaps,projectActivitySplits:withBoth},'costs',2027,'project:Beta').unallocated).toBe(500);
+ });
+ it('removes stale saved split volumes from visualized allocation and retains full unallocated source total',()=>{
+  const source=data();
+  const decisions=saveProjectActivitySplit(source,[],{workloadId:source.records[0].workloadId,developmentPercent:70});
+  const changed={...source,records:source.records.map((r,i)=>i===0?{...r,value:120}:r)};
+  expect(projectAllocationVisualSummary(changed,{...gaps,projectActivitySplits:decisions},'hours',2027,'project:Alpha')).toEqual({
+   development:0,maintenance:0,unallocated:160,total:160,complete:false
+  });
  });
  it('hides the section if no project is imported',()=>{
   const source={...emptyCanonical(),records:[data().records.at(-1)!]};
