@@ -40,14 +40,17 @@ export function rebalanceUoBudgetAllocation(preview:AllocationPreview,overrides:
  // imported locks exact, then compensate in untouched later LO first.
  // Earlier manual edits form the last fallback, rather than changing on every move.
  const active=overrides.at(-1)?.loId;
- const activeIndex=all.findIndex(item=>item.loId===active);
+ // Match the Swedish alphabetical LO card order, independent of source cell order.
+ const label=(id:string)=>{const part=id.startsWith('uo-overhead:')?'UO Övergripande':id.split(':').at(-1)??id;try{return decodeURIComponent(part)}catch{return part}};
+ const order=new Map([...all].sort((a,b)=>label(a.loId).localeCompare(label(b.loId),'sv')).map((item,index)=>[item.loId,index]));
+ const activeIndex=order.get(active??'')??-1;
  const allocations=new Map<string,number>();
  for(const item of all){
   const lock=locks.get(item.loId);
   allocations.set(item.loId,lock?lock.development:edits.has(item.loId)?item.total*edits.get(item.loId)!/100:item.development);
  }
  let remaining=desired-all.reduce((sum,item)=>sum+allocations.get(item.loId)!,0);
- const after=(item:typeof all[number])=>all.findIndex(row=>row.loId===item.loId)>activeIndex;
+ const after=(item:typeof all[number])=>(order.get(item.loId)??-1)>activeIndex;
  const free=all.filter(item=>!locks.has(item.loId)&&!edits.has(item.loId));
  const priorEdits=all.filter(item=>!locks.has(item.loId)&&edits.has(item.loId)&&item.loId!==active);
  const groups=[
