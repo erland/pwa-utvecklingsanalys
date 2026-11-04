@@ -79,7 +79,7 @@ export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{d
    <thead><tr><th>Typ</th><th>Planeringsobjekt</th><th>Behov</th></tr></thead>
    <tbody>{rows.map(row=><tr key={row.kind+row.key}>
     <td>{row.kind}</td>
-    <th scope="row"><button type="button" className="secondary" aria-expanded={false}
+    <th scope="row"><button type="button" className="secondary"
      onClick={()=>setSelectedObject({kind:row.kind,key:row.key})}>
      {decode(row.key)}
     </button></th>
