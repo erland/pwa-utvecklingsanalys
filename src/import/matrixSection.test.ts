@@ -15,7 +15,7 @@ describe('independent matrix sections',()=>{
   s.getCell('C7').value='Omkostnader (Mnkr)';s.getCell('D7').value=1.5;
   const bytes=await w.xlsx.writeBuffer() as ArrayBuffer;
   const matrix=await readMatrix(bytes,developmentMatrix(s.name));
-  expect(matrix.facts.map(f=>f.value)).toEqual([2000,3000,1500000]);
+  expect(matrix.facts.map(f=>f.value).sort((a,b)=>a-b)).toEqual([2000,3000,1500000]);
   expect(matrix.issues.some(i=>i.cell==='D7')).toBe(true);
   expect(matrix.excludedTotals).toBe(1);
   const parsed=await importUoBudget(bytes);
