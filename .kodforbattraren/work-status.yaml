@@ -2,35 +2,34 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
-work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-uo-completion-cas
-active_step: RR-03-01
+base_sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
+work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-02-budget-completion-cas
+active_step: RR-03-02
 step_state: verified_awaiting_merge
-completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006]
+completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006, RR-03-01]
 verification:
-  kf_006:
-    pr: 275
-    result: merged_and_ci_passed
-    workflow_run: 41725098105
   baseline_main:
-    sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
-    workflow_run: 41775869991
+    sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
+    workflow_run: 41777685837
     result: success
   rr_03_01:
+    pr: 276
+    result: merged_and_pr_ci_passed
+    workflow_run: 41776936933
+  rr_03_02:
     result: verified_awaiting_merge
-    verified_code_commit: cc34e36691f42010b30fda9b7430e189d9732d57
-    workflow_run: 41776566155
+    verified_code_commit: ba59a5576cbdd70515b01264464c2dfa8d9c4920
+    workflow_run: 41778061982
     tests:
-      - e2e/rr-03-uo-import-completion-concurrent-tabs.spec.ts
+      - src/import/budgetCompletionConcurrency.test.ts
       - src/gaps/store.guarded-writes.test.ts
-    change_type: focused_functional_bugfix
+      - e2e/kf-002-gapstate-concurrent-tabs.spec.ts
+    change_type: functional_concurrency_fix
 release_readiness:
   decision: NO_GO
   go_authorized: false
   manual_acceptance_rg_01_to_rg_10: not_performed
-  outstanding_risk_ids: [RR-01, RR-02, RR-03, RR-04, RR-05, RR-06]
-  remaining_rr_03_risk: "Other unguarded GapState writers not yet audited"
-  pr_256_disposition: "Closed without merge as superseded; discussion recorded on PR #256"
+  remaining_rr_03_risk: "Other legacy storage modules are not comprehensively guarded"
 next_step:
-  recommended: review_remaining_unguarded_gapstate_writers
-  reason: "Audit other critical write paths after completing RR-03-01 and record manual release acceptance separately"
+  recommended: audit_other_storage_write_paths
+  reason: "Assess remaining actual lost-update scenarios, then perform separate manual acceptance"
