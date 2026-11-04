@@ -4,6 +4,7 @@ import {loadGapState,saveGapState,type GapState} from '../gaps/store';
 import {previewActivityAllocation,approveBalancedActivityGroup,approvedActivityParts,type ActivityAllocationRule,type ActivityAllocationDecision,type AllocationPreview} from '../domain/activityAllocation';
 import type {CanonicalDataset} from '../domain/canonical';
 import LoAllocationDraft from '../gaps/LoAllocationDraft';
+import {assertBudgetAllocationSnapshot} from './budgetCompletionConcurrency';
 
 /** Import-format completion appears automatically; no manual rule creation is needed. */
 export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,selectedSourceId,onCloseSource}:{refreshKey:number;onAnalyze:()=>void;selectedSourceId:string|null;onCloseSource:()=>void}){
@@ -76,6 +77,8 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   setBulkBusy(true);setBulkMessage('');
   try{
    const latest=await loadGapState();
+   if(!state)throw new Error('STALE_GAP_STATE');
+   assertBudgetAllocationSnapshot(state,latest);
    const rules=[...(latest.activityAllocationRules??[])];
    const decisions=[...(latest.activityAllocationDecisions??[])];
    for(const group of pending){
@@ -94,7 +97,7 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
    }
    const next={...latest,activityAllocationRules:rules,activityAllocationDecisions:decisions};
    // A single store write follows validation of every pending group.
-   await saveGapState(next);
+   await saveGapState(next,latest);
    setState(next);
    setBulkMessage(`${pending.length} fördelningar godkända med låsta importerade UO-totaler.`);
   }catch(e){setBulkMessage(`Kunde inte godkänna alla fördelningar: ${e instanceof Error?e.message:String(e)}`)}
@@ -105,8 +108,10 @@ export default function BudgetCompletionAfterImport({refreshKey,onAnalyze,select
   const label=decodeURIComponent(entries[0].rule.uoId.startsWith('uo:')?entries[0].rule.uoId.slice(3):entries[0].rule.uoId)+' · '+entries[0].rule.year;
   const editor=<LoAllocationDraft key={preview.fingerprint+'-'+JSON.stringify(entries[0].decision?.overrides??[])} preview={preview} decision={approved&&entries[0].decision?.sharedPercentages!==true?entries[0].decision:undefined} balancedPreviews={entries.map(e=>e.preview)} quick onApprove={async(overrides,reason)=>{
    const latest=await loadGapState();
+   if(!state)throw new Error('STALE_GAP_STATE');
+   assertBudgetAllocationSnapshot(state,latest);
    const next=await saveBalanced(entries,overrides,reason,latest);
-   await saveGapState(next);
+   await saveGapState(next,latest);
    setState(next);
   }}/>;
   const legacy=entries.some(e=>e.decision?.sharedPercentages===true);
