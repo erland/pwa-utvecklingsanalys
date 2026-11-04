@@ -23,8 +23,11 @@ test('release: imported UO and independent project stay additive after a saved p
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles([await workbook('uo'),await workbook('project')]);
- await expect(page.getByRole('status').filter({hasText:'uo.xlsx'})).toContainText('importerad');
- await expect(page.getByRole('status').filter({hasText:'project.xlsx'})).toContainText('importerad');
+ const imported=page.getByRole('status').filter({hasText:'Importresultat'});
+ await expect(imported).toContainText('uo.xlsx');
+ await expect(imported).toContainText('project.xlsx');
+ await expect(imported).not.toContainText('Inte importerad');
+ await expect(imported).not.toContainText('Endast XLSX-filer');
 
  // All planning volume includes both types, but no activity is silently assumed.
  await page.getByRole('button',{name:'Analys',exact:true}).click();
