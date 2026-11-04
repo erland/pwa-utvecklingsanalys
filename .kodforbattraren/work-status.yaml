@@ -5,19 +5,21 @@ default_branch: main
 base_sha: 7c2c96905f0cdf4eaa0574bc2d5988bd2131ec91
 work_branch: kodforbattraren/pwa-utvecklingsanalys/ux-005-allocation-status
 active_step: UX-005
-step_state: awaiting_pr_ci
+step_state: verified_awaiting_merge
 completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006, RR-03-01, RR-03-02, UX-001, UX-002, UX-003, UX-004]
 verification:
   baseline_main:
     sha: 7c2c96905f0cdf4eaa0574bc2d5988bd2131ec91
     workflow_run: 41788864807
-    result: pending_at_step_start
+    result: success
   ux_004:
     pr: 281
     result: merged_and_ci_passed
     workflow_run: 41787354410
   ux_005:
-    result: pending_pr_ci
+    result: verified_awaiting_merge
+    verified_code_commit: 8b0d4c5816e3af07586434a0b25acf2fbb6c612a
+    workflow_run: 41790068785
     change_type: ux_change
     tests:
       - src/allocations/allocationUxStatus.test.ts
@@ -29,5 +31,5 @@ release_readiness:
   go_authorized: false
   manual_acceptance_rg_01_to_rg_10: not_performed
 next_step:
-  recommended: UX-005
-  reason: "Verify UX-005 on the exact final PR head and merge before UX-006"
+  recommended: UX-006
+  reason: "After UX-005 is merged, review accessibility, iPad usability and terminology"
