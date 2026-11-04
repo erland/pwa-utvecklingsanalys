@@ -32,8 +32,9 @@ describe('budget-format owned LO completion',()=>{
   const actual=rebalance(original,[{loId:'LO1',developmentPercent:60}]);
   expect(actual.items.map(item=>[item.development,item.maintenance])).toEqual([[90,60],[10,40]]);
  });
- it('rejects infeasible allocations and invalid overrides instead of changing UO totals',()=>{
-  expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:100},{loId:'LO2',developmentPercent:100}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
+ it('relaxes earlier edits when necessary but rejects invalid inputs and fixed-lock conflicts',()=>{
+  expect(rebalance(preview(),[{loId:'LO1',developmentPercent:100},{loId:'LO2',developmentPercent:100}]).items.map(i=>i.development)).toEqual([0,100]);
+  expect(()=>rebalance(preview(),[{loId:'LO2',developmentPercent:100}],[{loId:'LO1',development:100,maintenance:0}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
   expect(()=>rebalance(preview(),[{loId:'LO3',developmentPercent:60}])).toThrow('UNKNOWN_LO');
   expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:-1}])).toThrow('INVALID_DEVELOPMENT_PERCENT');
   expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:50},{loId:'LO1',developmentPercent:60}])).toThrow('DUPLICATE_LO_OVERRIDE');
