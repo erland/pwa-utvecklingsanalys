@@ -65,3 +65,25 @@ export function importBudgetFacts(existing:SemanticDataset,result:ImportResult,d
  const errors=validateSemantic(updated);if(errors.length)throw new Error(errors.join(', '));
  return updated;
 }
+
+/** Projects are a separate additive planning domain, not UO aliases. */
+export function importProjectFacts(existing:SemanticDataset,result:ImportResult,datasetId:string,fileName:string):SemanticDataset{
+ if(result.profile!=='project-budget-2027-v1'||!result.uo.trim()||result.issues.some(i=>i.severity==='error'))
+  throw new Error('PROJECT_IMPORT_NOT_APPROVED');
+ const slug=(value:string)=>encodeURIComponent(value.trim().normalize('NFKC'));
+ const projectId='project:'+slug(result.uo);
+ const entities=existing.entities.map(e=>({...e,aliases:[...e.aliases] }));
+ if(!entities.some(e=>e.id===projectId))entities.push({id:projectId,kind:'project',name:result.uo,aliases:[]});
+ const observations=[...existing.observations.filter(o=>o.source.datasetId!==datasetId)];
+ for(const fact of result.facts){
+  if(!Number.isFinite(fact.value)||fact.value<0)throw new Error('INVALID_PROJECT_AMOUNT');
+  const partId='project-part:'+slug(result.uo)+':'+slug(fact.area);
+  if(!entities.some(e=>e.id===partId))entities.push({id:partId,kind:'project-part',name:fact.area,parentId:projectId,aliases:[]});
+  const id=[datasetId,fact.source.sheet,fact.source.cell,fact.measure,'project'].map(slug).join('|');
+  observations.push({id,entityId:partId,measureId:fact.measure,value:fact.value,period:fact.period,
+   planningVersion:'2027',scenario:'need',source:{datasetId,fileName,sheet:fact.source.sheet,cell:fact.source.cell},kind:'detail',quality:'reported'});
+ }
+ const next={...existing,entities,observations};
+ const errors=validateSemantic(next);if(errors.length)throw new Error(errors.join(','));
+ return next;
+}
