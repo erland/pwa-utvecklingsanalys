@@ -62,8 +62,7 @@ export default function LoAllocationDraft({preview,decision,onApprove,quick=fals
   // Do not replace it with an unedited source rebalance until the user moves the slider.
   if(completion&&(!cards||!balancedPreviews?.length||Object.keys(changes).length>0)){
    shown=balancedPreviews?.length?(()=>{
-    approveBalancedActivityGroup(balancedPreviews,'Förhandsgranskning',overrides);
-    const results=balancedPreviews.map(p=>rebalanceUoBudgetAllocation(p,overrides,p.lockedLo??[]));
+    const results=balancedPreviews.map(p=>rebalanceUoBudgetAllocation(p,requested(p),p.lockedLo??[]));
     const items=new Map<string,AllocationPreview['items'][number]>();
     for(const result of results)for(const item of result.items){
      const old=items.get(item.loId);
