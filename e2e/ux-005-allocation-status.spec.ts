@@ -8,12 +8,14 @@ test('UX-005: proposed LO share has explanation and bulk action shows impact',as
  sheet.getCell('B31').value='LO 2';sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=40;
  sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
  sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.05;sheet.getCell('E5').value=0.05;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
  await page.goto('./');
  await page.getByRole('button',{name:'Import',exact:true}).click();
  await page.locator('#direct-import-files').setInputFiles({name:'ux-005.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
  await expect(page.getByRole('status').filter({hasText:'ux-005.xlsx'})).toContainText('importerad');
  await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
  const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await expect(builtIn).toBeVisible();
  await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
  await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
  const lo1=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
