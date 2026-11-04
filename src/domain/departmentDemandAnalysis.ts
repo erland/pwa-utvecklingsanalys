@@ -16,7 +16,7 @@ export function analyzeDepartmentDemand(records:readonly DepartmentDemandObserva
   if(options.year!==undefined&&d.year!==options.year||!options.metrics.includes(d.metric))continue;
   if(options.planningType&&options.planningType!=='all'&&(d.planningType??'uo')!==options.planningType)continue;
   if(options.scope?.level==='uo'&&d.uoId!==options.scope.id)continue;
-  if(options.scope?.level==='group'&&(d.planningType==='project'||groupForUo(options.groupModel??{id:'',name:'',groups:[]},d.uoId)?.id??'unassigned')!==options.scope.id)continue;
+  if(options.scope?.level==='group'&&(d.planningType==='project'||(groupForUo(options.groupModel??{id:'',name:'',groups:[]},d.uoId)?.id??'unassigned')!==options.scope.id))continue;
   const id=options.perspective==='uo'?d.uoId:(d.departmentCode||d.departmentName.trim().toLocaleLowerCase('sv-SE'));
   const label=options.perspective==='uo'?decodeURIComponent(d.uoId.replace(/^(?:uo|project):/,'')):departmentDisplayName(d.departmentName);
   const prior=groups.get(id)??{id,label,itHours:0,businessHours:0,total:0};
