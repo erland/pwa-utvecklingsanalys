@@ -5,19 +5,21 @@ default_branch: main
 base_sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
 work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-02-budget-completion-cas
 active_step: RR-03-02
-step_state: awaiting_pr_ci
+step_state: verified_awaiting_merge
 completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006, RR-03-01]
 verification:
   baseline_main:
     sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
     workflow_run: 41777685837
-    result: pending_at_step_start
+    result: success
   rr_03_01:
     pr: 276
     result: merged_and_pr_ci_passed
     workflow_run: 41776936933
   rr_03_02:
-    result: pending_pr_ci
+    result: verified_awaiting_merge
+    verified_code_commit: ba59a5576cbdd70515b01264464c2dfa8d9c4920
+    workflow_run: 41778061982
     tests:
       - src/import/budgetCompletionConcurrency.test.ts
       - src/gaps/store.guarded-writes.test.ts
