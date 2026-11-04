@@ -1,4 +1,4 @@
-import {useEffect,useState,type Dispatch,type SetStateAction} from 'react';
+import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
 import {recoverSourceMutation} from '../import/sourceManagement';
 import {recoverInterruptedRestore} from '../portability/store';
 import {loadCanonical} from '../domain/canonicalStore';
@@ -14,6 +14,8 @@ export function useProjectWorkspace(view:ViewId,setView:Dispatch<SetStateAction<
  const [analysisRefresh,setAnalysisRefresh]=useState(0);
  const [project,setProject]=useState<AnalysisProject|null>(null);
  const [storageError,setStorageError]=useState('');
+ const [nameSaveStatus,setNameSaveStatus]=useState<'idle'|'saving'|'saved'|'error'>('idle');
+ const nameSaveVersion=useRef(0);
  const [overview,setOverview]=useState<OverviewStatus|null>(null);
  const [overviewError,setOverviewError]=useState('');
 
@@ -56,20 +58,36 @@ export function useProjectWorkspace(view:ViewId,setView:Dispatch<SetStateAction<
   }
  };
 
- const updateName=async(name:string)=>{
+ const persistProjectName=async(next:AnalysisProject)=>{
+  const version=++nameSaveVersion.current;
+  setNameSaveStatus('saving');
+  try{
+   await saveProject(next);
+   // An older queued write cannot report success over a newer edit.
+   if(version===nameSaveVersion.current){setNameSaveStatus('saved');setStorageError('')}
+  }catch{
+   if(version===nameSaveVersion.current){
+    setNameSaveStatus('error');
+    setStorageError('Kunde inte spara projektet lokalt.');
+   }
+  }
+ };
+ const updateName=(name:string)=>{
   if(!project)return;
   const next={...project,name};
   setProject(next);
-  try{await saveProject(next);setStorageError('')}
-  catch{setStorageError('Kunde inte spara projektet lokalt.')}
+  void persistProjectName(next);
  };
+ const retryNameSave=()=>{if(project)void persistProjectName(project)};
 
  const projectImported=(next:AnalysisProject)=>{
+  nameSaveVersion.current++;
+  setNameSaveStatus('idle');
   setProject(next);
   setAnalysisRefresh(v=>v+1);
  };
  const refreshAnalysis=()=>setAnalysisRefresh(v=>v+1);
 
  return {project,analysisRefresh,storageError,overview,overviewError,analysisAvailable,
-  openAnalysis,updateName,projectImported,refreshAnalysis};
+  nameSaveStatus,openAnalysis,updateName,retryNameSave,projectImported,refreshAnalysis};
 }
