@@ -33,7 +33,7 @@ test('multiple UO sources preserve distinct scopes and reciprocal drilldown with
  const demand=page.getByRole('region',{name:'Avdelningsbehov'});
  await expect(demand).toContainText('180 h');
 
- await demand.getByRole('button',{name:'IT-avdelningen'}).click();
+ await demand.getByRole('table',{name:'Efterfrågade timmar per avdelning'}).getByRole('button',{name:'IT-avdelningen'}).click();
  await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO B');
  await expect(page.getByRole('table',{name:/Efterfrågande UO/})).toContainText('UO A');
  // The UO/LO view must obey the existing organization navigator, not sum every UO.
