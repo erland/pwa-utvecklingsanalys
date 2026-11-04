@@ -5,7 +5,7 @@ default_branch: main
 base_sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
 work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-uo-completion-cas
 active_step: RR-03-01
-step_state: awaiting_pr_ci
+step_state: verified_awaiting_merge
 completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006]
 verification:
   kf_006:
@@ -17,7 +17,9 @@ verification:
     workflow_run: 41775869991
     result: success
   rr_03_01:
-    result: pending_pr_ci
+    result: verified_awaiting_merge
+    verified_code_commit: cc34e36691f42010b30fda9b7430e189d9732d57
+    workflow_run: 41776566155
     tests:
       - e2e/rr-03-uo-import-completion-concurrent-tabs.spec.ts
       - src/gaps/store.guarded-writes.test.ts
