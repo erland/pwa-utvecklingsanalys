@@ -2,7 +2,6 @@ import {useState} from 'react';
 import type {CanonicalDataset,Metric} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {analyzeCanonical} from './canonicalQuery';
-import ProjectActivityEditor from '../allocations/ProjectActivityEditor';
 
 export type PlanningScope='all'|'uo'|'project';
 const decode=(id:string)=>{try{return decodeURIComponent(id.split(':').at(-1)??id)}catch{return id}};
@@ -16,7 +15,7 @@ export function planningTotals(data:CanonicalDataset,state:GapState,metrics:Metr
  return {uo,projects,total:uo.total+projects.total,unit:uo.unit};
 }
 
-export default function PlanningScopeAnalysis({data,sourceData,state,scope,metrics,year,onSaved}:{data:CanonicalDataset;sourceData:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number;onSaved:(next:GapState)=>void}){
+export default function PlanningScopeAnalysis({data,state,scope,metrics,year}:{data:CanonicalDataset;state:GapState;scope:PlanningScope;metrics:Metric[];year?:number}){
  const [activity,setActivity]=useState<'all'|'development'|'maintenance'>('all');
  const [openProject,setOpenProject]=useState<string|null>(null);
  const [openUo,setOpenUo]=useState<string|null>(null);
@@ -60,7 +59,6 @@ export default function PlanningScopeAnalysis({data,sourceData,state,scope,metri
    <table className="canonical-table"><thead><tr><th>Del</th><th>Behov</th></tr></thead><tbody>
     {parts(row.key).map(part=><tr key={part.key}><th scope="row">{decode(part.key)}</th><td>{fmt(part.value)} {unit}</td></tr>)}
    </tbody></table>
-   <ProjectActivityEditor data={sourceData} state={state} projectId={row.key} year={year} metrics={metrics} onSaved={onSaved}/>
   </section>)}
   {rows.filter(row=>row.kind==='UO'&&openUo===row.key).map(row=><section key={row.key} className="panel" aria-label={'LO per '+decode(row.key)}>
    <h4>{decode(row.key)} – LO och UO Övergripande</h4>
