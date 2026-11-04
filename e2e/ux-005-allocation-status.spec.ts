@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+import ExcelJS from 'exceljs';
+
+test('UX-005: proposed LO share has explanation and bulk action shows impact',async({page})=>{
+ const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+ sheet.getCell('B1').value='UO: UO A';sheet.getCell('D11').value=2027;
+ sheet.getCell('B25').value='LO 1';sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=60;
+ sheet.getCell('B31').value='LO 2';sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=40;
+ sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+ sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.05;sheet.getCell('E5').value=0.05;
+ await page.addInitScript(()=>localStorage.removeItem('utvecklingsanalys:e2e-legacy-navigation'));
+ await page.goto('./');
+ await page.getByRole('button',{name:'Import',exact:true}).click();
+ await page.locator('#direct-import-files').setInputFiles({name:'ux-005.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from(await wb.xlsx.writeBuffer())});
+ await expect(page.getByRole('status').filter({hasText:'ux-005.xlsx'})).toContainText('importerad');
+ await page.getByRole('button',{name:'Fördelningar',exact:true}).click();
+ const builtIn=page.getByRole('region',{name:'Inbyggda fördelningstyper'});
+ await expect(builtIn).toBeVisible();
+ await builtIn.getByRole('button',{name:/Utveckling \/ Förvaltning – timmar/}).click();
+ await builtIn.getByRole('region',{name:'Översikt UO-fördelningar'}).getByRole('button',{name:/UO A/}).click();
+ const lo1=builtIn.getByRole('region',{name:'LO-fördelning LO 1'});
+ await expect(lo1).toContainText('Automatiskt föreslagen');
+ await expect(lo1).toContainText('Andelen beräknas utifrån UO:s importerade fördelning');
+ await builtIn.getByRole('button',{name:'Massändra LO till UO-fördelningen'}).click();
+ const confirmation=builtIn.getByRole('group',{name:'Bekräfta massändring av LO'});
+ await expect(confirmation).toContainText('2 redigerbara LO');
+ await expect(confirmation).toContainText('0 låsta LO');
+ await expect(confirmation).toContainText('Tidigare egna LO-justeringar');
+ await expect(confirmation.getByRole('button',{name:'Bekräfta massändring'})).toBeEnabled();
+ await confirmation.getByRole('button',{name:'Avbryt'}).click();
+ await expect(confirmation).toHaveCount(0);
+});

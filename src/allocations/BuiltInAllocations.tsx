@@ -7,6 +7,7 @@ import {loadGapState,saveGapState} from '../gaps/store';
 import type {GapState} from '../gaps/store';
 import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 import {PeriodButtons} from './WeightedUoEditor';
+import {loAllocationStatus,loBulkImpact} from './allocationUxStatus';
 
 type Kind='activity'|'activity-cost'|'metric';
 type Values={first:number;second:number};
@@ -198,12 +199,17 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
         {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&<div className="actions">
          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>{setBulkError('');setBulkConfirm(true)}}>Massändra LO till UO-fördelningen</button>
         </div>}
-        {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&bulkConfirm&&<div className="panel" role="group" aria-label="Bekräfta massändring av LO">
-         <p>Alla redigerbara LO under {r.title} sätts till UO-fördelningen för {year===0?'samtliga tillgängliga år':year}. Importerade LO-värden ändras inte.</p>
-         <button type="button" className="primary" disabled={bulkBusy} onClick={()=>{setBulkBusy(true);setBulkError('');void bulkMatchUo(r.key).then(()=>setBulkConfirm(false)).catch(e=>setBulkError(String(e))).finally(()=>setBulkBusy(false))}}>Bekräfta massändring</button>
-         <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkConfirm(false)}>Avbryt</button>
-         {bulkError&&<p role="alert">{bulkError}</p>}
-        </div>}
+        {selectedUo===r.key&&(kind==='activity'||kind==='activity-cost')&&bulkConfirm&&(()=>{
+         const targetGroups=[...editorGroups.values()].filter(g=>g.rules[0].uoId===r.key&&(kind==='activity-cost'?g.rules[0].metric==='other_cost':g.rules[0].metric!=='other_cost')&&(year===0||g.rules[0].year===year));
+         const impact=loBulkImpact(targetGroups);
+         return <div className="panel" role="group" aria-label="Bekräfta massändring av LO">
+          <p><strong>Omfattning:</strong> {r.title} · {year===0?'samtliga tillgängliga år':year} · {impact.groups} UO-underlag · {impact.editableLo} redigerbara LO · {impact.lockedLo} låsta LO.</p>
+          <p>{impact.explanation}</p>
+          <button type="button" className="primary" disabled={bulkBusy||!impact.canApply} onClick={()=>{setBulkBusy(true);setBulkError('');void bulkMatchUo(r.key).then(()=>setBulkConfirm(false)).catch(e=>setBulkError(String(e))).finally(()=>setBulkBusy(false))}}>Bekräfta massändring</button>
+          <button type="button" className="secondary" disabled={bulkBusy} onClick={()=>setBulkConfirm(false)}>Avbryt</button>
+          {bulkError&&<p role="alert">{bulkError}</p>}
+         </div>;
+        })()}
         {selectedUo===r.key&&<section aria-label={'LO-detaljer '+r.title}>
 
          {kind==='metric'&&(()=>{
@@ -260,8 +266,10 @@ export default function BuiltInAllocations({data:sourceData,years,gaps,onSaved}:
          for(const item of displayed.items){const previous=activeItems.get(item.loId);activeItems.set(item.loId,previous?{...previous,total:previous.total+item.total,development:previous.development+item.development,maintenance:previous.maintenance+item.maintenance}:item)}
         }
         const combined:AllocationPreview={ruleId:key,fingerprint:previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)).join('|'),items:[...activeItems.values()],uo:{development:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.development,0),maintenance:previewGroups.flatMap(g=>g.previews).reduce((v,p)=>v+p.uo.maintenance,0)}};
+        const status=loAllocationStatus(previewGroups,loId,gaps.activityAllocationDecisions??[]);
         return <section key={selectionKey} className="panel" aria-label={'LO-fördelning '+name(loId)}>
          <h4>{loId.startsWith('uo-overhead:')?'UO Övergripande':name(loId)}</h4>
+         <p><strong>{status.label}</strong> · {status.description}</p>
          <PeriodButtons years={yearsForLo} selected={selectedYear} onSelect={setYear} label={'LO-period '+name(loId)}/>
 
          <LoAllocationDraft key={JSON.stringify([key,loId,selectedYear,previewGroups.flatMap(g=>g.previews.map(p=>p.fingerprint)),(gaps.activityAllocationDecisions??[]).filter(d=>group.rules.some(rule=>rule.id===d.ruleId)).map(d=>d.overrides)])} preview={combined} decision={undefined} balancedPreviews={previewGroups.flatMap(g=>g.previews)} cards onlyLoId={loId} quick autoSave unit={kind==='activity-cost'?'kr':'h'} onApprove={(overrides,reason)=>selectedYear===0?saveAcrossYears(available.map(([,g])=>g),overrides,reason):saveGroup(group,overrides,reason)}/>
