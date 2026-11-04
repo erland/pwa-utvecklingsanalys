@@ -19,6 +19,7 @@ import AnnualTrendReport from './AnnualTrendReport';
 import CostTypeAnalysis from './CostTypeAnalysis';
 import OrganizationYearReport from './OrganizationYearReport';
 import {canonicalCsv} from './canonicalCsv';
+import {analysisSelectionSummary} from './analysisSelectionSummary';
 import type {CanonicalDataset,Metric,ReportingAxis,Activity} from '../domain/canonical';
 export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpenCompletions:()=>void}){
  const [departmentDemand,setDepartmentDemand]=useState<DepartmentDemandObservation[]>([]);
@@ -44,6 +45,7 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  const activity:Activity|'all'|'allocated'=unit==='costs'?'all':selectedActivities.length===2?'all':selectedActivities[0];
  const metrics:Metric[]=axis==='department'||unit==='hours'?['it_hours','business_hours']:['consultant_cost','other_cost'];
  const choices=selected.filter(m=>metrics.includes(m));
+ const selectionSummary=analysisSelectionSummary({axis,unit,metrics:choices,activity,year,organization,groupModel:models.find(m=>m.id===activeGroupModelId)??models[0]});
  let result:ReturnType<typeof analyzeCanonical>|null=null;
  let trend:ReturnType<typeof canonicalTrend>=[];
  let groupYears:ReturnType<typeof canonicalGroupYears>|null=null;
@@ -64,6 +66,11 @@ export default function CanonicalAnalytics({refreshKey}:{refreshKey:number;onOpe
  </div>:<div className="analysis-metric-groups" aria-label="Kostnadsmått"><fieldset><legend>Kostnadsmått</legend>{metrics.map(m=><label className="check" key={m}><input type="checkbox" checked={choices.includes(m)} onChange={e=>setSelected(old=>e.target.checked?[...old,m]:old.length>1?old.filter(x=>x!==m):old)}/>{labels[m]}</label>)}</fieldset></div>}
  <div className="analysis-filter-card" aria-label="Välj analysår"><p><strong>Budgetår</strong> – välj ett enskilt år eller alla år för en sammanlagd vy. Årstrenden använder alltid samtliga tillgängliga år.</p><label>År<select aria-label="period" value={year} onChange={e=>setYear(e.target.value)}><option value="all">Alla år</option>{years.map(y=><option key={y} value={y}>{y}</option>)}</select></label></div>
  </div></section>
+ <section className="notice" aria-label="Aktuellt analysurval">
+  <strong>Aktuellt analysurval</strong>
+  <p><strong>Organisation:</strong> {selectionSummary.organization} · <strong>År:</strong> {selectionSummary.year}</p>
+  <p><strong>Mått:</strong> {selectionSummary.measure}{selectionSummary.activity?' · Aktivitet: '+selectionSummary.activity:''}</p>
+ </section>
  {axis==='work'&&activeGroupModelId&&<p className="notice">Varje UO tilldelas första matchande grupp i vald modell. UO utan grupp visas som Ej grupperad. Årssummor och jämförelser räknas fortfarande från källuppgifter.</p>}
  {axis==='department'&&unit==='hours'?<><DepartmentDemandAnalysis groupModel={models.find(m=>m.id===activeGroupModelId)??models[0]} records={departmentDemand} year={year==='all'?undefined:Number(year)} metrics={choices.filter((m):m is 'it_hours'|'business_hours'=>m==='it_hours'||m==='business_hours')}/></>:!data?<p>Hämtar analysdata…</p>:!data.records.length?<p>Inga data i analysmodellen. Importera ett Excelunderlag.</p>:!choices.length?<p>Välj minst ett mått.</p>:result?<><section className="analysis-summary" aria-label="Sammanfattning av analys"><h3>2. Sammanfattning</h3><p>Resultatet gäller valt urval och uppdateras när filtren ändras.</p><div className="canonical-result-head"><div><span>Totalt i vald redovisning</span><strong>{format(result.total)} {result.unit}</strong><small>{result.includedRecords} bidragande källposter i aktuellt urval</small></div></div><div className="actions"><button type="button" className="secondary" onClick={()=>{if(!result)return;const blob=new Blob([canonicalCsv(result,trend)],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='analys.csv';link.click();URL.revokeObjectURL(url)}}>Exportera analys som CSV</button></div>
  {result.unknownCount>0&&<p role="status" className="notice">Ofullständig täckning: {result.coverage}</p>}
