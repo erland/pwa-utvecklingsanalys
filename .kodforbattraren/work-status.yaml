@@ -2,34 +2,29 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
-work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-02-budget-completion-cas
-active_step: RR-03-02
-step_state: verified_awaiting_merge
-completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006, RR-03-01]
+base_sha: f19a633a1913e1915e50cb2c92eba27794592536
+work_branch: kodforbattraren/pwa-utvecklingsanalys/ux-001-project-save-feedback
+active_step: UX-001
+step_state: awaiting_pr_ci
+completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006, RR-03-01, RR-03-02]
 verification:
   baseline_main:
-    sha: f81da30b4a678d7b12726b1884da7b1e09ee3eb5
-    workflow_run: 41777685837
+    sha: f19a633a1913e1915e50cb2c92eba27794592536
+    workflow_run: 41779099476
     result: success
-  rr_03_01:
-    pr: 276
-    result: merged_and_pr_ci_passed
-    workflow_run: 41776936933
   rr_03_02:
-    result: verified_awaiting_merge
-    verified_code_commit: ba59a5576cbdd70515b01264464c2dfa8d9c4920
-    workflow_run: 41778061982
-    tests:
-      - src/import/budgetCompletionConcurrency.test.ts
-      - src/gaps/store.guarded-writes.test.ts
-      - e2e/kf-002-gapstate-concurrent-tabs.spec.ts
-    change_type: functional_concurrency_fix
+    pr: 277
+    result: merged_and_ci_passed
+    workflow_run: 41778379465
+  ux_001:
+    result: pending_pr_ci
+    change_type: ux_change
+    test: e2e/ux-001-project-save-feedback.spec.ts
+    report: docs/ux-001-project-save-feedback.md
 release_readiness:
   decision: NO_GO
   go_authorized: false
   manual_acceptance_rg_01_to_rg_10: not_performed
-  remaining_rr_03_risk: "Other legacy storage modules are not comprehensively guarded"
 next_step:
-  recommended: audit_other_storage_write_paths
-  reason: "Assess remaining actual lost-update scenarios, then perform separate manual acceptance"
+  recommended: UX-001
+  reason: "Finish Verify PWA on final PR head, review and merge before UX-002"
