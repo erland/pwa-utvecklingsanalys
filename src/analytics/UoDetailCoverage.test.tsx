@@ -49,7 +49,7 @@ describe('UO and LO activity coverage navigation',()=>{
    data:source(),state:gaps,metrics:['it_hours'],activity:'development',year:2027,
    selectedUoId:'uo:Test',onPartSelect:()=>{}
   }));
-  expect(html).toContain('lo:Test:B');
+  expect(html).toContain('>B</button>');
   expect(html).toContain('UO Övergripande');
   expect(html).toContain('Ofördelat: 50 h');
   expect(html).toContain('Ej beräkningsbar');
