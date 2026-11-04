@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import type {AllocationPreview} from '../../domain/activityAllocation';
-import {rebalanceUoBudgetAllocation as rebalance} from './uoBudgetCompletion';
+import {rebalanceUoBudgetAllocation as rebalance,mergeLoOverrides} from './uoBudgetCompletion';
 import {uoBudget2027_30} from './uoBudget2027_30';
 
 const preview=():AllocationPreview=>({
@@ -32,8 +32,9 @@ describe('budget-format owned LO completion',()=>{
   const actual=rebalance(original,[{loId:'LO1',developmentPercent:60}]);
   expect(actual.items.map(item=>[item.development,item.maintenance])).toEqual([[90,60],[10,40]]);
  });
- it('rejects infeasible allocations and invalid overrides instead of changing UO totals',()=>{
-  expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:100},{loId:'LO2',developmentPercent:100}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
+ it('relaxes earlier edits when necessary but rejects invalid inputs and fixed-lock conflicts',()=>{
+  expect(rebalance(preview(),[{loId:'LO1',developmentPercent:100},{loId:'LO2',developmentPercent:100}]).items.map(i=>i.development)).toEqual([0,100]);
+  expect(()=>rebalance(preview(),[{loId:'LO2',developmentPercent:100}],[{loId:'LO1',development:100,maintenance:0}])).toThrow('INFEASIBLE_LO_DISTRIBUTION');
   expect(()=>rebalance(preview(),[{loId:'LO3',developmentPercent:60}])).toThrow('UNKNOWN_LO');
   expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:-1}])).toThrow('INVALID_DEVELOPMENT_PERCENT');
   expect(()=>rebalance(preview(),[{loId:'LO1',developmentPercent:50},{loId:'LO1',developmentPercent:60}])).toThrow('DUPLICATE_LO_OVERRIDE');
@@ -62,6 +63,47 @@ describe('budget-format owned LO completion',()=>{
   expect(result.items.map(v=>[v.development,v.maintenance])).toEqual([[60,0],[48,32],[12,48]]);
   expect(result.uo).toEqual(original.uo);
   expect(JSON.stringify(original)).toBe(snapshot);
+ });
+ it('keeps previously edited LO stable while compensating in later untouched rows',()=>{
+  const initial=preview();
+  initial.uo={development:200,maintenance:200};
+  initial.items=['LO1','LO2','LO3','LO4'].map((loId,i)=>({loId,total:100,development:50,maintenance:50,workloadId:'w'+i}));
+  const first=mergeLoOverrides([],[{loId:'LO1',developmentPercent:80}]);
+  const afterFirst=rebalance(initial,first);
+  expect(afterFirst.items.map(item=>item.development)).toEqual([80,40,40,40]);
+  const second=mergeLoOverrides(first,[{loId:'LO2',developmentPercent:60}]);
+  const afterSecond=rebalance(initial,second);
+  expect(afterSecond.items.map(item=>item.development)).toEqual([80,60,30,30]);
+  expect(afterSecond.items.reduce((sum,item)=>sum+item.development,0)).toBe(200);
+  expect(afterSecond.items.every(item=>item.development>=0&&item.maintenance>=0)).toBe(true);
+ });
+ it('uses earlier manually edited rows only after later untouched LO run out of capacity',()=>{
+  const initial=preview();
+  initial.uo={development:200,maintenance:200};
+  initial.items=['LO1','LO2','LO3','LO4'].map((loId,i)=>({loId,total:100,development:50,maintenance:50,workloadId:'w'+i}));
+  const edits=mergeLoOverrides(
+   [{loId:'LO1',developmentPercent:80},{loId:'LO2',developmentPercent:60}],
+   [{loId:'LO3',developmentPercent:70}]
+  );
+  const result=rebalance(initial,edits);
+  expect(result.items[2].development).toBe(70);
+  expect(result.items[3].development).toBe(0);
+  expect(result.items[0].development).toBeLessThan(80);
+  expect(result.items.reduce((sum,item)=>sum+item.development,0)).toBeCloseTo(200);
+ });
+ it('preserves imported locks and updated overrides across subsequent edits',()=>{
+  const initial=preview();
+  initial.uo={development:200,maintenance:200};
+  initial.items=['LO1','LO2','LO3','LO4'].map((loId,i)=>({loId,total:100,development:50,maintenance:50,workloadId:'w'+i}));
+  const locked=[{loId:'LO4',development:50,maintenance:50}];
+  const first=mergeLoOverrides([],[{loId:'LO1',developmentPercent:80}]);
+  const next=mergeLoOverrides(first,[{loId:'LO2',developmentPercent:60}]);
+  const updated=mergeLoOverrides(next,[{loId:'LO1',developmentPercent:75}]);
+  expect(updated.map(x=>x.loId)).toEqual(['LO2','LO1']);
+  const result=rebalance(initial,updated,locked);
+  expect(result.items[0].development).toBe(75);
+  expect(result.items[3].development).toBe(50);
+  expect(result.items.reduce((sum,item)=>sum+item.development,0)).toBeCloseTo(200);
  });
  it('rejects tampering, mismatched imported totals, and infeasible locked allocations',()=>{
   const locked=[{loId:'LO1',development:50,maintenance:50}];
