@@ -63,12 +63,21 @@ export async function readMatrix(bytes:ArrayBuffer,mapping:MatrixMapping):Promis
    facts.push({sectionId:mapping.id,measureId:measure.id,activity,year:fullYear,value:parsed*measure.factor,unit:measure.unit,source:{sheet:sheet.name,cell:cell.address}});
   }
  }
- // An imported UO activity split is trustworthy only when both activities exist
- // for the same year and measure. Never interpret a missing half as zero.
+ // Keep every valid imported value, even when its counterpart is absent.
+ // The split remains incomplete for analysis until the missing activity is
+ // explicitly completed; an absent cell must never be interpreted as zero.
  const groups=new Map<string,Set<string>>();
- for(const fact of facts){const key=JSON.stringify([fact.year,fact.measureId]);const set=groups.get(key)??new Set<string>();set.add(fact.activity);groups.set(key,set)}
+ for(const fact of facts){
+  const key=JSON.stringify([fact.year,fact.measureId]);
+  const set=groups.get(key)??new Set<string>();
+  set.add(fact.activity);
+  groups.set(key,set);
+ }
  const requiresPair=Object.values(mapping.activityNames).includes('development')&&Object.values(mapping.activityNames).includes('maintenance');
- const complete=requiresPair?facts.filter(f=>{const activities=groups.get(JSON.stringify([f.year,f.measureId]));return activities?.has('development')&&activities.has('maintenance')}):facts;
- for(const fact of facts)if(!complete.includes(fact))issues.push({cell:fact.source.cell,message:'Ofullständig UO-fördelning: både Utveckling och Förvaltning krävs för import av fördelningen'});
- return {mapping,facts:complete,issues,excludedTotals};
+ if(requiresPair)for(const fact of facts){
+  const activities=groups.get(JSON.stringify([fact.year,fact.measureId]))!;
+  if(!activities.has('development')||!activities.has('maintenance'))
+   issues.push({cell:fact.source.cell,message:'Ofullständig UO-fördelning: importerat delvärde har behållits; komplettera den saknade aktiviteten i Import'});
+ }
+ return {mapping,facts,issues,excludedTotals};
 }

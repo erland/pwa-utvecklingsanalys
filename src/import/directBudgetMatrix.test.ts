@@ -50,6 +50,6 @@ describe('fixed UO matrix through direct import',()=>{
   const prepared=await prepareDirectImport(input);
   expect(prepared.result.facts.some(f=>f.value===42)).toBe(true);
   expect(prepared.result.matrix?.issues.some(i=>i.cell==='D5')).toBe(true);
-  expect(prepared.result.matrix?.facts).toEqual([]);
+  expect(prepared.result.matrix?.facts).toEqual([expect.objectContaining({activity:'maintenance',year:2027,value:17})]);
  });
 });
