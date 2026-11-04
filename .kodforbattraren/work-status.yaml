@@ -2,57 +2,35 @@ schema_version: 1
 plan_id: kf-pwa-utvecklingsanalys-2026-11
 repository: erland/pwa-utvecklingsanalys
 default_branch: main
-base_sha: b169b243f40b2060226c75e1a3cf70f7eda51e22
-work_branch: kodforbattraren/pwa-utvecklingsanalys/kf-006-release-readiness
-active_step: KF-006
-step_state: release_evidence_documented_awaiting_pr_ci
-completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005]
+base_sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
+work_branch: kodforbattraren/pwa-utvecklingsanalys/rr-03-uo-completion-cas
+active_step: RR-03-01
+step_state: verified_awaiting_merge
+completed_steps: [KF-001, KF-002, KF-003, KF-004, KF-005, KF-006]
 verification:
-  baseline_main:
-    sha: b169b243f40b2060226c75e1a3cf70f7eda51e22
-    workflow_run: 41724581146
-    result: pending_at_review
-  kf_001:
-    pr: 270
-    result: merged_and_ci_passed
-    workflow_run: 41713591629
-  kf_002:
-    pr: 271
-    result: merged_and_ci_passed
-    workflow_run: 41715499310
-  kf_003:
-    pr: 272
-    result: merged_and_ci_passed
-    workflow_run: 41718986862
-  kf_004:
-    pr: 273
-    result: merged_and_ci_passed
-    workflow_run: 41721692516
-  kf_005:
-    pr: 274
-    result: merged_and_ci_passed
-    workflow_run: 41723885451
   kf_006:
-    change_type: verification_and_documentation_only
-    report: docs/kf-006-release-verification.md
-    result: evidence_documented_pending_pr_ci
+    pr: 275
+    result: merged_and_ci_passed
+    workflow_run: 41725098105
+  baseline_main:
+    sha: faea4b214720fc79c94bd7f28e00f6a96d2106e3
+    workflow_run: 41775869991
+    result: success
+  rr_03_01:
+    result: verified_awaiting_merge
+    verified_code_commit: cc34e36691f42010b30fda9b7430e189d9732d57
+    workflow_run: 41776566155
+    tests:
+      - e2e/rr-03-uo-import-completion-concurrent-tabs.spec.ts
+      - src/gaps/store.guarded-writes.test.ts
+    change_type: focused_functional_bugfix
 release_readiness:
   decision: NO_GO
   go_authorized: false
   manual_acceptance_rg_01_to_rg_10: not_performed
-  published_release_at_review: v0.6.7
-  latest_release_published_date: 2026-11-02
-  planned_new_release: none
   outstanding_risk_ids: [RR-01, RR-02, RR-03, RR-04, RR-05, RR-06]
-  active_open_pr:
-    number: 256
-    state: draft
-    mergeability: dirty
-  blockers:
-    - "Manual RG-01–RG-10 sign-off not recorded"
-    - "Legacy unguarded GapState writes require mitigation or explicit acceptance"
-    - "Import-completion PR #256 must be reconciled or dispositioned"
-    - "Actual iPad/Safari, restore, published Pages and standalone acceptance outstanding"
+  remaining_rr_03_risk: "Other unguarded GapState writers not yet audited"
+  pr_256_disposition: "Closed without merge as superseded; discussion recorded on PR #256"
 next_step:
-  recommended: manual_release_acceptance_and_blocker_triage
-  reason: "Do not release or start a broad refactoring without RG evidence and formal decision"
+  recommended: review_remaining_unguarded_gapstate_writers
+  reason: "Audit other critical write paths after completing RR-03-01 and record manual release acceptance separately"
