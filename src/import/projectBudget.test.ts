@@ -13,7 +13,7 @@ async function source(marker:string,area:string){
  sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=40;sheet.getCell('Q26').value=60;
  sheet.getCell('C27').value='V timmar (h)';sheet.getCell('D27').value=10;
  sheet.getCell('C28').value='OMK Övrigt (kr)';sheet.getCell('D28').value=300;
- sheet.getCell('B31').value=marker.startsWith('Projekt:')?'Integrationer':'LO B';
+ sheet.getCell('B31').value=area==='LO A'?'LO B':'Integrationer';
  sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=20;
  return await wb.xlsx.writeBuffer() as ArrayBuffer;
 }
