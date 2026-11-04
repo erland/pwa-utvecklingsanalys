@@ -26,9 +26,9 @@ function DistributionIndicator({first,second,labels,unit='h'}:{first:number;seco
 }
 const approved=(r:AnalysisRecord)=>r.authority==='original'&&r.approval==='reported';
 const annual=(records:AnalysisRecord[],metric:Metric,year:number)=>{
- const all=records.filter(r=>approved(r)&&r.metric===metric&&r.granularity==='total'&&(year===0||r.year===year));
+ const all=records.filter(r=>r.scope.axis==='work'&&approved(r)&&r.metric===metric&&r.granularity==='total'&&(year===0||r.year===year));
  const groups=new Map<string,AnalysisRecord[]>();
- for(const r of all){const scope=r.scope.axis==='work'?[r.scope.uoId,r.scope.loId??'overhead']:['department',r.scope.departmentId];const key=JSON.stringify([r.source?.datasetId,scope,r.year]);groups.set(key,[...(groups.get(key)??[]),r])}
+ for(const r of all){if(r.scope.axis!=='work')continue;const scope=[r.scope.uoId,r.scope.loId??'overhead'];const key=JSON.stringify([r.source?.datasetId,scope,r.year]);groups.set(key,[...(groups.get(key)??[]),r])}
  return [...groups.values()].flatMap(group=>{const yearly=group.filter(r=>r.month===undefined);return yearly.length?yearly:group});
 };
 export function builtInRows(data:CanonicalDataset,kind:Kind,year:number):Row[]{
