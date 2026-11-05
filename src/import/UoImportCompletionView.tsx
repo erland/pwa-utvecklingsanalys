@@ -6,7 +6,7 @@ import type {GapState} from '../gaps/store';
 import {completionKey} from './uoImportCompletions';
 import {completionCandidates,groupCompletionRows,importedCompletionParts,completionValues,
  validCompletionValues,buildUoCompletionState,activeCompletionRows,
- type CompletionRow,type CompletionValues} from './uoImportCompletionForm';
+ type CompletionRow,type CompletionValues,completionDisplayValues,completionStoredValues} from './uoImportCompletionForm';
 
 const label=(id:string)=>{try{return decodeURIComponent(id.split(':').at(-1)??id)}catch{return id}};
 
@@ -24,8 +24,9 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
  const current=activeCompletionRows(data,gaps);
  const groups=groupCompletionRows(candidates);
  const importedPair=(row:CompletionRow)=>importedCompletionParts(data,row);
- const valuesFor=(row:CompletionRow):CompletionValues=>completionValues(data,row,current,inputs);
- const setPart=(row:CompletionRow,part:keyof CompletionValues,value:string)=>setInputs(old=>({...old,[completionKey(row)]:{...valuesFor(row),[part]:value}}));
+ const shownValues=(row:CompletionRow):CompletionValues=>inputs[completionKey(row)]??completionDisplayValues(row.metric,completionValues(data,row,current,{}));
+ const valuesFor=(row:CompletionRow):CompletionValues=>completionStoredValues(row.metric,shownValues(row));
+ const setPart=(row:CompletionRow,part:keyof CompletionValues,value:string)=>setInputs(old=>({...old,[completionKey(row)]:{...shownValues(row),[part]:value}}));
  const saveUo=async(uoId:string,rows:CompletionRow[])=>{
   if(rows.some(row=>!validCompletionValues(valuesFor(row))))return;
   setBusy(true);setError('');
@@ -58,13 +59,13 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
     </button>
     {open&&<>
      {rows.sort((a,b)=>a.year-b.year||a.metric.localeCompare(b.metric)).map(row=>{
-      const values=valuesFor(row),imported=importedPair(row);
+      const values=shownValues(row),imported=importedPair(row);
       const dev=imported.some(r=>r.activity==='development'),maint=imported.some(r=>r.activity==='maintenance');
       return <div key={completionKey(row)} className="panel" style={{marginTop:8}}>
-       <strong>{row.year} · {row.metric==='it_hours'?'IT-timmar':row.metric==='business_hours'?'Verksamhetstimmar':'Kostnader'}</strong>
+       <strong>{row.year} · {row.metric==='it_hours'?'IT-timmar':row.metric==='business_hours'?'Verksamhetstimmar':'Omkostnader (Mnkr)'}</strong>
        <div className="mapping-grid">
-        <label>Utveckling<input type="number" min="0" step="any" aria-label={'Utveckling '+label(uoId)+' '+row.year+' '+row.metric} disabled={busy||dev} value={values.development} onChange={e=>setPart(row,'development',e.target.value)}/></label>
-        <label>Förvaltning<input type="number" min="0" step="any" aria-label={'Förvaltning '+label(uoId)+' '+row.year+' '+row.metric} disabled={busy||maint} value={values.maintenance} onChange={e=>setPart(row,'maintenance',e.target.value)}/></label>
+        <label>Utveckling {row.metric==='other_cost'?'(Mnkr)':'(h)'}<input type="number" min="0" step="any" aria-label={'Utveckling '+label(uoId)+' '+row.year+' '+row.metric} disabled={busy||dev} value={values.development} onChange={e=>setPart(row,'development',e.target.value)}/></label>
+        <label>Förvaltning {row.metric==='other_cost'?'(Mnkr)':'(h)'}<input type="number" min="0" step="any" aria-label={'Förvaltning '+label(uoId)+' '+row.year+' '+row.metric} disabled={busy||maint} value={values.maintenance} onChange={e=>setPart(row,'maintenance',e.target.value)}/></label>
        </div>
       </div>;
      })}
