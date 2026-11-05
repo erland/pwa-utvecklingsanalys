@@ -5,6 +5,15 @@ import {activeUoImportCompletions,completionKey,saveUoImportCompletion,type UoIm
 
 export type CompletionRow=ReturnType<typeof uoAllocationEligibility>[number];
 export type CompletionValues={development:string;maintenance:string};
+/** Only the import form displays UO other costs in Mnkr. Persist SEK unchanged. */
+export function completionDisplayValues(metric:string,values:CompletionValues):CompletionValues{
+ const display=(value:string)=>metric==='other_cost'&&value.trim()!==''?String(Number(value)/1_000_000):value;
+ return {development:display(values.development),maintenance:display(values.maintenance)};
+}
+export function completionStoredValues(metric:string,values:CompletionValues):CompletionValues{
+ const stored=(value:string)=>metric==='other_cost'&&value.trim()!==''?String(Number(value)*1_000_000):value;
+ return {development:stored(values.development),maintenance:stored(values.maintenance)};
+}
 
 export function completionCandidates(data:CanonicalDataset):CompletionRow[]{
  return uoAllocationEligibility(data).filter(row=>row.status==='manual-allowed'&&

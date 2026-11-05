@@ -1,4 +1,4 @@
-import {readDepartmentDemand,type DepartmentDemand,type DepartmentDemandIssue} from '../departmentDemand';
+import {readDepartmentDemand,type DepartmentDemand,type DepartmentDemandIssue,type DepartmentDemandRowStatus} from '../departmentDemand';
 import ExcelJS from 'exceljs';
 import type {ImportFormat} from './registry';
 import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
@@ -35,7 +35,7 @@ export type Mapping={sheet:string;uoCell:string;headerRow:number;areaColumn:numb
 export const defaultMapping:Mapping={sheet:'UO Tot 2027-30',uoCell:'B1',headerRow:11,areaColumn:2,labelColumn:3,startRow:19};
 export type Coverage={candidates:number;imported:number;unresolved:number;formulas:number;perArea:{name:string;count:number}[]};
 export type DeclaredTotal={measure:Measure;period:{year:number;month?:number};value:number;source:{sheet:string;cell:string};formula:boolean};
-export type ImportResult={departmentDemand?:DepartmentDemand[];departmentDemandIssues?:DepartmentDemandIssue[];departmentYears?:number[];loActivities?:LoActivityFact[];declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
+export type ImportResult={departmentDemand?:DepartmentDemand[];departmentDemandIssues?:DepartmentDemandIssue[];departmentRows?:DepartmentDemandRowStatus[];departmentYears?:number[];loActivities?:LoActivityFact[];declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
 function valueText(cell:ExcelJS.Cell):string{const v=cell.value;if(v==null)return '';if(typeof v==='object'&&! (v instanceof Date)){if('text'in v)return String(v.text);if('result'in v)return String(v.result??'');return '';}return String(v);}
 /** Resolve only same-sheet single-cell references in area headings; ExcelJS does not calculate formulas. */
 function areaText(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen=new Set<string>()):string{
@@ -96,7 +96,7 @@ export async function importUoBudget(bytes:ArrayBuffer,mapping?:Mapping,matrixMa
  const loActivity=readLoActivitySheet(wb);
  for(const issue of loActivity.issues)issues.push({code:'INVALID_LO_ACTIVITY',severity:'error',message:issue.message,cell:issue.cell});
  const matrix=matrixMapping===null?undefined:await readMatrix(bytes,matrixMapping??developmentMatrix(sheet.name));
- return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,departmentDemand:department.facts,departmentDemandIssues:department.issues,departmentYears:department.years,loActivities:loActivity.facts,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
+ return {profile:'uo-budget-2027-v1',uo,facts,issues,matrix,departmentDemand:department.facts,departmentDemandIssues:department.issues,departmentRows:department.rows,departmentYears:department.years,loActivities:loActivity.facts,declaredTotals,coverage:{candidates,imported:facts.length,unresolved,formulas,perArea:[...counts].map(([name,count])=>({name,count}))},excludedSheets:wb.worksheets.filter(s=>s.id!==sheet.id).map(s=>s.name)};
 }
 
 /** Complete registration of this format lives with its code and tests. */

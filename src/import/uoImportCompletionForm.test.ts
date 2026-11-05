@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {emptyCanonical,type AnalysisRecord} from '../domain/canonical';
 import {completionCandidates,groupCompletionRows,importedCompletionParts,completionValues,
- validCompletionValues,buildUoCompletionState} from './uoImportCompletionForm';
+ validCompletionValues,buildUoCompletionState,completionDisplayValues,completionStoredValues} from './uoImportCompletionForm';
 import {completionKey} from './uoImportCompletions';
 import {saveManualUoSplit} from '../allocations/manualUoAllocation';
 
@@ -21,6 +21,16 @@ describe('KF-003 import completion form rules',()=>{
   expect(groups.get('uo:A')).toHaveLength(2);
  });
 
+ it('displays cost values in Mnkr and preserves SEK internally without assuming a missing half is zero',()=>{
+  const stored={development:'780000',maintenance:''};
+  const displayed=completionDisplayValues('other_cost',stored);
+  expect(displayed).toEqual({development:'0.78',maintenance:''});
+  expect(completionStoredValues('other_cost',displayed)).toEqual(stored);
+  expect(completionStoredValues('other_cost',{development:'0.78',maintenance:'0.22'}))
+   .toEqual({development:'780000',maintenance:'220000'});
+  expect(completionDisplayValues('it_hours',{development:'780000',maintenance:''}))
+   .toEqual(stored);
+ });
  it('preserves blank, zero and numeric validation contract',()=>{
   expect(validCompletionValues({development:'',maintenance:'10'})).toBe(false);
   expect(validCompletionValues({development:' ',maintenance:'10'})).toBe(false);
