@@ -70,8 +70,36 @@ describe('UO-linked department demand import',()=>{
   expect(result.facts.find(f=>f.source.cell==='C21')).toMatchObject({metric:'it_hours',hours:60,departmentCode:'713'});
   expect(result.facts.some(f=>f.source.cell==='C22'||f.source.cell==='C23')).toBe(false);
  });
+ it('reads Test.xlsx row 12 Kontrollavdelningen when numeric hours are entered',()=>{
+  const wb=workbook(),s=wb.getWorksheet('Timmar per avdelning')!;
+  s.getCell('C4').value='Timmar 2027';s.getCell('D4').value='Timmar 2028';s.getCell('E4').value='Timmar 2029';
+  s.getCell('A12').value='721*';
+  s.getCell('B12').value='·\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 Kontrollavdelningen';
+  s.getCell('C12').value=75;s.getCell('D12').value=0;s.getCell('E12').value=110;
+  const parsed=readDepartmentDemand(wb,'UO A');
+  expect(parsed.facts.filter(f=>f.departmentCode==='721')).toMatchObject([
+   {year:2027,hours:75,metric:'business_hours',source:{sheet:'Timmar per avdelning',cell:'C12'}},
+   {year:2028,hours:0,metric:'business_hours',source:{sheet:'Timmar per avdelning',cell:'D12'}},
+   {year:2029,hours:110,metric:'business_hours',source:{sheet:'Timmar per avdelning',cell:'E12'}}
+  ]);
+  expect(parsed.rows.find(r=>r.row===12)).toMatchObject({code:'721*',imported:3,skipped:0,status:'imported'});
+ });
+ it('reports rows with missing, invalid and formula hours without counting them as imported',()=>{
+  const wb=workbook(),s=wb.getWorksheet('Timmar per avdelning')!;
+  s.getCell('A12').value='721*';s.getCell('B12').value='Kontrollavdelningen';
+  const blank=readDepartmentDemand(wb,'UO A');
+  expect(blank.rows.find(r=>r.row===12)).toMatchObject({imported:0,status:'no-hours'});
+  s.getCell('C12').value={formula:'20+40',result:60};
+  s.getCell('D12').value=5;
+  const formula=readDepartmentDemand(wb,'UO A');
+  expect(formula.rows.find(r=>r.row===12)).toMatchObject({imported:1,skipped:1,status:'partial'});
+  expect(formula.issues).toContainEqual(expect.objectContaining({code:'INVALID_DEPARTMENT_HOURS',cell:'C12'}));
+  s.getCell('A12').value='721 *';
+  const invalid=readDepartmentDemand(wb,'UO A');
+  expect(invalid.rows.find(r=>r.row===12)).toMatchObject({imported:0,status:'invalid-code'});
+ });
  it('does not invent values for absent cells or missing sheet',()=>{
-  expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[]});
+  expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[],rows:[]});
   expect(readDepartmentDemand(workbook(),'UO B').facts.some(f=>f.source.cell==='D18')).toBe(false);
  });
 });
