@@ -33,12 +33,17 @@ export default function DirectImport({project,onProject,replaceId,onReplaced,onI
    {(results.length>1||summary.rejected>0||summary.warnings>0)&&<p><strong>{summary.imported} importerade · {summary.rejected} inte importerade</strong>{summary.warnings>0?' · '+summary.warnings+' med varningar':''} av {results.length} valda filer.</p>}
    <ul>{results.map((r,i)=>{const feedback=presentImportResult(r);const clean=r.status==='imported'&&feedback.statusLabel==='Importerad';return <li key={i} className="panel" style={{marginTop:8,padding:14}}>
     <strong>{r.fileName}</strong> – <strong>{feedback.statusLabel.toLowerCase()}</strong>
-    {clean?<details style={{marginTop:8}}>
-     <summary>Visa detaljer</summary>
-     <p>{feedback.detail}</p>
-    </details>:<>
-     <p>{feedback.detail}</p><p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p>
-    </>}
+    <p>{feedback.detail}</p>
+    {r.departmentRows&&<details style={{marginTop:8}} aria-label={'Avdelningskontroll '+r.fileName}>
+     <summary>Avdelningskontroll – {r.departmentRows.length} identifierade rader, {r.departmentRows.filter(row=>row.imported>0).length} med timmar, {r.departmentRows.filter(row=>row.imported===0).length} utan importerade timmar</summary>
+     <p>Varje UO och Excel-fil kontrolleras separat. Tomma timceller blir inga timmar; noll (0) importeras. Felaktiga koder och timceller visas med radnummer.</p>
+     <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={'Avdelningsrader '+r.fileName}>
+      <thead><tr><th>Excelrad</th><th>Kod</th><th>Avdelning</th><th>Årsvärden</th><th>Status / orsak</th></tr></thead>
+      <tbody>{r.departmentRows.map(row=><tr key={row.row}><td>{row.row}</td><td>{row.code}</td><th scope="row">{row.name}</th><td>{row.imported} importerade{row.skipped>0?' · '+row.skipped+' överhoppade':''}</td><td>{row.status==='imported'?'Importerad':row.status==='partial'?'Delvis importerad: '+row.reason:row.status==='no-hours'?'Ingen import: '+row.reason:'Överhoppad: '+row.reason}</td></tr>)}</tbody>
+     </table></div>
+     {r.departmentIssues&&r.departmentIssues.length>0&&<ul>{r.departmentIssues.map((issue,i)=><li key={i}>{issue.cell??'Bladet'}: {issue.message}</li>)}</ul>}
+    </details>}
+    {!clean&&<p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p>}
    </li>})}</ul>
    {summary.rejected>0&&<p>Rätta de avvisade filerna och välj dem igen. Redan importerade filer behöver inte importeras på nytt.</p>}
   </div>}
