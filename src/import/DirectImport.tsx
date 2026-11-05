@@ -47,7 +47,7 @@ export default function DirectImport({project,onProject,replaceId,onReplaced,onI
      <strong>{r.fileName}</strong> – <strong>{feedback.statusLabel.toLowerCase()}</strong>
      {clean?<details style={{marginTop:8}}><summary>Visa detaljer</summary><p>{feedback.detail}</p>{departmentDetails}</details>:<><p>{feedback.detail}</p>{departmentDetails}<p><strong>Nästa åtgärd:</strong> {feedback.nextAction}</p></>}
     </li>;
-   })}</ul>>
+   })}</ul>
    {summary.rejected>0&&<p>Rätta de avvisade filerna och välj dem igen. Redan importerade filer behöver inte importeras på nytt.</p>}
   </div>}
  </section>;
