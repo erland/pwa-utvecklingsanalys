@@ -5,8 +5,9 @@ import {importTableFacts} from './tabularAdapter';
 import {loadSemantic} from '../domain/semanticStore';
 import {tableIdentityIssues} from './tabularAdapter';
 import type {ImportResult} from './uoBudget';
+import type {DepartmentDemandRowStatus,DepartmentDemandIssue} from './departmentDemand';
 
-export type DirectImportResult={fileName:string;status:'imported'|'rejected';format?:string;facts?:number;message:string};
+export type DirectImportResult={fileName:string;status:'imported'|'rejected';format?:string;facts?:number;message:string;departmentRows?:DepartmentDemandRowStatus[];departmentIssues?:DepartmentDemandIssue[]};
 
 /** Validate before any persistent writes. Unknown formats are never interpreted heuristically. */
 export async function prepareDirectImport(file:File):Promise<{result:ImportResult;formatLabel:string}>{
@@ -62,7 +63,11 @@ export async function importFilesDirectly(files:readonly File[],onCommitted?:()=
      await replaceImportedSource(replaceId,before=>importBudgetFacts(before,result,replaceId,file.name,includeMatrix),{name:result.uo,planningYear:2027,source:'excel',importedAt:new Date().toISOString()},{result,includeMatrix});
     }else await approveBudgetSource(result,crypto.randomUUID(),file.name,includeMatrix);
     await onCommitted?.();
-    results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,message:result.matrix?.issues.length?'Importerad med varningar i UO-fördelning: '+result.matrix.issues.slice(0,5).map(i=>i.cell+' '+i.message).join('; '):'Importerad'});
+    results.push({fileName:file.name,status:'imported',format:formatLabel,facts:result.facts.length,
+     departmentRows:result.departmentRows,departmentIssues:result.departmentDemandIssues,
+     message:result.departmentDemandIssues?.length
+      ?'Importerad med varningar i avdelningstimmar: '+result.departmentDemandIssues.slice(0,5).map(i=>(i.cell??'')+' '+i.message).join('; ')
+      :result.matrix?.issues.length?'Importerad med varningar i UO-fördelning: '+result.matrix.issues.slice(0,5).map(i=>i.cell+' '+i.message).join('; '):'Importerad'});
    }
   }catch(error){
    results.push({fileName:file.name,status:'rejected',message:error instanceof Error?error.message:'Okänt importfel'});
