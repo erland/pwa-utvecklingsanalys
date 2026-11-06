@@ -22,8 +22,9 @@ export const staffHeadcountFormat={
 function mappingFor(sheet:ExcelJS.Worksheet):TableMapping|null{
  const names=new Map<string,string>();
  sheet.getRow(1).eachCell((cell,col)=>{
-  if(typeof cell.value!=='string')return;
-  const label=cell.value.trim().toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
+  const value=excelText(cell.value);
+  if(!value)return;
+  const label=value.toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
   if(!names.has(label))names.set(label,sheet.getColumn(col).letter);
  });
  const department=names.get('avdelning'),year=names.get('år'),count=names.get('antal anställda');
