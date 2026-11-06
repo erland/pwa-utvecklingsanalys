@@ -11,7 +11,7 @@ export function projectCompletionRows(data:CanonicalDataset){
   const k=completionKey(r.scope.projectId,r.year,metric),prev=rows.get(k);
   rows.set(k,{projectId:r.scope.projectId,year:r.year,metric,development:r.projectMatrixDevelopment,maintenance:r.projectMatrixMaintenance,
    developmentAssumed:!!r.projectMatrixDevelopmentAssumed,maintenanceAssumed:!!r.projectMatrixMaintenanceAssumed,
-   sourceFingerprint:(prev?prev.sourceFingerprint+'|':'')+projectSourceFingerprint(r)});
+   sourceFingerprint:(prev?prev.sourceFingerprint+'|':'')+JSON.stringify([projectSourceFingerprint(r),r.projectMatrixDevelopment,r.projectMatrixMaintenance,r.projectMatrixDevelopmentAssumed,r.projectMatrixMaintenanceAssumed])});
  }
  return [...rows.values()].filter(r=>['it_hours','business_hours','other_cost'].includes(r.metric));
 }
