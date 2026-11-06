@@ -14,6 +14,8 @@ export type WorkPart='uo-overhead'|'lo'|'uo-activity-matrix';
 export type AnalysisRecord={
  /** Explicit source role for UO budget rows. Legacy records may omit this field. */
  workPart?:WorkPart;
+ /** Source-derived default for project-part activity splits; manual choices override it. */
+ projectDefaultDevelopmentPercent?:number;
  id:string;metric:Metric;value:number;year:number;month?:number;
  activity:Activity;scope:AnalysisScope;authority:SourceAuthority;approval:ApprovalState;
  /** Identity of the underlying workload: records with different axes can describe the same total. */
@@ -33,6 +35,7 @@ export function validateCanonical(dataset:CanonicalDataset):string[]{
   if(!r.id?.trim()||ids.has(r.id))errors.push('DUPLICATE_OR_EMPTY_ID');
   ids.add(r.id);
   if(!Number.isFinite(r.value)||r.value<0)errors.push('INVALID_VALUE');
+  if(r.projectDefaultDevelopmentPercent!==undefined&&(r.scope.axis!=='project'||r.granularity!=='total'||r.authority!=='original'||!Number.isFinite(r.projectDefaultDevelopmentPercent)||r.projectDefaultDevelopmentPercent<0||r.projectDefaultDevelopmentPercent>100))errors.push('INVALID_PROJECT_DEFAULT_SPLIT');
   if(!Number.isInteger(r.year)||r.year<2000||r.year>2100||r.month!==undefined&&(!Number.isInteger(r.month)||r.month<1||r.month>12))errors.push('INVALID_PERIOD');
   if(!['it_hours','business_hours','consultant_cost','other_cost'].includes(r.metric))errors.push('INVALID_METRIC');
   if(!['development','maintenance','unknown'].includes(r.activity))errors.push('INVALID_ACTIVITY');
