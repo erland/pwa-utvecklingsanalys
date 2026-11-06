@@ -41,8 +41,16 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
   return cell.address+': '+(raw instanceof Date?'datum':'objekt');
  };
  const value=(row:number,col:number)=>{
-  const raw=sheet.getRow(row).getCell(col).value;
-  return typeof raw==='string'?raw.trim():typeof raw==='number'?String(raw):'';
+  const cell=sheet.getRow(row).getCell(col),raw=cell.value;
+  if(typeof raw==='string')return raw.trim();
+  if(typeof raw==='number')return String(raw);
+  // Excel may encode a single department name using multiple styled runs.
+  // This is display formatting, not a formula or a different identity.
+  if(raw&&typeof raw==='object'&&'richText'in raw)
+   return raw.richText.map(run=>run.text).join('').trim();
+  if(raw&&typeof raw==='object'&&'text'in raw&&typeof raw.text==='string')
+   return raw.text.trim();
+  return '';
  };
  // Department identity, not row position, determines whether a row is a detail.
  // Totals, blank separators and notes do not have a department code.
@@ -64,7 +72,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    (Boolean(name)&&hasYearEntry&&!/^(?:totalt?|summa|summering|alla avdelningar)$/i.test(name.trim()));
   if(!likelyDepartment)continue;
   if(!name){
-   rows.push({...rowInfo,status:'missing-name',reason:'Namn saknas eller är inte vanlig text i B'+row});
+   rows.push({...rowInfo,status:'missing-name',reason:'Namn saknas eller kan inte tolkas som text i B'+row});
    continue;
   }
   if(!code){
