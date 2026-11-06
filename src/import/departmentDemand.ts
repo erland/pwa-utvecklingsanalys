@@ -58,7 +58,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    const raw=sheet.getRow(row).getCell(col).value;
    return raw!==null&&raw!==undefined&&raw!=='';
   });
-  const likelyDepartment=/avdelning|stab|revision/i.test(name)||/^\\s*\\d/.test(code)||
+  const likelyDepartment=/avdelning|stab|revision/i.test(name)||/^\s*\d/.test(code)||
    (Boolean(name)&&hasYearEntry&&!/^(?:totalt?|summa|summering|alla avdelningar)$/i.test(name.trim()));
   if(!likelyDepartment)continue;
   if(!name){
@@ -69,7 +69,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    rows.push({...rowInfo,status:'missing-code',reason:'Kod saknas eller är inte vanlig text/tal i A'+row});
    continue;
   }
-  if(!/^\\d{3,}\\*?$/.test(code)){
+  if(!/^\d{3,}\*?$/.test(code)){
    rows.push({...rowInfo,status:'invalid-code',reason:'Ogiltig avdelningskod i A'+row+' (förväntat minst tre siffror och eventuellt *)'});
    continue;
   }
