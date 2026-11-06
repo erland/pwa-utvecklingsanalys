@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from './excelText';
 
 export type DepartmentDemand = {
  uo:string;departmentCodeRaw:string;departmentCode:string;departmentName:string;
@@ -40,18 +41,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
   if(raw&&typeof raw==='object'&&'text'in raw)return cell.address+': objekttext';
   return cell.address+': '+(raw instanceof Date?'datum':'objekt');
  };
- const value=(row:number,col:number)=>{
-  const cell=sheet.getRow(row).getCell(col),raw=cell.value;
-  if(typeof raw==='string')return raw.trim();
-  if(typeof raw==='number')return String(raw);
-  // Excel may encode a single department name using multiple styled runs.
-  // This is display formatting, not a formula or a different identity.
-  if(raw&&typeof raw==='object'&&'richText'in raw)
-   return raw.richText.map(run=>run.text).join('').trim();
-  if(raw&&typeof raw==='object'&&'text'in raw&&typeof raw.text==='string')
-   return raw.text.trim();
-  return '';
- };
+ const value=(row:number,col:number)=>excelText(sheet.getRow(row).getCell(col).value);
  // Department identity, not row position, determines whether a row is a detail.
  // Totals, blank separators and notes do not have a department code.
  for(let row=5;row<=sheet.rowCount;row++){
