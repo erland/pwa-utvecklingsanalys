@@ -49,7 +49,7 @@ export function projectActivityParts(data:CanonicalDataset,decisions:readonly Pr
    ...total,id:'project-activity|'+total.id+'|'+activity,
    value:activity==='development'?development:total.value-development,
    activity,granularity:'activity-part' as const,authority:'derived' as const,approval:'approved' as const,
-   source:undefined
+   source:undefined,projectDefaultDevelopmentPercent:undefined
   }));
  });
 }
