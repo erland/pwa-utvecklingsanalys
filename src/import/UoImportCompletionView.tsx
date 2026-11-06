@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import ProjectImportCompletionView from './ProjectImportCompletionView';
 import {loadCanonical} from '../domain/canonicalStore';
 import {loadGapState,saveGapState} from '../gaps/store';
 import type {CanonicalDataset} from '../domain/canonical';
@@ -94,6 +95,7 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
     <button className="primary" type="button" disabled={busy||rows.some(row=>!validCompletionValues(valuesFor(row)))} onClick={()=>void saveUo(uoId,rows)}>Spara ändring för {label(uoId)}</button>
    </section>)}
   </details>}
+  <ProjectImportCompletionView data={data} state={gaps} onSaved={setGaps} />
   {error&&<p role="alert">{error}</p>}
  </section>;
 }
