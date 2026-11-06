@@ -15,12 +15,12 @@ describe('independent matrix sections',()=>{
   s.getCell('C7').value='Omkostnader (Mnkr)';s.getCell('D7').value=1.5;
   const bytes=await w.xlsx.writeBuffer() as ArrayBuffer;
   const matrix=await readMatrix(bytes,developmentMatrix(s.name));
-  expect(matrix.facts.map(f=>f.value).sort((a,b)=>a-b)).toEqual([2000,3000,1500000]);
-  expect(matrix.issues.some(i=>i.cell==='D7')).toBe(true);
+  expect(matrix.facts.map(f=>f.value).sort((a,b)=>a-b)).toEqual([0,2000,3000,1500000]);
+  expect(matrix.issues.some(i=>i.cell==='D7')).toBe(false);
   expect(matrix.excludedTotals).toBe(1);
   const parsed=await importUoBudget(bytes);
   const data=importBudgetFacts(emptySemantic(),parsed,'source','a.xlsx',true);
-  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(3);
+  expect(data.observations.filter(o=>o.kind==='subset')).toHaveLength(4);
   expect(data.observations.find(o=>o.activity==='maintenance')?.value).toBe(3000);
   expect(analyze(data,{measureId:'all_hours',groupBy:'uo'}).total).toBe(42);
  });
@@ -40,12 +40,12 @@ describe('independent matrix sections',()=>{
   expect(r.issues).toEqual([]);
   expect(r.facts.find(f=>f.activity==='development')?.value).toBeCloseTo(7720);
  });
- it('keeps cell-specific warnings and preserves imported halves for completion',async()=>{
+ it('infers zero for blank half while preserving imported values for later correction',async()=>{
   const w=new ExcelJS.Workbook(),s=w.addWorksheet('Tabell');
   s.getCell('D4').value='Utv. 2027';s.getCell('E4').value='Förv. 2027';
   s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=7;
   const r=await readMatrix(await w.xlsx.writeBuffer(),{...developmentMatrix(s.name),firstRow:5,lastRow:5,firstColumn:4,lastColumn:5});
-  expect(r.facts).toMatchObject([{year:2027,measureId:'it_hours',activity:'development',value:7000}]);
-  expect(r.issues.some(i=>i.cell==='D5'&&/komplettera/i.test(i.message))).toBe(true);
+  expect(r.facts).toEqual(expect.arrayContaining([expect.objectContaining({year:2027,measureId:'it_hours',activity:'development',value:7000}),expect.objectContaining({year:2027,measureId:'it_hours',activity:'maintenance',value:0,assumedZero:true})]));
+  expect(r.issues).toEqual([]);
  });
 });

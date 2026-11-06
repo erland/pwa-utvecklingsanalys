@@ -15,6 +15,7 @@ export function uoAllocationEligibility(data:CanonicalDataset):UoAllocationEligi
    candidates.add(key(r.scope.uoId,r.year,r.metric));
   if(r.granularity==='activity-part'&&r.workPart==='uo-activity-matrix'&&(r.activity==='development'||r.activity==='maintenance')){
    const k=key(r.scope.uoId,r.year,r.metric);
+   if(r.assumedZero)continue;
    const pair=pairs.get(k)??{};
    // Do not silently sum duplicate imported matrices from independent sources.
    if(pair[r.activity]!==undefined)throw new Error('DUPLICATE_UO_ACTIVITY_SOURCE');

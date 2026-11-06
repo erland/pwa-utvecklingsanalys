@@ -14,6 +14,8 @@ export type WorkPart='uo-overhead'|'lo'|'uo-activity-matrix';
 export type AnalysisRecord={
  /** Explicit source role for UO budget rows. Legacy records may omit this field. */
  workPart?:WorkPart;
+ /** Blank counterpart assumed zero; remains editable rather than imported-locked. */
+ assumedZero?:boolean;
  /** Source-derived default for project-part activity splits; manual choices override it. */
  projectDefaultDevelopmentPercent?:number;
  id:string;metric:Metric;value:number;year:number;month?:number;

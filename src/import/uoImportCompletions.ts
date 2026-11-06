@@ -13,7 +13,7 @@ export function saveUoImportCompletion(data:CanonicalDataset,previous:readonly U
  const candidate={...input,sourceFingerprint:manualUoFingerprint(data,input.uoId,input.year,input.metric)};
  if(!activeUoImportCompletions(data,[candidate]).length)throw new Error('INVALID_OR_LOCKED_UO_COMPLETION');
  const imported=data.records.filter(r=>r.authority==='original'&&r.scope.axis==='work'&&r.scope.uoId===input.uoId&&r.year===input.year&&r.metric===input.metric&&r.workPart==='uo-activity-matrix');
- for(const row of imported){
+ for(const row of imported.filter(r=>!r.assumedZero)){
   if(row.activity==='development'&&Math.abs(row.value-input.development)>1e-7||row.activity==='maintenance'&&Math.abs(row.value-input.maintenance)>1e-7)
    throw new Error('IMPORTED_ACTIVITY_MUST_BE_PRESERVED');
  }
@@ -26,6 +26,10 @@ export function withCompletedUoMatrices(data:CanonicalDataset,completions:readon
  const records=[...data.records];
  for(const item of activeUoImportCompletions(data,completions)){
   const group=records.filter(r=>r.authority==='original'&&r.approval==='reported'&&r.scope.axis==='work'&&r.scope.uoId===item.uoId&&r.year===item.year&&r.metric===item.metric&&r.workPart==='uo-activity-matrix');
+  for(const assumed of group.filter(r=>r.assumedZero)){
+   const index=records.indexOf(assumed);
+   records[index]={...assumed,value:item[assumed.activity as 'development'|'maintenance'],assumedZero:false};
+  }
   const source=group[0]??records.find(r=>r.authority==='original'&&r.scope.axis==='work'&&r.scope.uoId===item.uoId&&r.year===item.year&&r.metric===item.metric&&r.source);
   if(!source?.source)continue;
   for(const activity of ['development','maintenance'] as const){

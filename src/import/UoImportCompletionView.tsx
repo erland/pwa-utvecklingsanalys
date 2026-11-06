@@ -22,7 +22,10 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
  if(!data)return null;
  const candidates=completionCandidates(data);
  const current=activeCompletionRows(data,gaps);
- const groups=groupCompletionRows(candidates);
+ const assumed=candidates.filter(row=>importedCompletionParts(data,row).some(p=>p.assumedZero));
+ const pending=candidates.filter(row=>!assumed.includes(row));
+ const groups=groupCompletionRows(pending);
+ const optionalGroups=groupCompletionRows(assumed);
  const importedPair=(row:CompletionRow)=>importedCompletionParts(data,row);
  const shownValues=(row:CompletionRow):CompletionValues=>inputs[completionKey(row)]??completionDisplayValues(row.metric,completionValues(data,row,current,{}));
  const valuesFor=(row:CompletionRow):CompletionValues=>completionStoredValues(row.metric,shownValues(row));
@@ -47,8 +50,8 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
  };
  return <section className="panel" aria-label="Komplettera importuppgifter">
   <h2>2. Komplettera saknade UO-värden</h2>
-  <p>Komplettera saknade utvecklings- och förvaltningsvärden per UO. Importerade värden kan inte ändras. Alla kompletteringar för ett UO sparas tillsammans.</p>
-  {!groups.size?<p>Inga ofullständiga UO-fördelningar hittades.</p>:[...groups].sort(([a],[b])=>label(a).localeCompare(label(b),'sv')).map(([uoId,rows])=>{
+  <p>En tom utvecklings- eller förvaltningscell antas vara 0 när motsatt sida har ett positivt värde. LO fördelas då automatiskt. Antagna nollor kan ändras nedan, medan ifyllda källvärden är låsta.</p>
+  {!groups.size?<p>Inga UO-fördelningar kräver komplettering.</p>:[...groups].sort(([a],[b])=>label(a).localeCompare(label(b),'sv')).map(([uoId,rows])=>{
    const complete=rows.every(row=>current.some(x=>completionKey(x)===completionKey(row)));
    const open=expanded[uoId]??!complete;
    const ready=rows.every(row=>validCompletionValues(valuesFor(row)));
@@ -60,7 +63,7 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
     {open&&<>
      {rows.sort((a,b)=>a.year-b.year||a.metric.localeCompare(b.metric)).map(row=>{
       const values=shownValues(row),imported=importedPair(row);
-      const dev=imported.some(r=>r.activity==='development'),maint=imported.some(r=>r.activity==='maintenance');
+      const dev=imported.some(r=>r.activity==='development'&&!r.assumedZero),maint=imported.some(r=>r.activity==='maintenance'&&!r.assumedZero);
       return <div key={completionKey(row)} className="panel" style={{marginTop:8}}>
        <strong>{row.year} · {row.metric==='it_hours'?'IT-timmar':row.metric==='business_hours'?'Verksamhetstimmar':'Omkostnader (Mnkr)'}</strong>
        <div className="mapping-grid">
@@ -73,6 +76,24 @@ export default function UoImportCompletionView({refresh}:{refresh:number}){
     </>}
    </section>;
   })}
+  {optionalGroups.size>0&&<details style={{marginTop:12}} aria-label="Ändra antagna nollvärden"><summary>Ändra automatiskt antagna nollvärden ({assumed.length})</summary>
+   <p>De tomma cellerna har fått värdet 0 som förslag. Ändra dem här vid behov; andra importerade värden kan inte skrivas över.</p>
+   {[...optionalGroups].map(([uoId,rows])=><section key={uoId} className="panel" aria-label={'Antagna nollor '+label(uoId)}>
+    <h3>{label(uoId)}</h3>
+    {rows.map(row=>{
+     const values=shownValues(row),imported=importedPair(row);
+     const dev=imported.some(r=>r.activity==='development'&&!r.assumedZero);
+     const maint=imported.some(r=>r.activity==='maintenance'&&!r.assumedZero);
+     return <div key={completionKey(row)}><strong>{row.year} · {row.metric==='it_hours'?'IT-timmar':row.metric==='business_hours'?'Verksamhetstimmar':'Omkostnader (Mnkr)'}</strong>
+      <div className="mapping-grid">
+       <label>Utveckling<input type="number" min="0" step="any" disabled={busy||dev} value={values.development} onChange={e=>setPart(row,'development',e.target.value)}/></label>
+       <label>Förvaltning<input type="number" min="0" step="any" disabled={busy||maint} value={values.maintenance} onChange={e=>setPart(row,'maintenance',e.target.value)}/></label>
+      </div>
+     </div>;
+    })}
+    <button className="primary" type="button" disabled={busy||rows.some(row=>!validCompletionValues(valuesFor(row)))} onClick={()=>void saveUo(uoId,rows)}>Spara ändring för {label(uoId)}</button>
+   </section>)}
+  </details>}
   {error&&<p role="alert">{error}</p>}
  </section>;
 }
