@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from '../excelText';
 import {parseTable,type TableResult,type TableMapping} from '../tabular';
 
 /**
