@@ -70,7 +70,7 @@ export async function readMatrix(bytes:ArrayBuffer,mapping:MatrixMapping):Promis
  const cells=new Map<string,Record<string,ExcelJS.Cell>>();
  for(let col=mapping.firstColumn;col<=mapping.lastColumn;col++){
   const header=cellText(sheet.getCell(mapping.headerRow,col));
-  const year=/\\b(20\\d{2}|\\d{2})\\b/.exec(header);
+  const year=/\b(20\d{2}|\d{2})\b/.exec(header);
   const activity=Object.entries(mapping.activityNames).find(([alias])=>normalize(header).startsWith(normalize(alias)))?.[1];
   if(!year||!activity||!['development','maintenance'].includes(activity))continue;
   const yr=Number(year[1]),fullYear=yr<100?2000+yr:yr;
