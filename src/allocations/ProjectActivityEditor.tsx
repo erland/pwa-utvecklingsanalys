@@ -11,7 +11,7 @@ const measures:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verks
 export default function ProjectActivityEditor({data,state,projectId,year,metrics,onSaved}:{data:CanonicalDataset;state:GapState;projectId:string;year?:number;metrics:Metric[];onSaved:(state:GapState)=>void}){
  const rows=projectAllocationRows(data).filter(r=>r.scope.axis==='project'&&r.scope.projectId===projectId&&
   (year===undefined||r.year===year)&&metrics.includes(r.metric));
- const decisions=effectiveProjectActivitySplits(data,state.projectActivitySplits??[]);
+ const decisions=effectiveProjectActivitySplits(data,state.projectActivitySplits??[],state.projectImportCompletions??[]);
  return <section className="panel" aria-label="Projektfördelningar Utveckling och Förvaltning">
   <h4>Utveckling / Förvaltning per projektdel</h4>
   <p>Projektets importerade andel föreslås automatiskt per projektdel, år och mått. Du kan spara en annan andel. Den importerade totalen ändras inte; saknade källandelar visas inte som noll.</p>
