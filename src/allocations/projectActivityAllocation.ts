@@ -1,5 +1,29 @@
-import type {AnalysisRecord,CanonicalDataset} from '../domain/canonical';
+import type {AnalysisRecord,CanonicalDataset,Metric} from '../domain/canonical';
 
+export type ProjectImportCompletion={projectId:string;year:number;metric:Metric;development:number;maintenance:number;sourceFingerprint:string};
+const completionKey=(projectId:string,year:number,metric:Metric)=>JSON.stringify([projectId,year,metric==='consultant_cost'?'other_cost':metric]);
+export function projectCompletionRows(data:CanonicalDataset){
+ const rows=new Map<string,{projectId:string;year:number;metric:Metric;development?:number;maintenance?:number;developmentAssumed:boolean;maintenanceAssumed:boolean;sourceFingerprint:string}>();
+ for(const r of projectAllocationRows(data)){
+  if(r.scope.axis!=='project')continue;
+  const metric=r.metric==='consultant_cost'?'other_cost':r.metric;
+  const k=completionKey(r.scope.projectId,r.year,metric),prev=rows.get(k);
+  rows.set(k,{projectId:r.scope.projectId,year:r.year,metric,development:r.projectMatrixDevelopment,maintenance:r.projectMatrixMaintenance,
+   developmentAssumed:!!r.projectMatrixDevelopmentAssumed,maintenanceAssumed:!!r.projectMatrixMaintenanceAssumed,
+   sourceFingerprint:(prev?prev.sourceFingerprint+'|':'')+projectSourceFingerprint(r)});
+ }
+ return [...rows.values()].filter(r=>['it_hours','business_hours','other_cost'].includes(r.metric));
+}
+export function activeProjectImportCompletions(data:CanonicalDataset,items:readonly ProjectImportCompletion[]){
+ const rows=new Map(projectCompletionRows(data).map(r=>[completionKey(r.projectId,r.year,r.metric),r]));
+ return items.filter(c=>{const r=rows.get(completionKey(c.projectId,c.year,c.metric));return !!r&&r.sourceFingerprint===c.sourceFingerprint&&Number.isFinite(c.development)&&c.development>=0&&Number.isFinite(c.maintenance)&&c.maintenance>=0&&c.development+c.maintenance>0});
+}
+export function saveProjectImportCompletion(data:CanonicalDataset,items:readonly ProjectImportCompletion[],entry:Omit<ProjectImportCompletion,'sourceFingerprint'>){
+ const r=projectCompletionRows(data).find(x=>completionKey(x.projectId,x.year,x.metric)===completionKey(entry.projectId,entry.year,entry.metric));
+ if(!r||!Number.isFinite(entry.development)||entry.development<0||!Number.isFinite(entry.maintenance)||entry.maintenance<0||entry.development+entry.maintenance<=0)throw Error('INVALID_PROJECT_COMPLETION');
+ if(r.development!==undefined&&!r.developmentAssumed&&Math.abs(entry.development-r.development)>1e-7||r.maintenance!==undefined&&!r.maintenanceAssumed&&Math.abs(entry.maintenance-r.maintenance)>1e-7)throw Error('IMPORTED_ACTIVITY_MUST_BE_PRESERVED');
+ return [...items.filter(c=>completionKey(c.projectId,c.year,c.metric)!==completionKey(entry.projectId,entry.year,entry.metric)),{...entry,metric:r.metric,sourceFingerprint:r.sourceFingerprint}];
+}
 /** Manual allocation belongs to an imported project-part workload, not to an UO. */
 export type ProjectActivitySplit={
  workloadId:string;sourceFingerprint:string;developmentPercent:number;
