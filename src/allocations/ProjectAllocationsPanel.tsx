@@ -11,7 +11,7 @@ const label=(id:string)=>{try{return decodeURIComponent(id.slice('project:'.leng
 /** Projects use the same stored decisions as the analysis; there is no parallel allocation model. */
 export function projectAllocationOverview(data:CanonicalDataset,gaps:GapState,unit:Unit,year:number){
  const rows=projectAllocationRows(data).filter(r=>kindMetrics[unit].includes(r.metric)&&(year===0||r.year===year));
- const active=new Set(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>d.workloadId));
+ const active=new Set(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[],gaps.projectImportCompletions??[]).map(d=>d.workloadId));
  const projects=new Map<string,{id:string;records:number;allocated:number;total:number}>();
  for(const row of rows){
   if(row.scope.axis!=='project')continue;
@@ -27,7 +27,7 @@ export function projectAllocationOverview(data:CanonicalDataset,gaps:GapState,un
  * Unallocated volume stays separate rather than being represented as 0% development.
  */
 export function projectAllocationVisualSummary(data:CanonicalDataset,gaps:GapState,unit:Unit,year:number,projectId?:string){
- const active=new Map(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>[d.workloadId,d.developmentPercent]));
+ const active=new Map(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[],gaps.projectImportCompletions??[]).map(d=>[d.workloadId,d.developmentPercent]));
  const rows=projectAllocationRows(data).filter(r=>kindMetrics[unit].includes(r.metric)&&(year===0||r.year===year)&&
   r.scope.axis==='project'&&(!projectId||r.scope.projectId===projectId));
  let development=0,maintenance=0,unallocated=0;
