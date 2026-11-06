@@ -98,6 +98,29 @@ describe('UO-linked department demand import',()=>{
   const invalid=readDepartmentDemand(wb,'UO A');
   expect(invalid.rows.find(r=>r.row===12)).toMatchObject({imported:0,status:'invalid-code'});
  });
+ it('explains why Kontrollavdelningen disappears when A12 is a formula, despite numeric C–E and comments F–H',()=>{
+  const wb=workbook(),s=wb.getWorksheet('Timmar per avdelning')!;
+  s.getCell('A12').value={formula:'A13',result:'721*'};
+  s.getCell('B12').value='· Kontrollavdelningen';
+  s.getCell('C12').value=15;s.getCell('D12').value=25;s.getCell('E12').value=35;
+  s.getCell('F12').value='Kommentar';s.getCell('G12').value='Förankrat';s.getCell('H12').value='Text';
+  const parsed=readDepartmentDemand(wb,'UO Klarering');
+  expect(parsed.facts.some(x=>x.source.cell==='C12')).toBe(false);
+  expect(parsed.rows.find(x=>x.row===12)).toMatchObject({
+   status:'missing-code',imported:0,codeCell:'A12: formel',nameCell:expect.stringContaining('Kontrollavdelningen'),
+   yearCells:expect.stringContaining('C12: tal')
+  });
+  expect(parsed.rows.some(x=>x.row===13)).toBe(false);
+ });
+ it('identifies a department with malformed code and displays the raw code and cell types',()=>{
+  const wb=workbook(),s=wb.getWorksheet('Timmar per avdelning')!;
+  s.getCell('A12').value='721 *';s.getCell('B12').value='Kontrollavdelningen';
+  s.getCell('C12').value=42;
+  const parsed=readDepartmentDemand(wb,'UO Klarering');
+  expect(parsed.rows.find(x=>x.row===12)).toMatchObject({
+   status:'invalid-code',code:'721 *',codeCell:'A12: text "721 *"',yearCells:expect.stringContaining('C12: tal')
+  });
+ });
  it('does not invent values for absent cells or missing sheet',()=>{
   expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[],rows:[]});
   expect(readDepartmentDemand(workbook(),'UO B').facts.some(f=>f.source.cell==='D18')).toBe(false);

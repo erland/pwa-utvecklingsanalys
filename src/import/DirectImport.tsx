@@ -36,10 +36,10 @@ export default function DirectImport({project,onProject,replaceId,onReplaced,onI
     const clean=r.status==='imported'&&feedback.statusLabel==='Importerad';
     const departmentDetails=r.departmentRows&&r.departmentRows.length>0?<section style={{marginTop:8}} aria-label={'Avdelningskontroll '+r.fileName}>
      <h4>Avdelningskontroll – {r.departmentRows.length} identifierade rader, {r.departmentRows.filter(row=>row.imported>0).length} med timmar, {r.departmentRows.filter(row=>row.imported===0).length} utan importerade timmar</h4>
-     <p>Varje UO och Excel-fil kontrolleras separat. Tomma timceller blir inga timmar; noll (0) importeras. Felaktiga koder och timceller visas med radnummer.</p>
+     <p>Varje UO och Excel-fil kontrolleras separat. Tomma timceller blir inga timmar; noll (0) importeras. Felaktiga koder, tomma celler och formler visas med radnummer och faktisk Excel-datatyp (A–E). Kolumnerna F–H påverkar inte urvalet.</p>
      <div style={{overflowX:'auto'}}><table className="canonical-table" aria-label={'Avdelningsrader '+r.fileName}>
-      <thead><tr><th>Excelrad</th><th>Kod</th><th>Avdelning</th><th>Årsvärden</th><th>Status / orsak</th></tr></thead>
-      <tbody>{r.departmentRows.map(row=><tr key={row.row}><td>{row.row}</td><td>{row.code}</td><th scope="row">{row.name}</th><td>{row.imported} importerade{row.skipped>0?' · '+row.skipped+' överhoppade':''}</td><td>{row.status==='imported'?'Importerad':row.status==='partial'?'Delvis importerad: '+row.reason:row.status==='no-hours'?'Ingen import: '+row.reason:'Överhoppad: '+row.reason}</td></tr>)}</tbody>
+      <thead><tr><th>Excelrad</th><th>Kod</th><th>Avdelning</th><th>Årsvärden</th><th>Status / orsak</th><th>Cellkontroll (A–E)</th></tr></thead>
+      <tbody>{r.departmentRows.map(row=><tr key={row.row}><td>{row.row}</td><td>{row.code}</td><th scope="row">{row.name}</th><td>{row.imported} importerade{row.skipped>0?' · '+row.skipped+' överhoppade':''}</td><td>{row.status==='imported'?'Importerad':row.status==='partial'?'Delvis importerad: '+row.reason:row.status==='no-hours'?'Ingen import: '+row.reason:'Överhoppad: '+row.reason}</td><td><small>{row.codeCell} · {row.nameCell} · {row.yearCells}</small></td></tr>)}</tbody>
      </table></div>
      {r.departmentIssues&&r.departmentIssues.length>0&&<ul>{r.departmentIssues.map((issue,index)=><li key={index}>{issue.cell??'Bladet'}: {issue.message}</li>)}</ul>}
     </section>:null;
