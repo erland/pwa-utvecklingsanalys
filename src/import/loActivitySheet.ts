@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from './excelText';
 export const LO_ACTIVITY_SHEET='LO Aktiviteter 2027-2030';
 export type LoActivityFact={area:string;year:number;metric:'it_hours'|'business_hours';development:number;maintenance:number;source:{sheet:string;developmentCell:string;maintenanceCell:string}};
 export type LoActivityIssue={cell:string;message:string};
@@ -10,14 +11,14 @@ export function readLoActivitySheet(workbook:ExcelJS.Workbook):LoActivitySheetRe
  const facts:LoActivityFact[]=[],issues:LoActivityIssue[]=[];
  const headers=['LO','År','Mått','Utveckling (h)','Förvaltning (h)'];
  for(let col=1;col<=headers.length;col++){
-  if(sheet.getCell(1,col).value!==headers[col-1])issues.push({cell:sheet.getCell(1,col).address,message:'Fel kolumnrubrik, förväntade '+headers[col-1]});
+  if(excelText(sheet.getCell(1,col).value)!==headers[col-1])issues.push({cell:sheet.getCell(1,col).address,message:'Fel kolumnrubrik, förväntade '+headers[col-1]});
  }
  if(issues.length)return {facts,issues};
  const seen=new Set<string>();
  for(let row=2;row<=sheet.rowCount;row++){
   const cells=[1,2,3,4,5].map(col=>sheet.getCell(row,col));
   if(cells.every(cell=>cell.value===null))continue;
-  const area=cells[0].value,areaName=typeof area==='string'?area.trim():'',year=cells[1].value,metric=cells[2].value;
+  const areaName=excelText(cells[0].value),year=cells[1].value,metric=excelText(cells[2].value);
   const development=cells[3].value,maintenance=cells[4].value;
   const issue=(col:number,message:string)=>issues.push({cell:cells[col].address,message});
   if(!areaName||!/^LO(?:\s+)?[^\s]+(?:\s.*)?$/i.test(areaName))issue(0,'Ogiltigt LO-namn');
