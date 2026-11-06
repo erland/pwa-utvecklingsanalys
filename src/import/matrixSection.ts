@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import {excelText} from './excelText';
 export type MatrixMapping={id:string;sheet:string;headerRow:number;firstRow:number;lastRow:number;measureColumn:number;firstColumn:number;lastColumn:number;activityNames:Record<string,string>;measureNames:Record<string,{id:string;unit:'h'|'SEK';factor:number}>};
-export type MatrixFact={sectionId:string;measureId:string;activity:string;year:number;value:number;unit:'h'|'SEK';source:{sheet:string;cell:string}};
+export type MatrixFact={sectionId:string;measureId:string;activity:string;year:number;value:number;unit:'h'|'SEK';assumedZero?:boolean;source:{sheet:string;cell:string}};
 export type MatrixResult={mapping:MatrixMapping;facts:MatrixFact[];issues:{cell:string;message:string}[];excludedTotals:number};
 const normalize=(s:string)=>s.trim().toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
 const cellText=(c:ExcelJS.Cell)=>excelText(c.value);
@@ -64,21 +64,36 @@ export async function readMatrix(bytes:ArrayBuffer,mapping:MatrixMapping):Promis
    facts.push({sectionId:mapping.id,measureId:measure.id,activity,year:fullYear,value:parsed*measure.factor,unit:measure.unit,source:{sheet:sheet.name,cell:cell.address}});
   }
  }
- // Keep every valid imported value, even when its counterpart is absent.
- // The split remains incomplete for analysis until the missing activity is
- // explicitly completed; an absent cell must never be interpreted as zero.
- const groups=new Map<string,Set<string>>();
- for(const fact of facts){
-  const key=JSON.stringify([fact.year,fact.measureId]);
-  const set=groups.get(key)??new Set<string>();
-  set.add(fact.activity);
-  groups.set(key,set);
+ // A blank counterpart is a provisional zero, not an imported/locked value.
+ // Only infer it for an unambiguous positive source half and an actual blank
+ // cell. Never overwrite a formula, malformed cell, or an absent year column.
+ const cells=new Map<string,Record<string,ExcelJS.Cell>>();
+ for(let col=mapping.firstColumn;col<=mapping.lastColumn;col++){
+  const header=cellText(sheet.getCell(mapping.headerRow,col));
+  const year=/\\b(20\\d{2}|\\d{2})\\b/.exec(header);
+  const activity=Object.entries(mapping.activityNames).find(([alias])=>normalize(header).startsWith(normalize(alias)))?.[1];
+  if(!year||!activity||!['development','maintenance'].includes(activity))continue;
+  const yr=Number(year[1]),fullYear=yr<100?2000+yr:yr;
+  for(let row=mapping.firstRow;row<=mapping.lastRow;row++){
+   const measure=mapping.measureNames[normalize(cellText(sheet.getCell(row,mapping.measureColumn)))];
+   if(!measure)continue;
+   const key=JSON.stringify([fullYear,measure.id]);
+   const group=cells.get(key)??{};
+   // Ambiguous duplicate mappings must not silently supply defaults.
+   if(group[activity])continue;
+   group[activity]=sheet.getCell(row,col);cells.set(key,group);
+  }
  }
- const requiresPair=Object.values(mapping.activityNames).includes('development')&&Object.values(mapping.activityNames).includes('maintenance');
- if(requiresPair)for(const fact of facts){
-  const activities=groups.get(JSON.stringify([fact.year,fact.measureId]))!;
-  if(!activities.has('development')||!activities.has('maintenance'))
-   issues.push({cell:fact.source.cell,message:'Ofullständig UO-fördelning: importerat delvärde har behållits; komplettera den saknade aktiviteten i Import'});
+ for(const [key,group] of cells){
+  if(!group.development||!group.maintenance)continue;
+  const [year,measureId]=JSON.parse(key) as [number,string];
+  const existing=facts.filter(f=>f.year===year&&f.measureId===measureId);
+  if(existing.length!==1||existing[0].value<=0)continue;
+  const missing=existing[0].activity==='development'?'maintenance':'development';
+  const cell=group[missing];
+  if(!cell||cell.value!==null&&cell.value!==undefined&&cell.value!=='')continue;
+  facts.push({...existing[0],activity:missing,value:0,assumedZero:true,
+   source:{sheet:sheet.name,cell:cell.address}});
  }
  return {mapping,facts,issues,excludedTotals};
 }
