@@ -10,7 +10,7 @@ export const projectBudget2027_30={
   return book.worksheets.some(isProjectBudgetSheet);
  },
  async parse(bytes:ArrayBuffer):Promise<ImportResult>{
-  const result=await importUoBudget(bytes,undefined,null,true);
+  const result=await importUoBudget(bytes,undefined,undefined,true);
   if(!result.uo||/^Projekt\s*:/i.test(result.uo))throw new Error('Projektnamn saknas i B1.');
   return {...result,profile:'project-budget-2027-v1'};
  }
