@@ -1,11 +1,12 @@
 import ExcelJS from 'exceljs';
+import {excelText} from './excelText';
 import type {EntityKind} from '../domain/semantic';
 export type TableProfile='process-hours'|'staff-snapshot'|'generic';
 export type TableMapping={sheet:string;headerRow:number;entityColumn:string;yearColumn:string;valueColumn:string;entityKind:EntityKind;measureId:string};
 export type TableFact={entityName:string;entityKind:EntityKind;measureId:string;value:number;year:number;source:{sheet:string;cell:string}};
 export type TableIssue={code:string;severity:'error'|'warning';row?:number;message:string};
 export type TableResult={profile:TableProfile;mapping:TableMapping;facts:TableFact[];issues:TableIssue[];sheets:string[]};
-const text=(v:ExcelJS.CellValue):string=>typeof v==='string'?v.trim():typeof v==='number'?String(v):v&&typeof v==='object'&&'text'in v?String(v.text).trim():'';
+const text=excelText;
 export async function inspectTable(bytes:ArrayBuffer):Promise<{sheets:string[];suggested:TableProfile;mapping:TableMapping}>{
  const wb=new ExcelJS.Workbook();await wb.xlsx.load(bytes);const sheets=wb.worksheets.map(s=>s.name);
  const sheet=wb.worksheets.find(s=>/process|verksamhet|arbetad tid/i.test(s.name))??wb.worksheets.find(s=>/personal|bemanning|fte|anställ/i.test(s.name))??wb.worksheets[0];
