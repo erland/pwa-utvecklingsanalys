@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {CanonicalDataset,Metric} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import {loadGapState,saveGapState} from '../gaps/store';
-import {projectAllocationRows,activeProjectActivitySplits,saveProjectActivitySplit} from './projectActivityAllocation';
+import {projectAllocationRows,effectiveProjectActivitySplits,saveProjectActivitySplit} from './projectActivityAllocation';
 
 const format=(n:number)=>n.toLocaleString('sv-SE',{maximumFractionDigits:2});
 const name=(s:string)=>{try{return decodeURIComponent(s.split(':').at(-1)??s)}catch{return s}};
@@ -11,19 +11,19 @@ const measures:Record<Metric,string>={it_hours:'IT-timmar',business_hours:'Verks
 export default function ProjectActivityEditor({data,state,projectId,year,metrics,onSaved}:{data:CanonicalDataset;state:GapState;projectId:string;year?:number;metrics:Metric[];onSaved:(state:GapState)=>void}){
  const rows=projectAllocationRows(data).filter(r=>r.scope.axis==='project'&&r.scope.projectId===projectId&&
   (year===undefined||r.year===year)&&metrics.includes(r.metric));
- const decisions=activeProjectActivitySplits(data,state.projectActivitySplits??[]);
+ const decisions=effectiveProjectActivitySplits(data,state.projectActivitySplits??[]);
  return <section className="panel" aria-label="Projektfördelningar Utveckling och Förvaltning">
   <h4>Utveckling / Förvaltning per projektdel</h4>
-  <p>Välj en andel per projektdel, år och mått. Den importerade totalen ändras inte. Saknade fördelningar visas inte som noll.</p>
+  <p>Projektets importerade andel föreslås automatiskt per projektdel, år och mått. Du kan spara en annan andel. Den importerade totalen ändras inte; saknade källandelar visas inte som noll.</p>
   {!rows.length?<p>Inga importvärden att fördela för det valda urvalet.</p>:rows.map(row=>{
    if(row.scope.axis!=='project')return null;
    const saved=decisions.find(d=>d.workloadId===row.workloadId);
-   return <ProjectActivityEditRow key={row.workloadId+'|'+(saved?.sourceFingerprint??'missing')+'|'+(saved?.developmentPercent??'missing')} row={row} percent={saved?.developmentPercent} state={state} data={data} onSaved={onSaved}/>;
+   return <ProjectActivityEditRow key={row.workloadId+'|'+(saved?.sourceFingerprint??'missing')+'|'+(saved?.developmentPercent??'missing')} row={row} percent={saved?.developmentPercent} automatic={saved?.automatic} state={state} data={data} onSaved={onSaved}/>;
   })}
  </section>;
 }
 
-function ProjectActivityEditRow({row,percent,data,state,onSaved}:{row:ReturnType<typeof projectAllocationRows>[number];percent?:number;data:CanonicalDataset;state:GapState;onSaved:(state:GapState)=>void}){
+function ProjectActivityEditRow({row,percent,automatic,data,state,onSaved}:{row:ReturnType<typeof projectAllocationRows>[number];percent?:number;automatic?:boolean;data:CanonicalDataset;state:GapState;onSaved:(state:GapState)=>void}){
  const [value,setValue]=useState(percent===undefined?'':String(percent));
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
@@ -45,7 +45,7 @@ function ProjectActivityEditRow({row,percent,data,state,onSaved}:{row:ReturnType
  const part=row.scope.axis==='project'?name(row.scope.partId):'';
  return <div className="panel" style={{marginTop:8}} aria-label={'Fördelning '+part+' '+row.metric+' '+row.year}>
   <strong>{part} · {row.year} · {measures[row.metric]}</strong>
-  <p>Totalt: {format(row.value)} {unit} · {percent===undefined?'Fördelning saknas':'Sparad: '+format(percent)+' % Utveckling'}</p>
+  <p>Totalt: {format(row.value)} {unit} · {percent===undefined?'Fördelning saknas':(automatic?'Automatiskt fördelad: ':'Sparad: ')+format(percent)+' % Utveckling'}</p>
   {percent!==undefined&&<div role="img" aria-label={'Sparad fördelning: Utveckling '+format(percent)+' %, Förvaltning '+format(100-percent)+' %'}
    style={{display:'flex',height:14,width:'100%',borderRadius:8,overflow:'hidden',background:'#e2e8f0'}}>
    <span style={{width:percent+'%',background:'#2563eb'}}/><span style={{width:(100-percent)+'%',background:'#0d9488'}}/>
@@ -57,7 +57,7 @@ function ProjectActivityEditRow({row,percent,data,state,onSaved}:{row:ReturnType
   </label>}
   <label>Utveckling (%) <input type="number" min="0" max="100" step="1" value={value} disabled={busy} onChange={e=>setValue(e.target.value)} aria-label={'Utveckling procent '+part+' '+row.year+' '+row.metric}/></label>
   {valid&&<p role="status">Förhandsvisning (ej sparad): Utveckling {format(row.value*parsed/100)} {unit} · Förvaltning {format(row.value*(100-parsed)/100)} {unit}</p>}
-  <button type="button" className="secondary" disabled={busy||!valid||percent===parsed} onClick={()=>void save()}>{busy?'Sparar…':'Spara fördelning'}</button>
+  <button type="button" className="secondary" disabled={busy||!valid||!automatic&&percent===parsed} onClick={()=>void save()}>{busy?'Sparar…':'Spara fördelning'}</button>
   {error&&<p role="alert">{error}</p>}
  </div>;
 }
