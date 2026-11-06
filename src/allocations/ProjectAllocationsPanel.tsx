@@ -2,7 +2,7 @@ import {useState} from 'react';
 import type {CanonicalDataset,Metric} from '../domain/canonical';
 import type {GapState} from '../gaps/store';
 import ProjectActivityEditor from './ProjectActivityEditor';
-import {activeProjectActivitySplits,projectAllocationRows} from './projectActivityAllocation';
+import {effectiveProjectActivitySplits,projectAllocationRows} from './projectActivityAllocation';
 
 type Unit='hours'|'costs';
 const kindMetrics:Record<Unit,Metric[]>={hours:['it_hours','business_hours'],costs:['consultant_cost','other_cost']};
@@ -11,7 +11,7 @@ const label=(id:string)=>{try{return decodeURIComponent(id.slice('project:'.leng
 /** Projects use the same stored decisions as the analysis; there is no parallel allocation model. */
 export function projectAllocationOverview(data:CanonicalDataset,gaps:GapState,unit:Unit,year:number){
  const rows=projectAllocationRows(data).filter(r=>kindMetrics[unit].includes(r.metric)&&(year===0||r.year===year));
- const active=new Set(activeProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>d.workloadId));
+ const active=new Set(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>d.workloadId));
  const projects=new Map<string,{id:string;records:number;allocated:number;total:number}>();
  for(const row of rows){
   if(row.scope.axis!=='project')continue;
@@ -27,7 +27,7 @@ export function projectAllocationOverview(data:CanonicalDataset,gaps:GapState,un
  * Unallocated volume stays separate rather than being represented as 0% development.
  */
 export function projectAllocationVisualSummary(data:CanonicalDataset,gaps:GapState,unit:Unit,year:number,projectId?:string){
- const active=new Map(activeProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>[d.workloadId,d.developmentPercent]));
+ const active=new Map(effectiveProjectActivitySplits(data,gaps.projectActivitySplits??[]).map(d=>[d.workloadId,d.developmentPercent]));
  const rows=projectAllocationRows(data).filter(r=>kindMetrics[unit].includes(r.metric)&&(year===0||r.year===year)&&
   r.scope.axis==='project'&&(!projectId||r.scope.projectId===projectId));
  let development=0,maintenance=0,unallocated=0;
@@ -68,7 +68,7 @@ export default function ProjectAllocationsPanel({data,gaps,onSaved}:{data:Canoni
   <button type="button" className="secondary" style={{width:'100%',textAlign:'left'}} aria-expanded={expanded}
    onClick={()=>setExpanded(v=>!v)}><strong>Utveckling / Förvaltning – projekt {expanded?'▾':'›'}</strong></button>
   {expanded&&<>
-   <p>Projekt är separata från UO. Ange Utveckling per projektdel, år och mått; den importerade totalen ändras inte. Saknad fördelning är okänd, inte noll.</p>
+   <p>Projekt är separata från UO. Projektets utvecklings-/förvaltningsandel används automatiskt för projektdelar med komplett källfördelning. Du kan ändra varje projektdel, år och mått; den importerade totalen ändras inte. Saknas en komplett källfördelning lämnas behovet ofördelat.</p>
    <div className="mapping-grid">
     <label>Typ av behov <select aria-label="Projektfördelning måttyp" value={unit} onChange={e=>{setUnit(e.target.value as Unit);setSelectedProject(null)}}>
      <option value="hours">Timmar</option><option value="costs">Kronor</option>
