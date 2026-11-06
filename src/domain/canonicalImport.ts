@@ -57,7 +57,7 @@ export function canonicalFromBudget(result:ImportResult,datasetId:string,include
   // A partial matrix is permitted: only validated complete pairs are in facts.
   for(const fact of result.matrix.facts){
    if(fact.activity!=='development'&&fact.activity!=='maintenance')throw new Error('INVALID_MATRIX_ACTIVITY');
-   add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(slug).join('|'),metric:fact.measureId as Metric,value:fact.value,year:fact.year,activity:fact.activity,scope:{axis:'work',uoId:'uo:'+slug(result.uo)},authority:'original',approval:'reported',workloadId:[datasetId,'uo:'+slug(result.uo),fact.measureId,fact.year].join('|'),granularity:'activity-part',workPart:'uo-activity-matrix',source:from(fact.source.sheet,fact.source.cell)});
+   add({id:[datasetId,fact.source.sheet,fact.source.cell,fact.measureId].map(slug).join('|'),metric:fact.measureId as Metric,value:fact.value,year:fact.year,activity:fact.activity,assumedZero:fact.assumedZero,scope:{axis:'work',uoId:'uo:'+slug(result.uo)},authority:'original',approval:'reported',workloadId:[datasetId,'uo:'+slug(result.uo),fact.measureId,fact.year].join('|'),granularity:'activity-part',workPart:'uo-activity-matrix',source:from(fact.source.sheet,fact.source.cell)});
   }
  }
  for(const fact of departments){
