@@ -1,9 +1,10 @@
 import ExcelJS from 'exceljs';
+import {excelText} from './excelText';
 export type MatrixMapping={id:string;sheet:string;headerRow:number;firstRow:number;lastRow:number;measureColumn:number;firstColumn:number;lastColumn:number;activityNames:Record<string,string>;measureNames:Record<string,{id:string;unit:'h'|'SEK';factor:number}>};
 export type MatrixFact={sectionId:string;measureId:string;activity:string;year:number;value:number;unit:'h'|'SEK';source:{sheet:string;cell:string}};
 export type MatrixResult={mapping:MatrixMapping;facts:MatrixFact[];issues:{cell:string;message:string}[];excludedTotals:number};
 const normalize=(s:string)=>s.trim().toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
-const cellText=(c:ExcelJS.Cell)=>{const v=c.value;return typeof v==='string'?v.trim():v&&typeof v==='object'&&'text'in v?String(v.text):''};
+const cellText=(c:ExcelJS.Cell)=>excelText(c.value);
 export const developmentMatrix=(sheet:string):MatrixMapping=>({
  id:'development-management',sheet,headerRow:4,firstRow:5,lastRow:7,measureColumn:3,firstColumn:4,lastColumn:15,
  activityNames:{'utv.':'development','förv.':'maintenance'},
