@@ -9,8 +9,10 @@ export type DepartmentDemand = {
 export type DepartmentDemandIssue={code:string;message:string;cell?:string};
 export type DepartmentDemandRowStatus={
  row:number;code:string;name:string;imported:number;skipped:number;
- status:'imported'|'partial'|'no-hours'|'invalid-code'|'invalid-hours';
+ status:'imported'|'partial'|'no-hours'|'invalid-code'|'invalid-hours'|'missing-code'|'missing-name';
  reason:string;
+ /** Imported value is never inferred from the displayed Excel formatting. */
+ codeCell:string;nameCell:string;yearCells:string;
 };
 export type DepartmentDemandParse={facts:DepartmentDemand[];issues:DepartmentDemandIssue[];years:number[];rows:DepartmentDemandRowStatus[]};
 
@@ -28,6 +30,16 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
   }
  }
  if(!years.size){issues.push({code:'NO_DEPARTMENT_YEARS',message:'Inga årtal på rad 4 i avdelningsbladet'});return {facts,issues,years:[],rows}}
+ const describe=(cell:ExcelJS.Cell):string=>{
+  const raw=cell.value;
+  if(raw===null||raw===undefined||raw==='')return cell.address+': tom';
+  if(cell.type===ExcelJS.ValueType.Formula)return cell.address+': formel';
+  if(typeof raw==='number')return cell.address+': tal';
+  if(typeof raw==='string')return cell.address+': text '+JSON.stringify(raw.slice(0,100));
+  if(raw&&typeof raw==='object'&&'richText'in raw)return cell.address+': formaterad text';
+  if(raw&&typeof raw==='object'&&'text'in raw)return cell.address+': objekttext';
+  return cell.address+': '+(raw instanceof Date?'datum':'objekt');
+ };
  const value=(row:number,col:number)=>{
   const raw=sheet.getRow(row).getCell(col).value;
   return typeof raw==='string'?raw.trim():typeof raw==='number'?String(raw):'';
@@ -36,11 +48,29 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
  // Totals, blank separators and notes do not have a department code.
  for(let row=5;row<=sheet.rowCount;row++){
   const name=value(row,2),code=value(row,1);
-  // Report suspect department rows instead of silently dropping them. Do not
-  // mistake totals, blank separators or section headings for departments.
-  if(!name||!code||!/^[0-9]/.test(code))continue;
-  if(!/^\d{3,}\*?$/.test(code)){
-   rows.push({row,code,name,imported:0,skipped:0,status:'invalid-code',reason:'Ogiltig avdelningskod i A'+row+' (förväntat minst tre siffror och eventuellt *)'});
+  // Inspect all likely department rows, including those whose code/name is
+  // encoded as a formula or rich text. Never treat totals as departments.
+  const yearCells=[...years.values()].map(col=>describe(sheet.getRow(row).getCell(col))).join(' · ');
+  const codeCell=describe(sheet.getRow(row).getCell(1));
+  const nameCell=describe(sheet.getRow(row).getCell(2));
+  const rowInfo={row,code,name,imported:0,skipped:0,codeCell,nameCell,yearCells};
+  const hasYearEntry=[...years.values()].some(col=>{
+   const raw=sheet.getRow(row).getCell(col).value;
+   return raw!==null&&raw!==undefined&&raw!=='';
+  });
+  const likelyDepartment=/avdelning|stab|revision/i.test(name)||/^\\s*\\d/.test(code)||
+   (Boolean(name)&&hasYearEntry&&!/^(?:totalt?|summa|summering|alla avdelningar)$/i.test(name.trim()));
+  if(!likelyDepartment)continue;
+  if(!name){
+   rows.push({...rowInfo,status:'missing-name',reason:'Namn saknas eller är inte vanlig text i B'+row});
+   continue;
+  }
+  if(!code){
+   rows.push({...rowInfo,status:'missing-code',reason:'Kod saknas eller är inte vanlig text/tal i A'+row});
+   continue;
+  }
+  if(!/^\\d{3,}\\*?$/.test(code)){
+   rows.push({...rowInfo,status:'invalid-code',reason:'Ogiltig avdelningskod i A'+row+' (förväntat minst tre siffror och eventuellt *)'});
    continue;
   }
   let imported=0,skipped=0;
@@ -57,7 +87,7 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    imported++;
    facts.push({uo,departmentCodeRaw:code,departmentCode:code.replaceAll('*','').trim(),departmentName:name,year,metric,hours:raw,anchoringStatus,comments,source:{sheet:sheet.name,cell:cell.address}});
   }
-  rows.push({row,code,name,imported,skipped,status:skipped?(imported?'partial':'invalid-hours'):imported?'imported':'no-hours',reason:skipped?'Ogiltigt timvärde eller formel i en eller flera årskolumner':imported?'':'Inga numeriska timvärden i årskolumnerna'});
+  rows.push({...rowInfo,imported,skipped,status:skipped?(imported?'partial':'invalid-hours'):imported?'imported':'no-hours',reason:skipped?'Ogiltigt timvärde eller formel i en eller flera årskolumner':imported?'':'Inga numeriska timvärden i årskolumnerna'});
  }
  return {facts,issues,years:[...years.keys()].sort((a,b)=>a-b),rows};
 }
