@@ -39,8 +39,8 @@ export function completionValues(data:CanonicalDataset,row:CompletionRow,
  const existing=current.find(item=>completionKey(item)===key);
  const imported=importedCompletionParts(data,row);
  return inputs[key]??{
-  development:String(imported.find(record=>record.activity==='development')?.value??existing?.development??''),
-  maintenance:String(imported.find(record=>record.activity==='maintenance')?.value??existing?.maintenance??'')
+  development:String(imported.find(record=>record.activity==='development'&&!record.assumedZero)?.value??existing?.development??imported.find(record=>record.activity==='development')?.value??''),
+  maintenance:String(imported.find(record=>record.activity==='maintenance'&&!record.assumedZero)?.value??existing?.maintenance??imported.find(record=>record.activity==='maintenance')?.value??'')
  };
 }
 
