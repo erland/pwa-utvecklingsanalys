@@ -87,7 +87,7 @@ describe('independent project budget import',()=>{
   expect(effectiveProjectActivitySplits(data,manual).find(r=>r.workloadId===integration.workloadId)).toMatchObject({developmentPercent:20,automatic:false});
   expect(analyzeCanonical(edited,{...state,projectActivitySplits:manual},{axis:'project',metrics:['it_hours'],year:2027,activity:'development'}).total).toBe(50);
  });
- it('leaves incomplete source matrices unallocated and never silently assumes maintenance zero',async()=>{
+ it('uses an editable zero for a missing project matrix half',async()=>{
   const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
   s.getCell('B1').value='Projekt: X';s.getCell('D11').value=2027;
   s.getCell('B25').value='Del';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=50;
@@ -97,8 +97,8 @@ describe('independent project budget import',()=>{
   const format=await recognizeWorkbook(bytes);
   if(format?.kind!=='project')throw new Error('PROJECT_NOT_MATCHED');
   const data=replaceCanonicalSource(emptyCanonical(),canonicalFromProject(await format.parse(bytes),'source'),'source');
-  expect(data.records[0].projectDefaultDevelopmentPercent).toBeUndefined();
-  expect(effectiveProjectActivitySplits(data,[])).toEqual([]);
+  expect(data.records[0].projectDefaultDevelopmentPercent).toBe(100);
+  expect(effectiveProjectActivitySplits(data,[])).toEqual([expect.objectContaining({developmentPercent:100,automatic:true})]);
  });
  it('does not confuse separate named parts with UO or allow invented project markers',async()=>{
   const bytes=await source('Projekt: X','Behovsanalys');
