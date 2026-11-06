@@ -77,6 +77,22 @@ export function canonicalFromProject(result:ImportResult,datasetId:string):Analy
  if(result.profile!=='project-budget-2027-v1'||!result.uo.trim()||result.issues.some(x=>x.severity==='error'))
   throw new Error('PROJECT_IMPORT_NOT_APPROVED');
  const projectId='project:'+slug(result.uo);
+ // Only a complete, positive project summary pair can define a default.
+ // The summary is a ratio source, never an additive planning volume.
+ const summary=new Map<string,{development?:number;maintenance?:number}>();
+ for(const part of result.matrix?.facts??[]){
+  if(part.activity!=='development'&&part.activity!=='maintenance')continue;
+  const key=JSON.stringify([part.measureId,part.year]);
+  const group=summary.get(key)??{};
+  group[part.activity]=part.value;
+  summary.set(key,group);
+ }
+ const defaults=new Map<string,number>();
+ for(const [key,pair] of summary){
+  if(pair.development===undefined||pair.maintenance===undefined)continue;
+  const total=pair.development+pair.maintenance;
+  if(total>0)defaults.set(key,100*pair.development/total);
+ }
  const grouped=new Map<string,typeof result.facts>();
  for(const fact of result.facts){
   if(fact.value<0||!Number.isFinite(fact.value))throw new Error('NEGATIVE_SOURCE_AMOUNT');
@@ -94,6 +110,10 @@ export function canonicalFromProject(result:ImportResult,datasetId:string):Analy
   records.push({
    id:[datasetId,first.source.sheet,first.source.cell,first.measure,'project'].map(slug).join('|'),
    metric:first.measure,value,year:first.period.year,activity:'unknown',
+   ...(defaults.has(JSON.stringify([first.measure,first.period.year]))?
+    {projectDefaultDevelopmentPercent:defaults.get(JSON.stringify([first.measure,first.period.year]))}:
+    first.measure==='consultant_cost'&&defaults.has(JSON.stringify(['other_cost',first.period.year]))?
+    {projectDefaultDevelopmentPercent:defaults.get(JSON.stringify(['other_cost',first.period.year]))}:{}),
    scope:{axis:'project',projectId,partId},authority:'original',approval:'reported',
    granularity:'total',workloadId:[datasetId,projectId,partId,first.measure,first.period.year].join('|'),
    source:{datasetId,sheet:first.source.sheet,cell:first.source.cell}

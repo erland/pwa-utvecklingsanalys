@@ -5,6 +5,9 @@ import {canonicalFromProject,canonicalFromBudget,replaceCanonicalSource} from '.
 import {importProjectFacts,importBudgetFacts} from '../domain/importAdapter';
 import {emptyCanonical,summarizeCanonical,validateCanonical} from '../domain/canonical';
 import {emptySemantic} from '../domain/semantic';
+import {prepareAnalysisDataset} from '../domain/preparedAnalysis';
+import {analyzeCanonical} from '../analytics/canonicalQuery';
+import {effectiveProjectActivitySplits,saveProjectActivitySplit} from '../allocations/projectActivityAllocation';
 
 async function source(marker:string,area:string){
  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
@@ -49,6 +52,53 @@ describe('independent project budget import',()=>{
   expect(semantic.entities.find(e=>e.id==='project:Digitalisering')?.kind).toBe('project');
   expect(semantic.entities.filter(e=>e.kind==='project-part')).toHaveLength(2);
   expect(semantic.observations.filter(o=>o.source.datasetId==='project-source')).toHaveLength(p.facts.length);
+ });
+ it('automatically distributes imported project matrix split to project parts, metrics and years, with manual override',async()=>{
+  const wb=new ExcelJS.Workbook(),sheet=wb.addWorksheet('UO Tot 2027-30');
+  sheet.getCell('B1').value='Projekt: Digitalisering';
+  sheet.getCell('D11').value=2027;
+  sheet.getCell('B25').value='Integrationer';
+  sheet.getCell('C26').value='IT timmar (h)';sheet.getCell('D26').value=100;
+  sheet.getCell('B31').value='Plattform';
+  sheet.getCell('C32').value='IT timmar (h)';sheet.getCell('D32').value=50;
+  sheet.getCell('C33').value='OMK Övrigt (kr)';sheet.getCell('D33').value=800;
+  sheet.getCell('C34').value='Produktkonsulter (kr)';sheet.getCell('D34').value=200;
+  sheet.getCell('D4').value='Utv. 27';sheet.getCell('E4').value='Förv. 27';
+  sheet.getCell('C5').value='IT timmar (th)';sheet.getCell('D5').value=0.09;sheet.getCell('E5').value=0.06;
+  sheet.getCell('C7').value='Omkostnader (Mnkr)';sheet.getCell('D7').value=0.8;sheet.getCell('E7').value=0.2;
+  const bytes=await wb.xlsx.writeBuffer() as ArrayBuffer;
+  const format=await recognizeWorkbook(bytes);
+  expect(format?.kind).toBe('project');
+  if(format?.kind!=='project')throw new Error('PROJECT_NOT_MATCHED');
+  const parsed=await format.parse(bytes);
+  const data=replaceCanonicalSource(emptyCanonical(),canonicalFromProject(parsed,'project-source'),'project-source');
+  expect(data.records.filter(r=>r.metric==='it_hours').map(r=>r.projectDefaultDevelopmentPercent)).toEqual([60,60]);
+  expect(data.records.filter(r=>r.metric==='other_cost'||r.metric==='consultant_cost').map(r=>r.projectDefaultDevelopmentPercent)).toEqual([80,80]);
+  const state={requirements:[],resolutions:[]};
+  const prepared=prepareAnalysisDataset(data,state).dataset;
+  expect(validateCanonical(prepared)).toEqual([]);
+  expect(analyzeCanonical(prepared,state,{axis:'project',metrics:['it_hours'],year:2027,activity:'development'}).total).toBe(90);
+  expect(analyzeCanonical(prepared,state,{axis:'project',metrics:['it_hours'],year:2027,activity:'maintenance'}).total).toBe(60);
+  expect(analyzeCanonical(prepared,state,{axis:'project',metrics:['it_hours'],year:2027,activity:'all'}).total).toBe(150);
+  expect(analyzeCanonical(prepared,state,{axis:'project',metrics:['other_cost','consultant_cost'],year:2027,activity:'development'}).total).toBe(800);
+  const integration=data.records.find(r=>r.scope.axis==='project'&&r.scope.partId.endsWith('Integrationer'))!;
+  const manual=saveProjectActivitySplit(data,[],{workloadId:integration.workloadId,developmentPercent:20});
+  const edited=prepareAnalysisDataset(data,{...state,projectActivitySplits:manual}).dataset;
+  expect(effectiveProjectActivitySplits(data,manual).find(r=>r.workloadId===integration.workloadId)).toMatchObject({developmentPercent:20,automatic:false});
+  expect(analyzeCanonical(edited,{...state,projectActivitySplits:manual},{axis:'project',metrics:['it_hours'],year:2027,activity:'development'}).total).toBe(50);
+ });
+ it('leaves incomplete source matrices unallocated and never silently assumes maintenance zero',async()=>{
+  const wb=new ExcelJS.Workbook(),s=wb.addWorksheet('UO Tot 2027-30');
+  s.getCell('B1').value='Projekt: X';s.getCell('D11').value=2027;
+  s.getCell('B25').value='Del';s.getCell('C26').value='IT timmar (h)';s.getCell('D26').value=50;
+  s.getCell('D4').value='Utv. 27';s.getCell('E4').value='Förv. 27';
+  s.getCell('C5').value='IT timmar (th)';s.getCell('D5').value=0.05;
+  const bytes=await wb.xlsx.writeBuffer() as ArrayBuffer;
+  const format=await recognizeWorkbook(bytes);
+  if(format?.kind!=='project')throw new Error('PROJECT_NOT_MATCHED');
+  const data=replaceCanonicalSource(emptyCanonical(),canonicalFromProject(await format.parse(bytes),'source'),'source');
+  expect(data.records[0].projectDefaultDevelopmentPercent).toBeUndefined();
+  expect(effectiveProjectActivitySplits(data,[])).toEqual([]);
  });
  it('does not confuse separate named parts with UO or allow invented project markers',async()=>{
   const bytes=await source('Projekt: X','Behovsanalys');

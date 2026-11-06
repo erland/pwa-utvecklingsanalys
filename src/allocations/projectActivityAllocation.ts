@@ -27,17 +27,29 @@ export function activeProjectActivitySplits(data:CanonicalDataset,decisions:read
    Number.isFinite(d.developmentPercent)&&d.developmentPercent>=0&&d.developmentPercent<=100);
  });
 }
+/** Manual choices win. Missing decisions inherit only complete, source-derived
+ * project percentages; no default 50/50 and no implicit zero for absent input.
+ */
+export function effectiveProjectActivitySplits(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[]){
+ const manual=activeProjectActivitySplits(data,decisions);
+ const active=new Set(manual.map(d=>d.workloadId));
+ const automatic=projectAllocationRows(data).filter(r=>
+  !active.has(r.workloadId)&&r.projectDefaultDevelopmentPercent!==undefined)
+  .map(r=>({workloadId:r.workloadId,developmentPercent:r.projectDefaultDevelopmentPercent!,
+   sourceFingerprint:projectSourceFingerprint(r),automatic:true as const}));
+ return [...manual.map(d=>({...d,automatic:false as const})),...automatic];
+}
 /** Derived rows describe the SAME source volume as a reported project total. */
 export function projectActivityParts(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[]):AnalysisRecord[]{
  const originals=new Map(projectAllocationRows(data).map(r=>[r.workloadId,r]));
- return activeProjectActivitySplits(data,decisions).flatMap(decision=>{
+ return effectiveProjectActivitySplits(data,decisions).flatMap(decision=>{
   const total=originals.get(decision.workloadId)!;
   const development=total.value*decision.developmentPercent/100;
   return (['development','maintenance'] as const).map(activity=>({
    ...total,id:'project-activity|'+total.id+'|'+activity,
    value:activity==='development'?development:total.value-development,
    activity,granularity:'activity-part' as const,authority:'derived' as const,approval:'approved' as const,
-   source:undefined
+   source:undefined,projectDefaultDevelopmentPercent:undefined
   }));
  });
 }
