@@ -54,7 +54,7 @@ export function activeProjectActivitySplits(data:CanonicalDataset,decisions:read
 /** Manual choices win. Missing decisions inherit only complete, source-derived
  * project percentages; no default 50/50 and no implicit zero for absent input.
  */
-export function effectiveProjectActivitySplits(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[]){
+export function effectiveProjectActivitySplits(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[],completions:readonly ProjectImportCompletion[]=[]){
  const manual=activeProjectActivitySplits(data,decisions);
  const active=new Set(manual.map(d=>d.workloadId));
  const automatic=projectAllocationRows(data).filter(r=>
@@ -64,9 +64,9 @@ export function effectiveProjectActivitySplits(data:CanonicalDataset,decisions:r
  return [...manual.map(d=>({...d,automatic:false as const})),...automatic];
 }
 /** Derived rows describe the SAME source volume as a reported project total. */
-export function projectActivityParts(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[]):AnalysisRecord[]{
+export function projectActivityParts(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[],completions:readonly ProjectImportCompletion[]=[]):AnalysisRecord[]{
  const originals=new Map(projectAllocationRows(data).map(r=>[r.workloadId,r]));
- return effectiveProjectActivitySplits(data,decisions).flatMap(decision=>{
+ return effectiveProjectActivitySplits(data,decisions,completions).flatMap(decision=>{
   const total=originals.get(decision.workloadId)!;
   const development=total.value*decision.developmentPercent/100;
   return (['development','maintenance'] as const).map(activity=>({
