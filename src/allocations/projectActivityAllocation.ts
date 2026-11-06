@@ -56,10 +56,11 @@ export function activeProjectActivitySplits(data:CanonicalDataset,decisions:read
  */
 export function effectiveProjectActivitySplits(data:CanonicalDataset,decisions:readonly ProjectActivitySplit[],completions:readonly ProjectImportCompletion[]=[]){
  const manual=activeProjectActivitySplits(data,decisions);
+ const override=new Map(activeProjectImportCompletions(data,completions).map(c=>[JSON.stringify([c.projectId,c.year,c.metric]),100*c.development/(c.development+c.maintenance)]));
  const active=new Set(manual.map(d=>d.workloadId));
  const automatic=projectAllocationRows(data).filter(r=>
-  !active.has(r.workloadId)&&r.projectDefaultDevelopmentPercent!==undefined)
-  .map(r=>({workloadId:r.workloadId,developmentPercent:r.projectDefaultDevelopmentPercent!,
+  !active.has(r.workloadId)&&(r.projectDefaultDevelopmentPercent!==undefined||(r.scope.axis==='project'&&override.has(JSON.stringify([r.scope.projectId,r.year,r.metric==='consultant_cost'?'other_cost':r.metric])))))
+  .map(r=>({workloadId:r.workloadId,developmentPercent:(r.scope.axis==='project'?override.get(JSON.stringify([r.scope.projectId,r.year,r.metric==='consultant_cost'?'other_cost':r.metric])):undefined)??r.projectDefaultDevelopmentPercent!,
    sourceFingerprint:projectSourceFingerprint(r),automatic:true as const}));
  return [...manual.map(d=>({...d,automatic:false as const})),...automatic];
 }
