@@ -26,9 +26,9 @@ export const processHoursFormat={
 function mappingFor(sheet:ExcelJS.Worksheet):TableMapping|null{
  const names=new Map<string,string>();
  sheet.getRow(1).eachCell((cell,col)=>{
-  const value=cell.value;
-  if(typeof value!=='string')return;
-  const name=value.trim().toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
+  const value=excelText(cell.value);
+  if(!value)return;
+  const name=value.toLocaleLowerCase('sv-SE').replace(/\s+/g,' ');
   if(!names.has(name))names.set(name,sheet.getColumn(col).letter);
  });
  const process=names.get('process'),year=names.get('år'),hours=names.get('timmar');
