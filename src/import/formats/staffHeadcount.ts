@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from '../excelText';
 import {parseTable,type TableResult,type TableMapping} from '../tabular';
 
 /** Fixed Excel format: Avdelning, År, Antal anställda. No inferred planning year. */
