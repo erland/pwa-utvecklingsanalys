@@ -121,6 +121,26 @@ describe('UO-linked department demand import',()=>{
    status:'invalid-code',code:'721 *',codeCell:'A12: text "721 *"',yearCells:expect.stringContaining('C12: tal')
   });
  });
+ it('imports Kontrollavdelningen on row 12 when B12 is formatted rich text',async()=>{
+  const wb=workbook(),s=wb.getWorksheet('Timmar per avdelning')!;
+  s.getCell('A12').value='721*';
+  s.getCell('B12').value={richText:[
+   {font:{bold:true},text:'·        '},
+   {font:{italic:true},text:'Kontroll'},
+   {text:'avdelningen'}
+  ]};
+  s.getCell('C12').value=12;s.getCell('D12').value=0;s.getCell('E12').value=34;
+  s.getCell('F12').value='Förankrat';s.getCell('G12').value='Kommentar';s.getCell('H12').value='Ytterligare kommentar';
+  // Check the actual representation after an XLSX round trip, not just the in-memory shape.
+  const bytes=await wb.xlsx.writeBuffer();
+  const loaded=new ExcelJS.Workbook();await loaded.xlsx.load(bytes);
+  const parsed=readDepartmentDemand(loaded,'UO A');
+  const kontrol=parsed.facts.filter(f=>f.departmentCode==='721');
+  expect(kontrol).toHaveLength(3);
+  expect(kontrol.map(f=>[f.year,f.hours])).toEqual([[2027,12],[2028,0],[2029,34]]);
+  expect(kontrol[0]).toMatchObject({departmentName:'·        Kontrollavdelningen',metric:'business_hours',source:{cell:'C12'}});
+  expect(parsed.rows.find(r=>r.row===12)).toMatchObject({name:'·        Kontrollavdelningen',status:'imported',imported:3,nameCell:'B12: formaterad text'});
+ });
  it('does not invent values for absent cells or missing sheet',()=>{
   expect(readDepartmentDemand(new ExcelJS.Workbook(),'UO A')).toEqual({facts:[],issues:[],years:[],rows:[]});
   expect(readDepartmentDemand(workbook(),'UO B').facts.some(f=>f.source.cell==='D18')).toBe(false);
