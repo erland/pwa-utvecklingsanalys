@@ -58,6 +58,8 @@ export function readDepartmentDemand(workbook:ExcelJS.Workbook,uo:string):Depart
    const raw=sheet.getRow(row).getCell(col).value;
    return raw!==null&&raw!==undefined&&raw!=='';
   });
+  const cleanName=name.replace(/^[\\s·•–-]+/u,'').trim();
+  if(/^(?:alla avdelningar|totalt?|summa|summering)$/i.test(cleanName))continue;
   const likelyDepartment=/avdelning|stab|revision/i.test(name)||/^\s*\d/.test(code)||
    (Boolean(name)&&hasYearEntry&&!/^(?:totalt?|summa|summering|alla avdelningar)$/i.test(name.trim()));
   if(!likelyDepartment)continue;
