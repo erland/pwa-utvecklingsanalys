@@ -18,6 +18,10 @@ export type AnalysisRecord={
  assumedZero?:boolean;
  /** Source-derived default for project-part activity splits; manual choices override it. */
  projectDefaultDevelopmentPercent?:number;
+ projectMatrixDevelopment?:number;
+ projectMatrixMaintenance?:number;
+ projectMatrixDevelopmentAssumed?:boolean;
+ projectMatrixMaintenanceAssumed?:boolean;
  id:string;metric:Metric;value:number;year:number;month?:number;
  activity:Activity;scope:AnalysisScope;authority:SourceAuthority;approval:ApprovalState;
  /** Identity of the underlying workload: records with different axes can describe the same total. */

@@ -124,7 +124,7 @@ export function prepareAnalysisDataset(source:CanonicalDataset,state:GapState):P
  }
  // Project activity decisions are optional, source-fingerprinted and never replace
  // the imported project-part total. Incomplete activity coverage stays explicit.
- calculated.push(...projectActivityParts(original,state.projectActivitySplits??[]));
+ calculated.push(...projectActivityParts(original,state.projectActivitySplits??[],state.projectImportCompletions??[]));
  // The UO summary matrix is never volume. Older source records can omit workPart.
  const isMatrix=(r:AnalysisRecord)=>r.scope.axis==='work'&&!r.scope.loId&&r.granularity==='activity-part'&&(r.workPart==='uo-activity-matrix'||r.authority==='original');
  const excludedMatrix=source.records.filter(isMatrix).length;

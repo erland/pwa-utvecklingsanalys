@@ -88,6 +88,16 @@ export function canonicalFromProject(result:ImportResult,datasetId:string):Analy
   summary.set(key,group);
  }
  const defaults=new Map<string,number>();
+ const sourcePairs=new Map<string,{development?:number;maintenance?:number;developmentAssumed?:boolean;maintenanceAssumed?:boolean}>();
+ for(const part of result.matrix?.facts??[]){
+  if(part.activity!=='development'&&part.activity!=='maintenance')continue;
+  const key=JSON.stringify([part.measureId,part.year]);
+  const pair=sourcePairs.get(key)??{};
+  pair[part.activity]=part.value;
+  if(part.activity==='development')pair.developmentAssumed=Boolean(part.assumedZero);
+  else pair.maintenanceAssumed=Boolean(part.assumedZero);
+  sourcePairs.set(key,pair);
+ }
  for(const [key,pair] of summary){
   if(pair.development===undefined||pair.maintenance===undefined)continue;
   const total=pair.development+pair.maintenance;
@@ -114,6 +124,10 @@ export function canonicalFromProject(result:ImportResult,datasetId:string):Analy
     {projectDefaultDevelopmentPercent:defaults.get(JSON.stringify([first.measure,first.period.year]))}:
     first.measure==='consultant_cost'&&defaults.has(JSON.stringify(['other_cost',first.period.year]))?
     {projectDefaultDevelopmentPercent:defaults.get(JSON.stringify(['other_cost',first.period.year]))}:{}),
+   ...((()=>{const pair=sourcePairs.get(JSON.stringify([first.measure==='consultant_cost'?'other_cost':first.measure,first.period.year]));
+    return pair?{projectMatrixDevelopment:pair.development,projectMatrixMaintenance:pair.maintenance,
+     projectMatrixDevelopmentAssumed:pair.developmentAssumed,projectMatrixMaintenanceAssumed:pair.maintenanceAssumed}:{};
+   })()),
    scope:{axis:'project',projectId,partId},authority:'original',approval:'reported',
    granularity:'total',workloadId:[datasetId,projectId,partId,first.measure,first.period.year].join('|'),
    source:{datasetId,sheet:first.source.sheet,cell:first.source.cell}
