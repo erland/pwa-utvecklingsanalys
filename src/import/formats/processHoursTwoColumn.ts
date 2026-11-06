@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from '../excelText';
 import type {TableResult,TableFact,TableIssue,TableMapping} from '../tabular';
 
 /** Two-column processtimmar: only a year stated explicitly in the worksheet name is accepted. */
@@ -15,7 +16,7 @@ export const processHoursTwoColumnFormat={
   const facts:TableFact[]=[],issues:TableIssue[]=[];
   for(let r=2;r<=sheet.rowCount;r++){
    const nameCell=sheet.getCell(r,1),valueCell=sheet.getCell(r,2);
-   const name=typeof nameCell.value==='string'?nameCell.value.trim():'';
+   const name=excelText(nameCell.value);
    if(!name&&!valueCell.value)continue;
    if(!name){issues.push({code:'MISSING_ENTITY',severity:'error',row:r,message:'Processnamn saknas.'});continue;}
    if(valueCell.type===ExcelJS.ValueType.Formula){issues.push({code:'FORMULA_SKIPPED',severity:'error',row:r,message:'Formelvärde kan inte importeras automatiskt.'});continue;}
@@ -38,7 +39,7 @@ function sheetYear(name:string):number|null{
 function eligible(sheet:ExcelJS.Worksheet):boolean{
  if(sheetYear(sheet.name)===null)return false;
  const h1=sheet.getCell('A1').value,h2=sheet.getCell('B1').value;
- return typeof h1==='string'&&h1.trim().toLocaleLowerCase('sv-SE')==='process'
-   &&typeof h2==='string'&&h2.trim().toLocaleLowerCase('sv-SE')==='timmar'
+ return excelText(h1).toLocaleLowerCase('sv-SE')==='process'
+   &&excelText(h2).toLocaleLowerCase('sv-SE')==='timmar'
    &&sheet.getCell('C1').value==null;
 }
