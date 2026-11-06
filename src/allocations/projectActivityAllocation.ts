@@ -7,6 +7,7 @@ export function projectCompletionRows(data:CanonicalDataset){
  for(const r of projectAllocationRows(data)){
   if(r.scope.axis!=='project')continue;
   const metric=r.metric==='consultant_cost'?'other_cost':r.metric;
+  if(r.projectDefaultDevelopmentPercent!==undefined&&r.projectMatrixDevelopment===undefined&&r.projectMatrixMaintenance===undefined)continue;
   const k=completionKey(r.scope.projectId,r.year,metric),prev=rows.get(k);
   rows.set(k,{projectId:r.scope.projectId,year:r.year,metric,development:r.projectMatrixDevelopment,maintenance:r.projectMatrixMaintenance,
    developmentAssumed:!!r.projectMatrixDevelopmentAssumed,maintenanceAssumed:!!r.projectMatrixMaintenanceAssumed,
