@@ -1,5 +1,6 @@
 import {readDepartmentDemand,type DepartmentDemand,type DepartmentDemandIssue,type DepartmentDemandRowStatus} from '../departmentDemand';
 import ExcelJS from 'exceljs';
+import {excelText} from '../excelText';
 import type {ImportFormat} from './registry';
 import {rebalanceUoBudgetAllocation} from './uoBudgetCompletion';
 import {readLoActivitySheet,type LoActivityFact} from '../loActivitySheet';
@@ -10,16 +11,16 @@ export const UO_BUDGET_SHEET=/^UO Tot 2027[-–]30$/;
  */
 export function isProjectBudgetSheet(sheet:ExcelJS.Worksheet):boolean{
  if(!UO_BUDGET_SHEET.test(sheet.name))return false;
- const heading=String(sheet.getCell('B1').value??'').trim();
+ const heading=excelText(sheet.getCell('B1').value);
  if(/^Projekt\s*:\s*\S/i.test(heading))return true;
  if(!heading||/skriv namn/i.test(heading))return false;
  let named=0,uo=0;
  for(let r=19;r<sheet.rowCount;r++){
   const area=sheet.getCell(r,2).value;
-  if(typeof area!=='string'||!area.trim())continue;
-  const candidate=area.trim();
+  const candidate=excelText(area);
+  if(!candidate)continue;
   const metric=sheet.getCell(r+1,3).value;
-  if(typeof metric!=='string'||!/it[ -]?timmar|v timmar|verksamhetstimmar|omk|produktkonsulter|prod.konsulter/i.test(metric))continue;
+  if(!/it[ -]?timmar|v timmar|verksamhetstimmar|omk|produktkonsulter|prod.konsulter/i.test(excelText(metric)))continue;
   const hasValues=[...Array(Math.min(sheet.columnCount,19)-3)].some((_,i)=>typeof sheet.getCell(r+1,i+4).value==='number');
   if(!hasValues)continue;
   if(/^(?:UO Övergripande|LO(?:\s+)?[^\s]+)(?:\s.*)?$/i.test(candidate))uo++;
@@ -36,7 +37,7 @@ export const defaultMapping:Mapping={sheet:'UO Tot 2027-30',uoCell:'B1',headerRo
 export type Coverage={candidates:number;imported:number;unresolved:number;formulas:number;perArea:{name:string;count:number}[]};
 export type DeclaredTotal={measure:Measure;period:{year:number;month?:number};value:number;source:{sheet:string;cell:string};formula:boolean};
 export type ImportResult={departmentDemand?:DepartmentDemand[];departmentDemandIssues?:DepartmentDemandIssue[];departmentRows?:DepartmentDemandRowStatus[];departmentYears?:number[];loActivities?:LoActivityFact[];declaredTotals?:DeclaredTotal[];profile:string;uo:string;facts:Fact[];issues:Issue[];excludedSheets:string[];coverage?:Coverage;matrix?:MatrixResult};
-function valueText(cell:ExcelJS.Cell):string{const v=cell.value;if(v==null)return '';if(typeof v==='object'&&! (v instanceof Date)){if('text'in v)return String(v.text);if('result'in v)return String(v.result??'');return '';}return String(v);}
+function valueText(cell:ExcelJS.Cell):string{return excelText(cell.value);}
 /** Resolve only same-sheet single-cell references in area headings; ExcelJS does not calculate formulas. */
 function areaText(sheet:ExcelJS.Worksheet,cell:ExcelJS.Cell,seen=new Set<string>()):string{
  if(seen.has(cell.address)||seen.size>=16)return '';

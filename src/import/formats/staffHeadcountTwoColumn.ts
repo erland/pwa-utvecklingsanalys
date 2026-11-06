@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import {excelText} from '../excelText';
 import type {TableResult,TableFact,TableIssue,TableMapping} from '../tabular';
 
 /** Two-column department headcount is importable only when the sheet explicitly declares a single year. */
@@ -15,7 +16,7 @@ export const staffHeadcountTwoColumnFormat={
   const facts:TableFact[]=[],issues:TableIssue[]=[];
   for(let r=2;r<=sheet.rowCount;r++){
    const nameCell=sheet.getCell(r,1),valueCell=sheet.getCell(r,2);
-   const name=typeof nameCell.value==='string'?nameCell.value.trim():'';
+   const name=excelText(nameCell.value);
    if(!name&&valueCell.value==null)continue;
    if(!name){issues.push({code:'MISSING_ENTITY',severity:'error',row:r,message:'Avdelningsnamn saknas.'});continue;}
    if(valueCell.type===ExcelJS.ValueType.Formula){issues.push({code:'FORMULA_SKIPPED',severity:'error',row:r,message:'Formelvärde kan inte importeras automatiskt.'});continue;}
@@ -40,7 +41,7 @@ function sheetYear(name:string):number|null{
 function eligible(sheet:ExcelJS.Worksheet):boolean{
  if(sheetYear(sheet.name)===null)return false;
  const first=sheet.getCell('A1').value,second=sheet.getCell('B1').value;
- return typeof first==='string'&&first.trim().toLocaleLowerCase('sv-SE')==='avdelning'
-   &&typeof second==='string'&&second.trim().toLocaleLowerCase('sv-SE')==='antal anställda'
+ return excelText(first).toLocaleLowerCase('sv-SE')==='avdelning'
+   &&excelText(second).toLocaleLowerCase('sv-SE')==='antal anställda'
    &&sheet.getCell('C1').value==null;
 }
